@@ -1,15 +1,27 @@
-using System.Collections;
 using MessagePack;
 
 namespace UnicornHack.Hubs.ChangeTracking;
 
 [MessagePackObject]
-public partial class LogEntryChange
+public class LogEntryChange
 {
     public const int PropertyCount = 3;
+    private byte? _changedProperties = 1;
 
     [Key(0)]
-    public BitArray? ChangedProperties { get; set; } = new BitArray(PropertyCount) { [0] = true };
+    public byte? ChangedProperties
+    {
+        get => _changedProperties;
+        set => _changedProperties = value;
+    }
+
+    private void MarkChanged(int propertyIndex)
+    {
+        if (_changedProperties.HasValue)
+        {
+            _changedProperties = (byte)(_changedProperties.GetValueOrDefault() | (1 << propertyIndex));
+        }
+    }
 
     [Key(1)]
     public string? Message
@@ -17,7 +29,7 @@ public partial class LogEntryChange
         get => field; set
         {
             field = value;
-            ChangedProperties?.Set(1, true);
+            MarkChanged(1);
         }
     }
     [Key(2)]
@@ -26,7 +38,7 @@ public partial class LogEntryChange
         get => field; set
         {
             field = value;
-            ChangedProperties?.Set(2, true);
+            MarkChanged(2);
         }
     }
 }

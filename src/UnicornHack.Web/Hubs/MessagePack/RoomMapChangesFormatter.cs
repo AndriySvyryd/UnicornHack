@@ -1,4 +1,3 @@
-using System.Collections;
 using MessagePack;
 using MessagePack.Formatters;
 using UnicornHack.Hubs.ChangeTracking;
@@ -19,22 +18,22 @@ public sealed class RoomMapChangesFormatter : IMessagePackFormatter<RoomMapChang
 
         var resolver = options.Resolver;
         var values = value.ChangedProperties;
-        var length = ChangeSetFormatterHelper.GetSerializedLength(values, RoomMapChanges.PropertyCount);
+        var length = values.GetSerializedLength(RoomMapChanges.PropertyCount);
         writer.WriteArrayHeader(length);
-        resolver.GetFormatterWithVerify<BitArray?>().Serialize(ref writer, values, options);
-        if (values == null || values[1])
+        resolver.GetFormatterWithVerify<byte?>().Serialize(ref writer, values, options);
+        if (values.IsPropertyChanged(1))
         {
             resolver.GetFormatterWithVerify<List<(short, MapFeature)>?>()
                 .Serialize(ref writer, value.TerrainChanges, options);
         }
 
-        if (values == null || values[2])
+        if (values.IsPropertyChanged(2))
         {
             resolver.GetFormatterWithVerify<List<(short, DirectionFlags)>?>()
                 .Serialize(ref writer, value.WallNeighborsChanges, options);
         }
 
-        if (values == null || values[3])
+        if (values.IsPropertyChanged(3))
         {
             resolver.GetFormatterWithVerify<List<(short, byte)>?>()
                 .Serialize(ref writer, value.VisibleTerrainChanges, options);
@@ -51,11 +50,11 @@ public sealed class RoomMapChangesFormatter : IMessagePackFormatter<RoomMapChang
         var resolver = options.Resolver;
         var length = reader.ReadArrayHeader();
         var value = new RoomMapChanges();
-        BitArray? values = null;
+        byte? values = null;
 
         for (var i = 0; i < length; i++)
         {
-            if (values != null && !values[i])
+            if (values.HasValue && !values.IsPropertyChanged(i))
             {
                 continue;
             }
@@ -63,10 +62,10 @@ public sealed class RoomMapChangesFormatter : IMessagePackFormatter<RoomMapChang
             switch (i)
             {
                 case 0:
-                    values = resolver.GetFormatterWithVerify<BitArray?>().Deserialize(ref reader, options);
-                    if (values != null)
+                    values = resolver.GetFormatterWithVerify<byte?>().Deserialize(ref reader, options);
+                    if (values.HasValue)
                     {
-                        length = values.Length;
+                        length = values.GetValueOrDefault() == 0 ? 1 : RoomMapChanges.PropertyCount;
                     }
 
                     value.ChangedProperties = values;

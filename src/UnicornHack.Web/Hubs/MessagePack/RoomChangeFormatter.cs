@@ -1,4 +1,3 @@
-using System.Collections;
 using MessagePack;
 using MessagePack.Formatters;
 using UnicornHack.Hubs.ChangeTracking;
@@ -19,63 +18,63 @@ public sealed class RoomChangeFormatter : IMessagePackFormatter<RoomChange?>
 
         var resolver = options.Resolver;
         var values = value.ChangedProperties;
-        var length = ChangeSetFormatterHelper.GetSerializedLength(values, RoomChange.PropertyCount);
+        var length = values.GetSerializedLength(RoomChange.PropertyCount);
         writer.WriteArrayHeader(length);
-        resolver.GetFormatterWithVerify<BitArray?>().Serialize(ref writer, values, options);
-        if (values == null || values[1])
+        resolver.GetFormatterWithVerify<ushort?>().Serialize(ref writer, values, options);
+        if (values.IsPropertyChanged(1))
         {
             resolver.GetFormatterWithVerify<Dictionary<int, ActorChange>?>()
                 .Serialize(ref writer, value.Actors, options);
         }
 
-        if (values == null || values[2])
+        if (values.IsPropertyChanged(2))
         {
             resolver.GetFormatterWithVerify<Dictionary<int, ItemChange>?>()
                 .Serialize(ref writer, value.Items, options);
         }
 
-        if (values == null || values[3])
+        if (values.IsPropertyChanged(3))
         {
             resolver.GetFormatterWithVerify<Dictionary<int, ConnectionChange>?>()
                 .Serialize(ref writer, value.Connections, options);
         }
 
-        if (values == null || values[4])
+        if (values.IsPropertyChanged(4))
         {
             resolver.GetFormatterWithVerify<RoomMap?>().Serialize(ref writer, value.LevelMap, options);
         }
 
-        if (values == null || values[5])
+        if (values.IsPropertyChanged(5))
         {
             resolver.GetFormatterWithVerify<RoomMapChanges?>().Serialize(ref writer, value.LevelMapChanges, options);
         }
 
-        if (values == null || values[6])
+        if (values.IsPropertyChanged(6))
         {
             writer.Write(value.BranchName ?? "");
         }
 
-        if (values == null || values[7])
+        if (values.IsPropertyChanged(7))
         {
             writer.Write(value.Depth);
         }
 
-        if (values == null || values[8])
+        if (values.IsPropertyChanged(8))
         {
             writer.Write(value.Width);
         }
 
-        if (values == null || values[9])
+        if (values.IsPropertyChanged(9))
         {
             writer.Write(value.Height);
         }
 
-        if (values == null || values[10])
+        if (values.IsPropertyChanged(10))
         {
             writer.Write(value.GridX);
         }
 
-        if (values == null || values[11])
+        if (values.IsPropertyChanged(11))
         {
             writer.Write(value.GridY);
         }
@@ -91,11 +90,11 @@ public sealed class RoomChangeFormatter : IMessagePackFormatter<RoomChange?>
         var resolver = options.Resolver;
         var length = reader.ReadArrayHeader();
         var result = new RoomChange();
-        BitArray? values = null;
+        ushort? values = null;
 
         for (var i = 0; i < length; i++)
         {
-            if (values != null && !values[i])
+            if (values.HasValue && !values.IsPropertyChanged(i))
             {
                 continue;
             }
@@ -103,10 +102,10 @@ public sealed class RoomChangeFormatter : IMessagePackFormatter<RoomChange?>
             switch (i)
             {
                 case 0:
-                    values = resolver.GetFormatterWithVerify<BitArray?>().Deserialize(ref reader, options);
-                    if (values != null)
+                    values = resolver.GetFormatterWithVerify<ushort?>().Deserialize(ref reader, options);
+                    if (values.HasValue)
                     {
-                        length = values.Length;
+                        length = values.GetValueOrDefault() == 0 ? 1 : RoomChange.PropertyCount;
                     }
 
                     result.ChangedProperties = values;

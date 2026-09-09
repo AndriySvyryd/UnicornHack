@@ -11,18 +11,14 @@ public class EntityRelationshipPerfTest
     private GameEntity _levelEntity = null!;
     private ConnectionComponent[] _connections = null!;
 
-    [GlobalSetup(Target = nameof(CollectionAdd))]
+    [GlobalSetup]
     public void CollectionSetup()
     {
         var manager = TestHelper.CreateGameManager();
         var testSystem = new RelationshipTestSystem();
         manager.IncomingConnectionsToRoomRelationship.Dependents.AddListener(testSystem);
 
-        if (_connections == null
-            || _connections.Length != EntityCount)
-        {
-            _connections = new ConnectionComponent[EntityCount];
-        }
+        _connections = new ConnectionComponent[EntityCount];
 
         _levelEntity = manager.CreateEntity().Referenced;
         var level = _levelEntity.AddComponent<RoomComponent>((int)EntityComponent.Room);
@@ -55,12 +51,43 @@ public class EntityRelationshipPerfTest
         manager.Queue.Suspend();
     }
 
-    [GlobalSetup(Targets =
-        new[] { nameof(CollectionRemove), nameof(CollectionUpdate), nameof(CollectionCompositeUpdate) })]
-    public void InitializedCollectionSetup()
+    [IterationSetup(Target = nameof(CollectionAdd))]
+    public void ResetCollectionAdd()
     {
-        CollectionSetup();
-        CollectionAdd();
+        foreach (var connection in _connections)
+        {
+            connection.TargetRoomId = 0;
+        }
+    }
+
+    [IterationSetup(Target = nameof(CollectionRemove))]
+    public void ResetCollectionRemove()
+    {
+        foreach (var connection in _connections)
+        {
+            connection.TargetRoomId = _levelEntity.Id;
+        }
+    }
+
+    [IterationSetup(Target = nameof(CollectionUpdate))]
+    public void ResetCollectionUpdate()
+    {
+        foreach (var connection in _connections)
+        {
+            connection.TargetRoomId = _levelEntity.Id;
+            connection.TargetLevelX = 0;
+            connection.TargetLevelY = 0;
+        }
+    }
+
+    [IterationSetup(Target = nameof(CollectionCompositeUpdate))]
+    public void ResetCollectionCompositeUpdate()
+    {
+        foreach (var connection in _connections)
+        {
+            connection.TargetRoomId = _levelEntity.Id;
+            connection.TargetCell = default;
+        }
     }
 
     private class RelationshipTestSystem :

@@ -227,6 +227,7 @@ public sealed class PersistedGame : IDisposable
     private static DbContextOptions<GameDbContext> BuildOptions(string connectionString)
         => new DbContextOptionsBuilder<GameDbContext>()
             .UseSqlServer(connectionString, sql => sql.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))
+            .AddInterceptors(PooledMaterializationInterceptor.Instance)
             .Options;
 
     private static void CleanOrRecreateDatabase(GameDbContext context)

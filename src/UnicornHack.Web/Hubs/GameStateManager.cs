@@ -14,8 +14,10 @@ public static class GameStateManager
     ///     must observe identical state.
     /// </summary>
     public static PlayerChange GetState(GameEntity playerEntity, GameServices services)
-        => PlayerChangeBuilder.SerializePlayer(
-            playerEntity, new SerializationContext(null!, playerEntity, services));
+    {
+        var context = new SerializationContext(null, playerEntity, services);
+        return PlayerChangeBuilder.SerializePlayer(playerEntity, in context);
+    }
 
     /// <summary>
     ///     Advances the game until the current player is ready to act again, optionally
@@ -65,6 +67,9 @@ public static class GameStateManager
                 {
                     MarkTerrainPropertiesModified(dbContext, manager);
                 }
+
+                roomChangeBuilder.PrepareCommonRoom(
+                    currentPlayer.Entity.Position?.RoomEntity, services);
 
                 foreach (var builder in builders!)
                 {

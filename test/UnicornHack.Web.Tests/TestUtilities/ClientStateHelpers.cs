@@ -59,32 +59,32 @@ public static class ClientStateHelpers
     {
         var setValues = data.ChangedProperties!;
 
-        if (setValues[1])
+        if (setValues.IsPropertyChanged(1))
         {
             player.Name = data.Name;
         }
 
-        if (setValues[2])
+        if (setValues.IsPropertyChanged(2))
         {
             player.Id = data.Id;
         }
 
-        if (setValues[3])
+        if (setValues.IsPropertyChanged(3))
         {
             player.PreviousTick = data.PreviousTick;
         }
 
-        if (setValues[4])
+        if (setValues.IsPropertyChanged(4))
         {
             player.CurrentTick = data.CurrentTick;
         }
 
-        if (setValues[5])
+        if (setValues.IsPropertyChanged(5))
         {
             player.NextActionTick = data.NextActionTick;
         }
 
-        if (setValues[6])
+        if (setValues.IsPropertyChanged(6))
         {
             if (data.Room!.ChangedProperties != null)
             {
@@ -96,7 +96,7 @@ public static class ClientStateHelpers
             }
         }
 
-        if (setValues[7])
+        if (setValues.IsPropertyChanged(7))
         {
             foreach (var kvp in data.Abilities!)
             {
@@ -104,7 +104,7 @@ public static class ClientStateHelpers
             }
         }
 
-        if (setValues[8])
+        if (setValues.IsPropertyChanged(8))
         {
             foreach (var kvp in data.Effects!)
             {
@@ -112,7 +112,7 @@ public static class ClientStateHelpers
             }
         }
 
-        if (setValues[9])
+        if (setValues.IsPropertyChanged(9))
         {
             foreach (var kvp in data.Log!)
             {
@@ -120,37 +120,37 @@ public static class ClientStateHelpers
             }
         }
 
-        if (setValues[10])
+        if (setValues.IsPropertyChanged(10))
         {
             player.XP = data.XP;
         }
 
-        if (setValues[11])
+        if (setValues.IsPropertyChanged(11))
         {
             player.Hp = data.Hp;
         }
 
-        if (setValues[12])
+        if (setValues.IsPropertyChanged(12))
         {
             player.MaxHp = data.MaxHp;
         }
 
-        if (setValues[13])
+        if (setValues.IsPropertyChanged(13))
         {
             player.Ep = data.Ep;
         }
 
-        if (setValues[14])
+        if (setValues.IsPropertyChanged(14))
         {
             player.MaxEp = data.MaxEp;
         }
 
-        if (setValues[15])
+        if (setValues.IsPropertyChanged(15))
         {
             player.ReservedEp = data.ReservedEp;
         }
 
-        if (setValues[16])
+        if (setValues.IsPropertyChanged(16))
         {
             player.Fortune = data.Fortune;
         }
@@ -211,6 +211,7 @@ public static class ClientStateHelpers
                 ExpandConnection(kvp.Key, kvp.Value, level.Connections!, isParentAdd: true);
             }
         }
+
     }
 
     private static void InitializeEmptyMap(RoomMap levelMap, int width, int height)
@@ -228,9 +229,9 @@ public static class ClientStateHelpers
         var level = player.Room!;
         var levelMap = level.LevelMap!;
 
-        for (var i = 1; i < setValues.Length; i++)
+        for (var i = 1; i < RoomChange.PropertyCount; i++)
         {
-            if (!setValues[i])
+            if (!setValues.IsPropertyChanged(i))
             {
                 continue;
             }
@@ -286,17 +287,17 @@ public static class ClientStateHelpers
         var setValues = sparseMap.ChangedProperties;
         if (setValues != null)
         {
-            if (setValues[1] && sparseMap.TerrainChanges != null)
+            if (setValues.IsPropertyChanged(1) && sparseMap.TerrainChanges != null)
             {
                 ApplyTerrainChanges(sparseMap.TerrainChanges, levelMap.Terrain);
             }
 
-            if (setValues[2] && sparseMap.WallNeighborsChanges != null)
+            if (setValues.IsPropertyChanged(2) && sparseMap.WallNeighborsChanges != null)
             {
                 ApplyWallNeighborChanges(sparseMap.WallNeighborsChanges, levelMap.WallNeighbors);
             }
 
-            if (setValues[3] && sparseMap.VisibleTerrainChanges != null)
+            if (setValues.IsPropertyChanged(3) && sparseMap.VisibleTerrainChanges != null)
             {
                 ApplyVisibilityChanges(sparseMap.VisibleTerrainChanges, levelMap.VisibleTerrain);
             }
@@ -362,7 +363,7 @@ public static class ClientStateHelpers
             return;
         }
 
-        if (setValues[0])
+        if (setValues != 0)
         {
             if (!collection.TryGetValue(id, out var existing))
             {
@@ -371,9 +372,9 @@ public static class ClientStateHelpers
                     + "(missing prior Added emission).");
             }
 
-            for (var i = 1; i < setValues.Length; i++)
+            for (var i = 1; i < ActorChange.PropertyCount; i++)
             {
-                if (!setValues[i])
+                if (!setValues.IsPropertyChanged(i))
                 {
                     continue;
                 }
@@ -416,18 +417,6 @@ public static class ClientStateHelpers
                     case 12:
                         existing.NextAction = data.NextAction;
                         break;
-                    case 13:
-                        existing.MeleeAttack = data.MeleeAttack;
-                        break;
-                    case 14:
-                        existing.RangeAttack = data.RangeAttack;
-                        break;
-                    case 15:
-                        existing.MeleeDefense = data.MeleeDefense;
-                        break;
-                    case 16:
-                        existing.RangeDefense = data.RangeDefense;
-                        break;
                 }
             }
         }
@@ -460,7 +449,7 @@ public static class ClientStateHelpers
             return;
         }
 
-        if (setValues[0])
+        if (setValues != 0)
         {
             if (!collection.TryGetValue(id, out var existing))
             {
@@ -469,9 +458,9 @@ public static class ClientStateHelpers
                     + "(missing prior Added emission).");
             }
 
-            for (var i = 1; i < setValues.Length; i++)
+            for (var i = 1; i < ItemChange.PropertyCount; i++)
             {
-                if (!setValues[i])
+                if (!setValues.IsPropertyChanged(i))
                 {
                     continue;
                 }
@@ -528,7 +517,7 @@ public static class ClientStateHelpers
             return;
         }
 
-        if (setValues[0])
+        if (setValues != 0)
         {
             if (!collection.TryGetValue(id, out var existing))
             {
@@ -537,9 +526,9 @@ public static class ClientStateHelpers
                     + "(missing prior Added emission).");
             }
 
-            for (var i = 1; i < setValues.Length; i++)
+            for (var i = 1; i < ConnectionChange.PropertyCount; i++)
             {
-                if (!setValues[i])
+                if (!setValues.IsPropertyChanged(i))
                 {
                     continue;
                 }
@@ -587,16 +576,16 @@ public static class ClientStateHelpers
             return;
         }
 
-        if (setValues[0])
+        if (setValues != 0)
         {
             if (!collection.TryGetValue(id, out var existing))
             {
                 throw new InvalidOperationException($"Effect {id} not found for update");
             }
 
-            for (var i = 1; i < setValues.Length; i++)
+            for (var i = 1; i < EffectChange.PropertyCount; i++)
             {
-                if (!setValues[i])
+                if (!setValues.IsPropertyChanged(i))
                 {
                     continue;
                 }
@@ -642,7 +631,7 @@ public static class ClientStateHelpers
             return;
         }
 
-        if (setValues[0])
+        if (setValues != 0)
         {
             if (!collection.TryGetValue(id, out var existing))
             {
@@ -651,9 +640,9 @@ public static class ClientStateHelpers
                     + "(missing prior Added emission).");
             }
 
-            for (var i = 1; i < setValues.Length; i++)
+            for (var i = 1; i < AbilityChange.PropertyCount; i++)
             {
-                if (!setValues[i])
+                if (!setValues.IsPropertyChanged(i))
                 {
                     continue;
                 }
@@ -734,16 +723,16 @@ public static class ClientStateHelpers
             return;
         }
 
-        if (setValues[0])
+        if (setValues != 0)
         {
             if (!collection.TryGetValue(id, out var existing))
             {
                 throw new InvalidOperationException($"LogEntry {id} not found for update");
             }
 
-            for (var i = 1; i < setValues.Length; i++)
+            for (var i = 1; i < LogEntryChange.PropertyCount; i++)
             {
-                if (!setValues[i])
+                if (!setValues.IsPropertyChanged(i))
                 {
                     continue;
                 }

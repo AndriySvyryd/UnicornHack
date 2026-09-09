@@ -1,4 +1,3 @@
-using System.Collections;
 using MessagePack;
 
 namespace UnicornHack.Hubs.MessagePack;
@@ -11,7 +10,7 @@ public sealed class PlayerSkillsFormatter : FixedArrayFormatter<PlayerSkills>
     protected override void SerializeFields(
         ref MessagePackWriter writer, PlayerSkills value, MessagePackSerializerOptions options)
     {
-        options.Resolver.GetFormatterWithVerify<BitArray?>()
+        options.Resolver.GetFormatterWithVerify<uint?>()
             .Serialize(ref writer, value.ChangedProperties, options);
         writer.Write(value.HandWeapons);
         writer.Write(value.ShortWeapons);
@@ -50,7 +49,7 @@ public sealed class PlayerSkillsFormatter : FixedArrayFormatter<PlayerSkills>
     {
         switch (field)
         {
-            case 0: value.ChangedProperties = options.Resolver.GetFormatterWithVerify<BitArray?>().Deserialize(ref reader, options); break;
+            case 0: value.ChangedProperties = options.Resolver.GetFormatterWithVerify<uint?>().Deserialize(ref reader, options); break;
             case 1: value.HandWeapons = reader.ReadInt32(); break;
             case 2: value.ShortWeapons = reader.ReadInt32(); break;
             case 3: value.MediumWeapons = reader.ReadInt32(); break;

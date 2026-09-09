@@ -390,7 +390,7 @@ public class MovementTest
 
         var actorEntity = CreatureData.HumanWarrior.Instantiate(observedRoom, new Point(2, 1));
         manager.Queue.ProcessQueue(manager);
-        var knowledgeReference = manager.CreateEntity();
+        using var knowledgeReference = manager.CreateEntity();
         var knowledgeEntity = knowledgeReference.Referenced;
         knowledgeEntity.Knowledge = manager.CreateComponent<KnowledgeComponent>(EntityComponent.Knowledge);
         knowledgeEntity.Knowledge.KnownEntityId = actorEntity.Id;
@@ -408,7 +408,7 @@ public class MovementTest
 
         Assert.True(playerBuilder.HasObservableChanges(manager));
         var movedOut = playerBuilder.BuildChangeSet(manager, game.Services);
-        Assert.Equal(1, movedOut.Room!.Actors![knowledgeEntity.Id].ChangedProperties!.Length);
+        Assert.Equal((ushort?)0, movedOut.Room!.Actors![knowledgeEntity.Id].ChangedProperties);
 
         listener.Reset(manager);
         knowledgeEntity.Position.RoomId = observedRoom.EntityId;
@@ -419,6 +419,25 @@ public class MovementTest
         Assert.Null(added.ChangedProperties);
         Assert.Equal(2, added.LevelX);
         Assert.Equal(1, added.LevelY);
+
+        var clientState = ClientStateHelpers.Deserialize(GameStateManager.GetState(playerEntity, game.Services));
+        listener.Reset(manager);
+
+        knowledgeEntity.Position.RoomId = otherRoom.EntityId;
+        knowledgeEntity.Position.Cell = new Point(3, 2);
+        knowledgeEntity.Position.RoomId = observedRoom.EntityId;
+
+        Assert.True(playerBuilder.HasObservableChanges(manager));
+        var roundTrip = playerBuilder.BuildChangeSet(manager, game.Services);
+        var roundTripActor = roundTrip.Room!.Actors![knowledgeEntity.Id];
+        Assert.NotNull(roundTripActor.ChangedProperties);
+        Assert.Equal(3, roundTripActor.LevelX);
+        Assert.Equal(2, roundTripActor.LevelY);
+
+        ClientStateHelpers.ApplyDelta(clientState, roundTrip);
+        var clientActor = clientState.Room!.Actors![knowledgeEntity.Id];
+        Assert.Equal(3, clientActor.LevelX);
+        Assert.Equal(2, clientActor.LevelY);
 
         knowledgeEntity.Position = null;
         knowledgeEntity.Knowledge = null;

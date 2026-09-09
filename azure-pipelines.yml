@@ -34,13 +34,13 @@ steps:
   displayName: 'Benchmark Core'
   inputs:
     command: 'run'
-    arguments: '--configuration $(buildConfiguration) --project test\UnicornHack.Core.PerformanceTests\UnicornHack.Core.PerformanceTests.csproj -- --filter *EffectSystemPerfTest* --job short --artifacts $(Build.ArtifactStagingDirectory)\CoreBenchmarks'
+    arguments: '--configuration $(buildConfiguration) --no-build --project test\UnicornHack.Core.PerformanceTests\UnicornHack.Core.PerformanceTests.csproj -- --artifacts $(Build.ArtifactStagingDirectory)\CoreBenchmarks'
 
 - task: DotNetCoreCLI@2
   displayName: 'Benchmark Web'
   inputs:
     command: 'run'
-    arguments: '--configuration $(buildConfiguration) --project test\UnicornHack.Web.PerformanceTests\UnicornHack.Web.PerformanceTests.csproj -- --filter *ChangeDetectionPerfTest* --artifacts $(Build.ArtifactStagingDirectory)\WebBenchmarks'
+    arguments: '--configuration $(buildConfiguration) --no-build --project test\UnicornHack.Web.PerformanceTests\UnicornHack.Web.PerformanceTests.csproj -- --artifacts $(Build.ArtifactStagingDirectory)\WebBenchmarks'
 
 - task: PowerShell@2
   displayName: 'Check Performance Thresholds'

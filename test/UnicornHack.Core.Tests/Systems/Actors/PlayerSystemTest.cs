@@ -366,6 +366,10 @@ public class PlayerSystemTest
         // The item physically moved into the player's container.
         var pickedUpItem = Assert.Single(being.Items);
         Assert.Equal(playerEntity.Id, pickedUpItem.Item!.ContainerId);
+        Assert.Null(pickedUpItem.Position!.Cell);
+        Assert.Empty(room.Items);
+        Assert.Empty(room.KnownItems);
+        Assert.Null(pickedUpItem.Position.Knowledge);
     }
 
     [Fact]

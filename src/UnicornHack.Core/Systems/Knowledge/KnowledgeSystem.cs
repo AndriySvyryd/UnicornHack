@@ -79,8 +79,19 @@ public class KnowledgeSystem :
         SenseType preservedSenseMask = SenseType.Sound)
     {
         var position = entity.Position;
-        if (position?.Cell is not { } cell)
+        if (position == null)
         {
+            return;
+        }
+
+        if (position.Cell is not { } cell)
+        {
+            if (position.Knowledge is { } knowledge)
+            {
+                knowledge.RemoveComponent(EntityComponent.Knowledge);
+                knowledge.RemoveComponent(EntityComponent.Position);
+            }
+
             return;
         }
 

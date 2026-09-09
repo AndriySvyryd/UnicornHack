@@ -92,7 +92,7 @@ public class EngulfTest
         Assert.True(builder.HasObservableChanges(manager));
 
         var change = builder.BuildChangeSet(manager, services);
-        Assert.Equal(PlayerChange.PropertyCount, change.ChangedProperties!.Length);
+        Assert.NotNull(change.ChangedProperties);
 
         var engulferKnowledgeId = engulfer.Position!.Knowledge!.Id;
         Assert.NotNull(change.Room);

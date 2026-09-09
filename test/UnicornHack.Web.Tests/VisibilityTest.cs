@@ -425,7 +425,7 @@ public class VisibilityTest
     /// <summary>
     ///     Regression: equipping mail armor via ability then moving in the opposite direction
     ///     causes "Actor X not deleted" and "Item X not found" exceptions on the client.
-    ///     The bug occurs because <see cref="ActorChangeBuilder.OnBaseGroupPropertyValuesChanged" />
+    ///     The bug occurs when shared actor state and observer-derived assessments are invalidated
     ///     unconditionally creates Modified entries for knowledge entities that may not be in
     ///     the <c>KnownActorsToLevelCellRelationship</c>, leading to spurious deltas for entities
     ///     the client was never told about.

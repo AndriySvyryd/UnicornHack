@@ -72,18 +72,59 @@ public class EffectTest
             player, EffectType.Confuse, EffectTestHelper.GetStatusEffectThreshold(player), manager);
         manager.Queue.ProcessQueue(manager);
 
-        var hiddenDelta = playerBuilder.BuildChangeSet(manager, game.Services).Room!.Actors![enemyKnowledgeId];
-        Assert.True(hiddenDelta.ChangedProperties![12]);
+        var hiddenDelta = playerBuilder.BuildChangeSet(manager, game.Services)
+            .Room!.Actors![enemyKnowledgeId];
+        Assert.True(hiddenDelta.ChangedProperties.IsPropertyChanged(12));
         Assert.Null(hiddenDelta.NextAction);
-        Assert.Null(GameStateManager.GetState(player, game.Services).Room!.Actors![enemyKnowledgeId].NextAction);
+        Assert.Null(GameStateManager.GetState(
+            player, game.Services).Room!.Actors![enemyKnowledgeId].NextAction);
         listener.Reset(manager);
 
         manager.EffectApplicationSystem.RemoveAbility(player, AbilityData.Confused.Name, manager);
         manager.Queue.ProcessQueue(manager);
 
-        var restoredDelta = playerBuilder.BuildChangeSet(manager, game.Services).Room!.Actors![enemyKnowledgeId];
-        Assert.True(restoredDelta.ChangedProperties![12]);
+        var restoredDelta = playerBuilder.BuildChangeSet(manager, game.Services)
+            .Room!.Actors![enemyKnowledgeId];
+        Assert.True(restoredDelta.ChangedProperties.IsPropertyChanged(12));
         Assert.NotNull(restoredDelta.NextAction);
+    }
+
+    [Fact]
+    public void Any_capable_player_shares_enemy_action_telegraphs_with_the_room()
+    {
+        var game = TestHelper.CreateGame();
+        var level = TestHelper.BuildRoom(TestMap, game);
+        var manager = game.Manager;
+        var enemy = CreatureData.HumanWarrior.Instantiate(level, new Point(2, 3));
+        var confusedPlayer = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(2, 2));
+        var capablePlayer = PlayerRace.InstantiatePlayer("Cudley", Sex.Female, level, new Point(3, 2));
+        manager.Queue.ProcessQueue(manager);
+
+        var listener = WebTestHelper.SetupListeners(manager);
+        var confusedPlayerBuilder = listener.PlayerBuilders.Single(
+            builder => builder.PlayerEntityId == confusedPlayer.Id);
+        var capablePlayerBuilder = listener.PlayerBuilders.Single(
+            builder => builder.PlayerEntityId == capablePlayer.Id);
+
+        enemy.AI!.NextAction = ActorActionType.MoveOneCell;
+        enemy.AI.NextActionTarget = (int)Direction.South;
+        var enemyKnowledgeId = level.KnownActors.Values.Single(
+            actor => actor.Knowledge!.KnownEntityId == enemy.Id).Id;
+        var confusedPlayerActorChange = confusedPlayerBuilder.BuildChangeSet(manager, game.Services)
+            .Room!.Actors![enemyKnowledgeId];
+        var capablePlayerActorChange = capablePlayerBuilder.BuildChangeSet(manager, game.Services)
+            .Room!.Actors![enemyKnowledgeId];
+        Assert.Same(confusedPlayerActorChange, capablePlayerActorChange);
+        Assert.NotNull(confusedPlayerActorChange.NextAction);
+        listener.Reset(manager);
+
+        EffectTestHelper.ApplyStatus(
+            confusedPlayer, EffectType.Confuse, EffectTestHelper.GetStatusEffectThreshold(confusedPlayer), manager);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.True(capablePlayer.Being!.CanPerceiveIntention);
+        Assert.NotNull(GameStateManager.GetState(
+            confusedPlayer, game.Services).Room!.Actors![enemyKnowledgeId].NextAction);
     }
 
     [Fact]
@@ -314,7 +355,7 @@ public class EffectTest
 
         var updated = playerBuilder.BuildChangeSet(manager, manager.Game.Services);
         placeholder = Assert.Single(updated.Abilities!, ability => ability.Key == placeholderId).Value;
-        Assert.True(placeholder.ChangedProperties![9]);
+        Assert.True(placeholder.ChangedProperties.IsPropertyChanged(9));
         Assert.Equal(residual + 5, placeholder.Accumulator);
         ClientStateHelpers.ApplyChangeSets(state, [new TurnChangeSet { PlayerState = updated }]);
         Assert.Equal(residual + 5, state.Abilities![placeholderId].Accumulator);
@@ -328,10 +369,10 @@ public class EffectTest
         var activated = playerBuilder.BuildChangeSet(manager, manager.Game.Services);
         var activatedAbilities = activated.Abilities!;
         Assert.Equal(
-            1,
+            (ushort?)0,
             Assert.Single(
                 activatedAbilities, ability => ability.Key == placeholderId)
-                .Value.ChangedProperties!.Length);
+                .Value.ChangedProperties);
         var status = Assert.Single(
             activatedAbilities,
             ability => ability.Key != placeholderId
@@ -352,9 +393,9 @@ public class EffectTest
         var deactivated = playerBuilder.BuildChangeSet(manager, manager.Game.Services);
         var deactivatedAbilities = deactivated.Abilities!;
         Assert.Equal(
-            1,
+            (ushort?)0,
             Assert.Single(deactivatedAbilities, ability => ability.Key == activeStatus.Key)
-                .Value.ChangedProperties!.Length);
+                .Value.ChangedProperties);
         placeholder = Assert.Single(
             deactivatedAbilities, ability => ability.Key == placeholderId).Value;
         Assert.Null(placeholder.ChangedProperties);
@@ -477,9 +518,9 @@ public class EffectTest
         var abilityDelta = playerChange.Abilities![statusEntry.Key];
 
         Assert.NotNull(abilityDelta.ChangedProperties);
-        Assert.True(abilityDelta.ChangedProperties[10]);
-        Assert.True(abilityDelta.ChangedProperties[12]);
-        Assert.True(abilityDelta.ChangedProperties[13]);
+        Assert.True(abilityDelta.ChangedProperties.IsPropertyChanged(10));
+        Assert.True(abilityDelta.ChangedProperties.IsPropertyChanged(12));
+        Assert.True(abilityDelta.ChangedProperties.IsPropertyChanged(13));
         Assert.Equal(2, abilityDelta.Level);
         Assert.Equal(25, abilityDelta.ExpirationTarget);
         Assert.Equal((int)EffectDuration.UntilXPGained, abilityDelta.ExpirationEvent);

@@ -1,6 +1,6 @@
-using System.Collections;
 using MessagePack;
 using MessagePack.Resolvers;
+using System.Reflection;
 using UnicornHack.Generation;
 using UnicornHack.Hubs.ChangeTracking;
 using Xunit;
@@ -9,6 +9,71 @@ namespace UnicornHack;
 
 public class MessagePackTest
 {
+    [Fact]
+    public void Integer_changed_property_masks_cover_contiguous_message_pack_keys()
+    {
+        Type[] dtoTypes =
+        [
+            typeof(AbilityChange),
+            typeof(ActorChange),
+            typeof(ConnectionChange),
+            typeof(EffectChange),
+            typeof(ItemChange),
+            typeof(LogEntryChange),
+            typeof(PlayerChange),
+            typeof(RoomChange),
+            typeof(RoomMapChanges),
+            typeof(Hubs.AbilityAttributes),
+            typeof(Hubs.ActorAttributes),
+            typeof(Hubs.DialogData),
+            typeof(Hubs.Item),
+            typeof(Hubs.ItemAttributes),
+            typeof(Hubs.PlayerSkills)
+        ];
+
+        foreach (var dtoType in dtoTypes)
+        {
+            var keyedMembers = dtoType
+                .GetMembers(BindingFlags.Instance | BindingFlags.Public)
+                .Select(member => (Member: member, Key: member.GetCustomAttribute<KeyAttribute>()))
+                .Where(entry => entry.Key != null)
+                .OrderBy(entry => entry.Key!.IntKey)
+                .ToArray();
+            Assert.NotEmpty(keyedMembers);
+
+            for (var expectedKey = 0; expectedKey < keyedMembers.Length; expectedKey++)
+            {
+                Assert.Equal(expectedKey, keyedMembers[expectedKey].Key!.IntKey);
+            }
+
+            var changedProperties = Assert.Single(
+                keyedMembers, entry => entry.Key!.IntKey == 0);
+            Assert.Equal(nameof(PlayerChange.ChangedProperties), changedProperties.Member.Name);
+
+            var memberType = changedProperties.Member switch
+            {
+                PropertyInfo property => property.PropertyType,
+                FieldInfo field => field.FieldType,
+                _ => throw new InvalidOperationException(changedProperties.Member.MemberType.ToString())
+            };
+            var maskType = Nullable.GetUnderlyingType(memberType);
+            var maskWidth = maskType == typeof(byte) ? 8
+                : maskType == typeof(ushort) ? 16
+                : maskType == typeof(uint) ? 32
+                : maskType == typeof(ulong) ? 64
+                : throw new InvalidOperationException(
+                    $"{dtoType.Name}.ChangedProperties uses unsupported type {memberType}.");
+            Assert.True(
+                keyedMembers.Length <= maskWidth,
+                $"{dtoType.Name} has {keyedMembers.Length} keys but its {maskType!.Name} mask has {maskWidth} bits.");
+
+            if (dtoType.GetField(nameof(PlayerChange.PropertyCount)) is { } propertyCount)
+            {
+                Assert.Equal(keyedMembers.Length, propertyCount.GetRawConstantValue());
+            }
+        }
+    }
+
     private static readonly MessagePackSerializerOptions Options = MessagePackSerializerOptions.Standard
         .WithSecurity(MessagePackSecurity.UntrustedData)
         .WithResolver(CompositeResolver.Create(
@@ -47,7 +112,7 @@ public class MessagePackTest
     {
         var change = new AbilityChange
         {
-            ChangedProperties = new BitArray(AbilityChange.PropertyCount)
+            ChangedProperties = 0
         };
 
         var bytes = MessagePackSerializer.Serialize(
@@ -55,7 +120,7 @@ public class MessagePackTest
         var reader = new MessagePackReader(bytes);
 
         Assert.Equal(1, reader.ReadArrayHeader());
-        Assert.NotNull(Options.Resolver.GetFormatterWithVerify<BitArray?>()
+        Assert.Equal((ushort?)0, Options.Resolver.GetFormatterWithVerify<ushort?>()
             .Deserialize(ref reader, Options));
         Assert.True(reader.End);
     }
@@ -226,11 +291,9 @@ public class MessagePackTest
     [Fact]
     public void Sparse_level_map_dialog_contains_only_its_mask_and_payload()
     {
-        var bits = new BitArray(13);
-        bits[12] = true;
         var dialog = new DialogData
         {
-            ChangedProperties = bits,
+            ChangedProperties = 1 << 12,
             LevelMap = new LevelMap
             {
                 Rooms = [new RoomEntry { Id = 21 }],
@@ -242,7 +305,7 @@ public class MessagePackTest
             dialog, Options, TestContext.Current.CancellationToken);
         var reader = new MessagePackReader(bytes);
         Assert.Equal(2, reader.ReadArrayHeader());
-        Assert.NotNull(Options.Resolver.GetFormatterWithVerify<BitArray?>()
+        Assert.Equal((ushort?)(1 << 12), Options.Resolver.GetFormatterWithVerify<ushort?>()
             .Deserialize(ref reader, Options));
         Assert.NotNull(Options.Resolver.GetFormatterWithVerify<LevelMap?>()
             .Deserialize(ref reader, Options));
@@ -256,11 +319,9 @@ public class MessagePackTest
             DialogData.Deleted(), Options, TestContext.Current.CancellationToken);
         var reader = new MessagePackReader(bytes);
         Assert.Equal(1, reader.ReadArrayHeader());
-        var deleted = Options.Resolver.GetFormatterWithVerify<BitArray?>()
+        var deleted = Options.Resolver.GetFormatterWithVerify<ushort?>()
             .Deserialize(ref reader, Options);
-        Assert.NotNull(deleted);
-        Assert.Single(deleted.Cast<bool>());
-        Assert.False(deleted[0]);
+        Assert.Equal((ushort?)0, deleted);
         Assert.True(reader.End);
     }
 
@@ -269,16 +330,14 @@ public class MessagePackTest
     [InlineData(9)]
     public void Sparse_deleted_attribute_dialog_contains_only_its_masks(int field)
     {
-        var dialogBits = new BitArray(13);
-        dialogBits[field] = true;
         var dialog = new DialogData
         {
-            ChangedProperties = dialogBits,
+            ChangedProperties = (ushort)(1 << field),
             ActorAttributes = field == 8
-                ? new ActorAttributes { ChangedProperties = SerializationContext.DeletedBitArray }
+                ? new ActorAttributes { ChangedProperties = 0 }
                 : null,
             ItemAttributes = field == 9
-                ? new ItemAttributes { ChangedProperties = SerializationContext.DeletedBitArray }
+                ? new ItemAttributes { ChangedProperties = 0 }
                 : null
         };
 
@@ -286,14 +345,19 @@ public class MessagePackTest
             dialog, Options, TestContext.Current.CancellationToken);
         var reader = new MessagePackReader(bytes);
         Assert.Equal(2, reader.ReadArrayHeader());
-        Assert.NotNull(Options.Resolver.GetFormatterWithVerify<BitArray?>()
+        Assert.Equal((ushort?)(1 << field), Options.Resolver.GetFormatterWithVerify<ushort?>()
             .Deserialize(ref reader, Options));
         Assert.Equal(1, reader.ReadArrayHeader());
-        var deleted = Options.Resolver.GetFormatterWithVerify<BitArray?>()
-            .Deserialize(ref reader, Options);
-        Assert.NotNull(deleted);
-        Assert.Single(deleted.Cast<bool>());
-        Assert.False(deleted[0]);
+        if (field == 8)
+        {
+            Assert.Equal((ulong?)0, Options.Resolver.GetFormatterWithVerify<ulong?>()
+                .Deserialize(ref reader, Options));
+        }
+        else
+        {
+            Assert.Equal((ushort?)0, Options.Resolver.GetFormatterWithVerify<ushort?>()
+                .Deserialize(ref reader, Options));
+        }
         Assert.True(reader.End);
     }
 
@@ -323,5 +387,71 @@ public class MessagePackTest
         Assert.Equal(TurnEventType.SteppedOnConnection, turnEvent.Type);
         Assert.Equal((int)ConnectionScope.Room, turnEvent.Value1);
         Assert.Equal(123, turnEvent.Value2);
+    }
+
+    [Fact]
+    public void Change_dto_full_sparse_and_deleted_bytes_are_stable()
+    {
+        var lines = new List<string>();
+        Add("Player", new PlayerChange { ChangedProperties = null }, new PlayerChange { Fortune = 7 });
+        Add("Room", new RoomChange { ChangedProperties = null }, new RoomChange { GridY = 7 });
+        Add("Actor", new ActorChange { ChangedProperties = null },
+            new ActorChange
+            {
+                NextAction = new ActorActionChange { Type = Systems.Actors.ActorActionType.Wait }
+            },
+            new ActorChange { ChangedProperties = 0 });
+        Add("Item", new ItemChange { ChangedProperties = null }, new ItemChange { IsCurrentlyPerceived = true },
+            new ItemChange { ChangedProperties = 0 });
+        Add("Connection", new ConnectionChange { ChangedProperties = null },
+            new ConnectionChange { Orientation = Direction.East },
+            new ConnectionChange { ChangedProperties = 0 });
+        Add("Ability", new AbilityChange { ChangedProperties = null }, new AbilityChange { Noise = 7 },
+            new AbilityChange { ChangedProperties = 0 });
+        Add("Effect", new EffectChange { ChangedProperties = null }, new EffectChange { InForce = true },
+            new EffectChange { ChangedProperties = 0 });
+        Add("Log", new LogEntryChange { ChangedProperties = null }, new LogEntryChange { Ticks = 7 });
+        Add("RoomMap", new RoomMapChanges { ChangedProperties = null },
+            new RoomMapChanges { VisibleTerrainChanges = [(1, 2)] });
+
+        Assert.Equal(
+            [
+                "Player.Full=DC0011C0A000000000C0C0C0C000000000000000",
+                "Player.Sparse=92CE0001000107",
+                "Room.Full=9CC0C0C0C0C0C0A00000000000",
+                "Room.Sparse=92CD080107",
+                "Actor.Full=9DC0000000A0A0C20000000000C0",
+                "Actor.Sparse=92CD10019500A0000000",
+                "Actor.Deleted=9100",
+                "Item.Full=97C0000000A0A0C2",
+                "Item.Sparse=9241C3",
+                "Item.Deleted=9100",
+                "Connection.Full=94C0000000",
+                "Connection.Sparse=920900",
+                "Connection.Deleted=9100",
+                "Ability.Full=9FC0A000C0C0C0000000C00000C0C0C0",
+                "Ability.Sparse=92CD400107",
+                "Ability.Deleted=9100",
+                "Effect.Full=95C0000000C2",
+                "Effect.Sparse=9211C3",
+                "Effect.Deleted=9100",
+                "Log.Full=93C0A000",
+                "Log.Sparse=920507",
+                "RoomMap.Full=94C0C0C0C0",
+                "RoomMap.Sparse=920991920102"
+            ],
+            lines);
+
+        void Add<T>(string name, T full, T sparse, T? deleted = null)
+            where T : class
+        {
+            var cancellationToken = TestContext.Current.CancellationToken;
+            lines.Add($"{name}.Full={Convert.ToHexString(MessagePackSerializer.Serialize(full, Options, cancellationToken))}");
+            lines.Add($"{name}.Sparse={Convert.ToHexString(MessagePackSerializer.Serialize(sparse, Options, cancellationToken))}");
+            if (deleted != null)
+            {
+                lines.Add($"{name}.Deleted={Convert.ToHexString(MessagePackSerializer.Serialize(deleted, Options, cancellationToken))}");
+            }
+        }
     }
 }

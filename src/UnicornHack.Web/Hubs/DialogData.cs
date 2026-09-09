@@ -1,4 +1,3 @@
-using System.Collections;
 using MessagePack;
 using UnicornHack.Hubs.ChangeTracking;
 
@@ -8,7 +7,7 @@ namespace UnicornHack.Hubs;
 public class DialogData
 {
     [Key(0)]
-    public BitArray? ChangedProperties { get; set; } = new(13);
+    public ushort? ChangedProperties { get; set; } = 1;
 
     [Key(1)]
     public int? AbilitySlot { get; set; }
@@ -46,7 +45,7 @@ public class DialogData
     [Key(12)]
     public LevelMap? LevelMap { get; set; }
 
-    public static DialogData Deleted() => new() { ChangedProperties = SerializationContext.DeletedBitArray };
+    public static DialogData Deleted() => new() { ChangedProperties = 0 };
 }
 
 [MessagePackObject]
@@ -59,11 +58,8 @@ public class PlayerInventory
 [MessagePackObject]
 public class Item
 {
-    [IgnoreMember]
-    public int Id { get; set; } = -1;
-
     [Key(0)]
-    public BitArray? ChangedProperties { get; set; } = new(6);
+    public byte? ChangedProperties { get; set; } = 1;
 
     [Key(1)]
     public ItemType Type { get; set; }
@@ -107,7 +103,7 @@ public class PlayerAdaptations
 [MessagePackObject]
 public class PlayerSkills
 {
-    [Key(0)] public BitArray? ChangedProperties { get; set; } = new(31);
+    [Key(0)] public uint? ChangedProperties { get; set; } = 1;
     [Key(1)] public int HandWeapons { get; set; }
     [Key(2)] public int ShortWeapons { get; set; }
     [Key(3)] public int MediumWeapons { get; set; }
@@ -143,7 +139,7 @@ public class PlayerSkills
 [MessagePackObject]
 public class ActorAttributes
 {
-    [Key(0)] public BitArray? ChangedProperties { get; set; } = new(46);
+    [Key(0)] public ulong? ChangedProperties { get; set; } = 1;
     [Key(1)] public string? Name { get; set; }
     [Key(2)] public string Description { get; set; } = "";
     [Key(3)] public int Level { get; set; }
@@ -194,7 +190,7 @@ public class ActorAttributes
 [MessagePackObject]
 public class AbilityAttributes
 {
-    [Key(0)] public BitArray? ChangedProperties { get; set; } = new(23);
+    [Key(0)] public uint? ChangedProperties { get; set; } = 1;
     [Key(1)] public int Id { get; set; } = -1;
     [Key(2)] public string? Name { get; set; }
     [Key(3)] public int Level { get; set; }
@@ -251,7 +247,7 @@ public class SubAbilityAttributes
 [MessagePackObject]
 public class ItemAttributes
 {
-    [Key(0)] public BitArray? ChangedProperties { get; set; } = new(13);
+    [Key(0)] public ushort? ChangedProperties { get; set; } = 1;
     [Key(1)] public string? Name { get; set; }
     [Key(2)] public string Description { get; set; } = "";
     [Key(3)] public ItemType Type { get; set; }

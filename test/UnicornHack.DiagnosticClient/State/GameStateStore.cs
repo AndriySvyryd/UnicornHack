@@ -67,6 +67,7 @@ public sealed class GameStateStore
 
                     (events ??= []).AddRange(turnEvents);
                 }
+
             }
             catch (Exception ex)
             {

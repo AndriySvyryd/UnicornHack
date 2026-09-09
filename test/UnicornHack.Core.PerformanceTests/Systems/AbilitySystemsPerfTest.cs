@@ -9,30 +9,39 @@ namespace UnicornHack.PerformanceTests.Systems;
 [MemoryDiagnoser]
 public class AbilitySystemsPerfTest
 {
-    private GameEntity _actor = null!;
+    private const int DeathOperations = 3;
+
+    private GameEntity[] _actors = null!;
     private GameManager _manager = null!;
     private RoomComponent _room = null!;
 
-    [Params(16, 64, 256)]
+    [Params(64)]
     public int Count { get; set; }
 
     [IterationSetup(Target = nameof(Creature_death))]
     public void SetupDeath()
     {
-        _room = TestHelper.BuildRoom(".");
-        _actor = CreatureData.HumanWarrior.Instantiate(_room, new Point(0, 0));
-        _manager = _actor.Manager;
-        _manager.Queue.ProcessQueue(_manager);
-
-        for (var i = 0; i < Count; i++)
+        _room = TestHelper.BuildRoom("...");
+        _actors = new GameEntity[DeathOperations];
+        for (var actorIndex = 0; actorIndex < _actors.Length; actorIndex++)
         {
-            var abilityEntity = _manager.CreateEntity().Referenced;
-            var ability = _manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
-            ability.Name = $"benchmark ability {i}";
-            ability.Activation = ActivationType.WhileToggled;
-            ability.IsActive = true;
-            ability.OwnerId = _actor.Id;
-            abilityEntity.Ability = ability;
+            var actor = CreatureData.HumanWarrior.Instantiate(
+                _room, new Point((byte)actorIndex, 0));
+            _manager = actor.Manager;
+            _manager.Queue.ProcessQueue(_manager);
+
+            for (var i = 0; i < Count; i++)
+            {
+                var abilityEntity = _manager.CreateEntity().Referenced;
+                var ability = _manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
+                ability.Name = $"benchmark ability {actorIndex}-{i}";
+                ability.Activation = ActivationType.WhileToggled;
+                ability.IsActive = true;
+                ability.OwnerId = actor.Id;
+                abilityEntity.Ability = ability;
+            }
+
+            _actors[actorIndex] = actor;
         }
 
         _manager.Queue.ProcessQueue(_manager);
@@ -50,7 +59,11 @@ public class AbilitySystemsPerfTest
     [Benchmark]
     public void Creature_death()
     {
-        DiedMessage.Enqueue(_actor, _manager);
+        foreach (var actor in _actors)
+        {
+            DiedMessage.Enqueue(actor, _manager);
+        }
+
         _manager.Queue.ProcessQueue(_manager);
     }
 

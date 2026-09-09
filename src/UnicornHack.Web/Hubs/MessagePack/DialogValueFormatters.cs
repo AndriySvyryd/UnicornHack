@@ -1,4 +1,3 @@
-using System.Collections;
 using MessagePack;
 using DialogItem = UnicornHack.Hubs.Item;
 
@@ -29,7 +28,7 @@ public sealed class DialogItemFormatter : FixedArrayFormatter<DialogItem>
         ref MessagePackWriter writer, DialogItem value, MessagePackSerializerOptions options)
     {
         var resolver = options.Resolver;
-        resolver.GetFormatterWithVerify<BitArray?>().Serialize(ref writer, value.ChangedProperties, options);
+        resolver.GetFormatterWithVerify<byte?>().Serialize(ref writer, value.ChangedProperties, options);
         writer.Write((int)value.Type);
         writer.Write(value.BaseName);
         writer.Write(value.Name);
@@ -44,7 +43,7 @@ public sealed class DialogItemFormatter : FixedArrayFormatter<DialogItem>
         var resolver = options.Resolver;
         switch (field)
         {
-            case 0: value.ChangedProperties = resolver.GetFormatterWithVerify<BitArray?>().Deserialize(ref reader, options); break;
+            case 0: value.ChangedProperties = resolver.GetFormatterWithVerify<byte?>().Deserialize(ref reader, options); break;
             case 1: value.Type = (ItemType)reader.ReadInt32(); break;
             case 2: value.BaseName = reader.ReadString(); break;
             case 3: value.Name = reader.ReadString(); break;

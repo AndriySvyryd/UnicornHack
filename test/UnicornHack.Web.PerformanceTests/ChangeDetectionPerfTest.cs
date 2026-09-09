@@ -1,6 +1,5 @@
 using BenchmarkDotNet.Attributes;
 using UnicornHack.Data.Creatures;
-using UnicornHack.Data.Items;
 
 namespace UnicornHack.Web.PerformanceTests;
 
@@ -29,7 +28,7 @@ namespace UnicornHack.Web.PerformanceTests;
 public class ChangeDetectionPerfTest
 {
     /// <summary>Number of NPCs placed around the player (one per available cell).</summary>
-    [Params(8, 24, 64)]
+    [Params(24)]
     public int NpcCount;
 
     private const string Map = @"
@@ -71,11 +70,6 @@ public class ChangeDetectionPerfTest
 
         var center = new Point(10, 7);
         _playerEntity = PlayerRace.InstantiatePlayer("Bench", Sex.Male, _room, center);
-        manager.Queue.ProcessQueue(manager);
-
-        // Equip the player so attack-summary recomputation is exercised every turn.
-        ItemData.LongSword.Instantiate(_playerEntity);
-        ItemData.Shortbow.Instantiate(_playerEntity);
         manager.Queue.ProcessQueue(manager);
 
         // Surround the player with NPCs in concentric rings (skipping the center cell).

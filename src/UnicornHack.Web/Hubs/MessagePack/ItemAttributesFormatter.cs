@@ -1,4 +1,3 @@
-using System.Collections;
 using MessagePack;
 
 namespace UnicornHack.Hubs.MessagePack;
@@ -8,14 +7,14 @@ public sealed class ItemAttributesFormatter : FixedArrayFormatter<ItemAttributes
     public static readonly ItemAttributesFormatter Instance = new();
     protected override int FieldCount => 13;
 
-    protected override BitArray? GetChangedProperties(ItemAttributes value)
-        => value.ChangedProperties;
+    protected override bool IsDeleted(ItemAttributes value)
+        => value.ChangedProperties == 0;
 
     protected override void SerializeFields(
         ref MessagePackWriter writer, ItemAttributes value, MessagePackSerializerOptions options)
     {
         var resolver = options.Resolver;
-        resolver.GetFormatterWithVerify<BitArray?>().Serialize(ref writer, value.ChangedProperties, options);
+        resolver.GetFormatterWithVerify<ushort?>().Serialize(ref writer, value.ChangedProperties, options);
         writer.Write(value.Name);
         writer.Write(value.Description);
         writer.Write((int)value.Type);
@@ -38,7 +37,7 @@ public sealed class ItemAttributesFormatter : FixedArrayFormatter<ItemAttributes
         var resolver = options.Resolver;
         switch (field)
         {
-            case 0: value.ChangedProperties = resolver.GetFormatterWithVerify<BitArray?>().Deserialize(ref reader, options); break;
+            case 0: value.ChangedProperties = resolver.GetFormatterWithVerify<ushort?>().Deserialize(ref reader, options); break;
             case 1: value.Name = reader.ReadString(); break;
             case 2: value.Description = reader.ReadString() ?? ""; break;
             case 3: value.Type = (ItemType)reader.ReadInt32(); break;

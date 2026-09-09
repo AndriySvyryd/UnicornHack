@@ -3,7 +3,7 @@ using MessagePack;
 namespace UnicornHack.Hubs.ChangeTracking;
 
 [MessagePackObject]
-public partial class RoomMap
+public class RoomMap
 {
     [Key(0)]
     public MapFeature[] Terrain { get; set; } = [];

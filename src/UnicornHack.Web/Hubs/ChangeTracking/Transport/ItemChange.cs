@@ -1,22 +1,34 @@
-using System.Collections;
 using MessagePack;
 
 namespace UnicornHack.Hubs.ChangeTracking;
 
 [MessagePackObject]
-public partial class ItemChange
+public class ItemChange
 {
     public const int PropertyCount = 7;
+    private byte? _changedProperties = 1;
 
     [Key(0)]
-    public BitArray? ChangedProperties { get; set; } = new BitArray(PropertyCount) { [0] = true };
+    public byte? ChangedProperties
+    {
+        get => _changedProperties;
+        set => _changedProperties = value;
+    }
+
+    private void MarkChanged(int propertyIndex)
+    {
+        if (_changedProperties.HasValue)
+        {
+            _changedProperties = (byte)(_changedProperties.GetValueOrDefault() | (1 << propertyIndex));
+        }
+    }
     [Key(1)]
     public int LevelX
     {
         get => field; set
         {
             field = value;
-            ChangedProperties?.Set(1, true);
+            MarkChanged(1);
         }
     }
     [Key(2)]
@@ -25,7 +37,7 @@ public partial class ItemChange
         get => field; set
         {
             field = value;
-            ChangedProperties?.Set(2, true);
+            MarkChanged(2);
         }
     }
     [Key(3)]
@@ -34,7 +46,7 @@ public partial class ItemChange
         get => field; set
         {
             field = value;
-            ChangedProperties?.Set(3, true);
+            MarkChanged(3);
         }
     }
     [Key(4)]
@@ -43,7 +55,7 @@ public partial class ItemChange
         get => field; set
         {
             field = value;
-            ChangedProperties?.Set(4, true);
+            MarkChanged(4);
         }
     }
     [Key(5)]
@@ -52,7 +64,7 @@ public partial class ItemChange
         get => field; set
         {
             field = value;
-            ChangedProperties?.Set(5, true);
+            MarkChanged(5);
         }
     }
     [Key(6)]
@@ -61,7 +73,7 @@ public partial class ItemChange
         get => field; set
         {
             field = value;
-            ChangedProperties?.Set(6, true);
+            MarkChanged(6);
         }
     }
 }

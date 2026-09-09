@@ -1,4 +1,3 @@
-using System.Collections;
 using MessagePack;
 using MessagePack.Formatters;
 using UnicornHack.Hubs.ChangeTracking;
@@ -19,88 +18,88 @@ public sealed class PlayerChangeFormatter : IMessagePackFormatter<PlayerChange?>
 
         var resolver = options.Resolver;
         var values = value.ChangedProperties;
-        var length = ChangeSetFormatterHelper.GetSerializedLength(values, PlayerChange.PropertyCount);
+        var length = values.GetSerializedLength(PlayerChange.PropertyCount);
         writer.WriteArrayHeader(length);
-        resolver.GetFormatterWithVerify<BitArray?>().Serialize(ref writer, values, options);
-        if (values == null || values[1])
+        resolver.GetFormatterWithVerify<uint?>().Serialize(ref writer, values, options);
+        if (values.IsPropertyChanged(1))
         {
             writer.Write(value.Name ?? "");
         }
 
-        if (values == null || values[2])
+        if (values.IsPropertyChanged(2))
         {
             writer.Write(value.Id);
         }
 
-        if (values == null || values[3])
+        if (values.IsPropertyChanged(3))
         {
             writer.Write(value.PreviousTick);
         }
 
-        if (values == null || values[4])
+        if (values.IsPropertyChanged(4))
         {
             writer.Write(value.CurrentTick);
         }
 
-        if (values == null || values[5])
+        if (values.IsPropertyChanged(5))
         {
             writer.Write(value.NextActionTick);
         }
 
-        if (values == null || values[6])
+        if (values.IsPropertyChanged(6))
         {
             resolver.GetFormatterWithVerify<RoomChange?>().Serialize(ref writer, value.Room, options);
         }
 
-        if (values == null || values[7])
+        if (values.IsPropertyChanged(7))
         {
             resolver.GetFormatterWithVerify<Dictionary<int, AbilityChange>?>()
                 .Serialize(ref writer, value.Abilities, options);
         }
 
-        if (values == null || values[8])
+        if (values.IsPropertyChanged(8))
         {
             resolver.GetFormatterWithVerify<Dictionary<int, EffectChange>?>()
                 .Serialize(ref writer, value.Effects, options);
         }
 
-        if (values == null || values[9])
+        if (values.IsPropertyChanged(9))
         {
             resolver.GetFormatterWithVerify<Dictionary<int, LogEntryChange>?>()
                 .Serialize(ref writer, value.Log, options);
         }
 
-        if (values == null || values[10])
+        if (values.IsPropertyChanged(10))
         {
             writer.Write(value.XP);
         }
 
-        if (values == null || values[11])
+        if (values.IsPropertyChanged(11))
         {
             writer.Write(value.Hp);
         }
 
-        if (values == null || values[12])
+        if (values.IsPropertyChanged(12))
         {
             writer.Write(value.MaxHp);
         }
 
-        if (values == null || values[13])
+        if (values.IsPropertyChanged(13))
         {
             writer.Write(value.Ep);
         }
 
-        if (values == null || values[14])
+        if (values.IsPropertyChanged(14))
         {
             writer.Write(value.MaxEp);
         }
 
-        if (values == null || values[15])
+        if (values.IsPropertyChanged(15))
         {
             writer.Write(value.ReservedEp);
         }
 
-        if (values == null || values[16])
+        if (values.IsPropertyChanged(16))
         {
             writer.Write(value.Fortune);
         }
@@ -117,11 +116,11 @@ public sealed class PlayerChangeFormatter : IMessagePackFormatter<PlayerChange?>
         var resolver = options.Resolver;
         var length = reader.ReadArrayHeader();
         var result = new PlayerChange();
-        BitArray? values = null;
+        uint? values = null;
 
         for (var i = 0; i < length; i++)
         {
-            if (values != null && !values[i])
+            if (values.HasValue && !values.IsPropertyChanged(i))
             {
                 continue;
             }
@@ -129,10 +128,10 @@ public sealed class PlayerChangeFormatter : IMessagePackFormatter<PlayerChange?>
             switch (i)
             {
                 case 0:
-                    values = resolver.GetFormatterWithVerify<BitArray?>().Deserialize(ref reader, options);
-                    if (values != null)
+                    values = resolver.GetFormatterWithVerify<uint?>().Deserialize(ref reader, options);
+                    if (values.HasValue)
                     {
-                        length = values.Length;
+                        length = values.GetValueOrDefault() == 0 ? 1 : PlayerChange.PropertyCount;
                     }
 
                     result.ChangedProperties = values;

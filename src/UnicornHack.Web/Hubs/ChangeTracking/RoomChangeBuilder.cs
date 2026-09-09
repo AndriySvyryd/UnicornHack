@@ -10,33 +10,36 @@ public class RoomChangeBuilder
     private readonly ConnectionChangeBuilder _connectionBuilder = new();
     private readonly EventBuilder _eventBuilder = new();
 
+    // Item, connection, and terrain DTOs are observer-independent for players sharing a room.
+    private RoomChange? _serializedCommonRoom;
+    private bool _commonRoomSerialized;
+
     public List<PlayerChangeBuilder> PlayerBuilders { get; } = [];
 
     public EventBuilder EventBuilder => _eventBuilder;
 
-    public bool HasChanges(RoomComponent? room)
+    public bool HasChanges(RoomComponent? room, in SerializationContext context)
     {
         if (room == null)
         {
             return false;
         }
 
-        var manager = room.Entity.Manager;
-        var roomId = room.Entity.Id;
+        if (_commonRoomSerialized && _serializedCommonRoom != null)
+        {
+            return true;
+        }
 
-        // Prune cross-room entries from every builder (don't short-circuit — all three must be
-        // visited). HasObservableChanges always calls it before
-        // BuildChangeSet, so GetSerializedRoom can serialize the already-scoped builders directly.
-        var hasActorChanges = _actorBuilder.RemoveChangesNotInRoom(manager, roomId);
-        var hasItemChanges = _itemBuilder.RemoveChangesNotInRoom(manager, roomId);
-        var hasConnectionChanges = _connectionBuilder.RemoveChangesNotInRoom(manager, roomId);
+        var hasActorChanges = _actorBuilder.HasChangesForRoom(room, context.Services);
+        var hasItemChanges = _itemBuilder.HasChangesForRoom(room.EntityId, room.Entity.Game.Services);
+        var hasConnectionChanges = _connectionBuilder.HasChangesForRoom(room.EntityId);
 
         return hasActorChanges || hasItemChanges || hasConnectionChanges
                || TerrainChangeBuilder.HasChanges(room);
     }
 
     public RoomChange? GetSerializedRoom(
-        GameEntity? roomEntity, GameEntity observer, GameServices services)
+        GameEntity? roomEntity, in SerializationContext context)
     {
         var room = roomEntity?.Room;
         if (room == null)
@@ -44,59 +47,65 @@ public class RoomChangeBuilder
             return null;
         }
 
-        // Cross-room entries were already pruned by HasObservableChanges (which always runs and
-        // prunes before this is reached), so the builders hold only this room's entries.
-        var context = new SerializationContext(null!, observer, services);
-        var change = new RoomChange();
-        var hasChanges = false;
+        PrepareCommonRoom(roomEntity, context.Services);
+        return _serializedCommonRoom;
+    }
 
-        if (_actorBuilder.HasChanges)
+    public void PrepareCommonRoom(GameEntity? roomEntity, GameServices services)
+    {
+        if (!_commonRoomSerialized)
         {
-            var serializedActors = new Dictionary<int, ActorChange>();
-            _actorBuilder.WriteTo(serializedActors, context);
-            if (serializedActors.Count > 0)
+            var room = roomEntity?.Room;
+            if (room == null)
             {
-                change.Actors = serializedActors;
-                hasChanges = true;
+                _commonRoomSerialized = true;
+                return;
             }
-        }
 
-        if (_itemBuilder.HasChanges)
-        {
-            var serializedItems = new Dictionary<int, ItemChange>();
-            _itemBuilder.WriteTo(serializedItems, context);
-            if (serializedItems.Count > 0)
+            var commonChange = new RoomChange();
+            var hasCommonChanges = false;
+
+            var commonActorChanges = _actorBuilder.BuildCommonChanges(room, services);
+            if (commonActorChanges != null)
             {
-                change.Items = serializedItems;
-                hasChanges = true;
+                commonChange.Actors = commonActorChanges;
+                hasCommonChanges = true;
             }
-        }
 
-        if (_connectionBuilder.HasChanges)
-        {
-            var serializedConnections = new Dictionary<int, ConnectionChange>();
-            _connectionBuilder.WriteTo(serializedConnections, context);
-            if (serializedConnections.Count > 0)
+            if (_itemBuilder.HasChangesForRoom(room.Entity.Id, services))
             {
-                change.Connections = serializedConnections;
-                hasChanges = true;
+                var serializedItems = _itemBuilder.BuildChanges(room.Entity.Id, services);
+                if (serializedItems != null)
+                {
+                    commonChange.Items = serializedItems;
+                    hasCommonChanges = true;
+                }
             }
-        }
 
-        if (TerrainChangeBuilder.HasChanges(room))
-        {
-            TerrainChangeBuilder.WriteToRoomChange(room, change);
-            hasChanges = true;
-        }
+            if (_connectionBuilder.HasChangesForRoom(room.Entity.Id))
+            {
+                var serializedConnections = _connectionBuilder.BuildChanges(room.Entity.Id);
+                if (serializedConnections != null)
+                {
+                    commonChange.Connections = serializedConnections;
+                    hasCommonChanges = true;
+                }
+            }
 
-        return hasChanges ? change : null;
+            if (TerrainChangeBuilder.HasChanges(room))
+            {
+                TerrainChangeBuilder.WriteToRoomChange(room, commonChange);
+                hasCommonChanges = true;
+            }
+
+            _serializedCommonRoom = hasCommonChanges ? commonChange : null;
+            _commonRoomSerialized = true;
+        }
     }
 
     /// <summary>
-    ///     Discards every accumulated per-turn delta (actor / item / connection diffs and
-    ///     buffered events) and realigns each registered <see cref="PlayerBuilders" />
-    ///     entry's baseline against the current world state via
-    ///     <see cref="PlayerChangeBuilder.Reset" />.
+    ///     Discards every accumulated per-turn delta without rebuilding persistent
+    ///     client-known projections.
     ///     <para>
     ///         Must not be called from a read endpoint (e.g. <c>GetState</c>) — multiple
     ///         clients may share a builder, so a read that advanced the log high-water
@@ -109,6 +118,8 @@ public class RoomChangeBuilder
         _itemBuilder.Reset();
         _connectionBuilder.Reset();
         _eventBuilder.Reset();
+        _serializedCommonRoom = null;
+        _commonRoomSerialized = false;
 
         foreach (var builder in PlayerBuilders)
         {
@@ -118,40 +129,83 @@ public class RoomChangeBuilder
     }
 
     public static RoomChange SerializeRoom(
-        GameEntity roomEntity, SerializationContext context)
+        GameEntity roomEntity, in SerializationContext context, RoomChangeBuilder? builder = null)
+    {
+        var room = roomEntity.Room!;
+        if (builder?._serializedCommonRoom is not { ChangedProperties: null } common
+            || common.BranchName != room.Level.BranchName
+            || common.Depth != room.Level.Depth
+            || common.GridX != room.GridX
+            || common.GridY != room.GridY)
+        {
+            common = SerializeFullRoomCommon(roomEntity, in context);
+            if (builder != null)
+            {
+                builder._serializedCommonRoom = common;
+            }
+        }
+
+        return ComposeFullRoom(
+            common,
+            SerializeActors(room, in context));
+    }
+
+    private static Dictionary<int, ActorChange> SerializeActors(
+        RoomComponent room, in SerializationContext context)
+    {
+        var actors = new Dictionary<int, ActorChange>(room.KnownActors.Count);
+        var canPerceiveIntentions = ActorChangeBuilder.CanPerceiveIntentions(room);
+        foreach (var actorPosition in room.KnownActors.Values)
+        {
+            var actor = actorPosition.Knowledge!.Entity;
+            actors.Add(
+                actor.Id,
+                ActorChangeBuilder.SerializeActor(actor, in context, canPerceiveIntentions));
+        }
+
+        return actors;
+    }
+
+    private static RoomChange SerializeFullRoomCommon(
+        GameEntity roomEntity, in SerializationContext context)
     {
         var room = roomEntity.Room!;
 
-        var actors = new Dictionary<int, ActorChange>();
-        foreach (var actor in room.KnownActors.Values
-                     .Select(a => a.Knowledge!).Select(a => a.Entity))
+        var items = new Dictionary<int, ItemChange>(room.KnownItems.Count);
+        foreach (var itemPosition in room.KnownItems.Values)
         {
-            actors.Add(actor.Id, ActorChangeBuilder.SerializeActor(actor, context));
+            var item = itemPosition.Knowledge!.Entity;
+            items.Add(item.Id, ItemChangeBuilder.SerializeItem(item, in context));
         }
 
-        var items = new Dictionary<int, ItemChange>();
-        foreach (var item in room.KnownItems.Values
-                     .Select(t => t.Knowledge!).Select(t => t.Entity))
+        var connectionCount = 0;
+        foreach (var connectionPosition in room.KnownConnections.Values)
         {
-            items.Add(item.Id, ItemChangeBuilder.SerializeItem(item, context));
+            var directionality = connectionPosition.Knowledge!.KnownEntity.Connection!.Directionality;
+            if (directionality == null || (directionality & Directionality.Source) != 0)
+            {
+                connectionCount++;
+            }
         }
 
-        var connections = new Dictionary<int, ConnectionChange>();
-        foreach (var connection in room.KnownConnections.Values
-                     .Select(c => c.Knowledge!)
-                     .Where(c => c.KnownEntity.Connection!.Directionality == null
-                                 || (c.KnownEntity.Connection.Directionality & Directionality.Source) != 0)
-                     .Select(c => c.Entity))
+        var connections = new Dictionary<int, ConnectionChange>(connectionCount);
+        foreach (var connectionPosition in room.KnownConnections.Values)
         {
+            var knowledge = connectionPosition.Knowledge!;
+            var directionality = knowledge.KnownEntity.Connection!.Directionality;
+            if (directionality != null && (directionality & Directionality.Source) == 0)
+            {
+                continue;
+            }
+
+            var connection = knowledge.Entity;
             var connectionChange = ConnectionChangeBuilder.SerializeConnection(connection);
-            connectionChange.ChangedProperties = null;
             connections.Add(connection.Id, connectionChange);
         }
 
         var change = new RoomChange
         {
             ChangedProperties = null,
-            Actors = actors,
             Items = items,
             Connections = connections,
             BranchName = room.Level.BranchName,
@@ -166,71 +220,26 @@ public class RoomChangeBuilder
         return change;
     }
 
+    private static RoomChange ComposeFullRoom(
+        RoomChange common, Dictionary<int, ActorChange> actors)
+        => new()
+        {
+            ChangedProperties = null,
+            Actors = actors,
+            Items = common.Items,
+            Connections = common.Connections,
+            LevelMap = common.LevelMap,
+            LevelMapChanges = common.LevelMapChanges,
+            BranchName = common.BranchName,
+            Depth = common.Depth,
+            Width = common.Width,
+            Height = common.Height,
+            GridX = common.GridX,
+            GridY = common.GridY
+        };
+
     private static void SerializeMap(RoomComponent room, RoomChange change)
-    {
-        var tileCount = room.TileCount;
-        var knownTerrainChanges = new List<(short, MapFeature)>();
-        var wallNeighborsChanges = new List<(short, DirectionFlags)>();
-        for (short j = 0; j < tileCount; j++)
-        {
-            var feature = room.KnownTerrain[j];
-            if (feature == MapFeature.Unexplored)
-            {
-                continue;
-            }
-
-            knownTerrainChanges.Add((j, feature));
-            var neighbors = room.Neighbors[j];
-            if (neighbors != DirectionFlags.None)
-            {
-                wallNeighborsChanges.Add((j, neighbors));
-            }
-        }
-
-        var visibleTerrainChanges = new List<(short, byte)>();
-        for (short j = 0; j < tileCount; j++)
-        {
-            var visibility = room.VisibleTerrain[j];
-            if (visibility != 0)
-            {
-                visibleTerrainChanges.Add((j, visibility));
-            }
-        }
-
-        if (knownTerrainChanges.Count == 0 && wallNeighborsChanges.Count == 0 && visibleTerrainChanges.Count == 0)
-        {
-            // No map data
-        }
-        else if ((knownTerrainChanges.Count + wallNeighborsChanges.Count + visibleTerrainChanges.Count) > tileCount)
-        {
-            change.LevelMap = new RoomMap
-            {
-                Terrain = room.KnownTerrain,
-                WallNeighbors = TerrainChangeBuilder.MaskWallNeighborsToExplored(room),
-                VisibleTerrain = room.VisibleTerrain
-            };
-        }
-        else
-        {
-            if (knownTerrainChanges.Count == 0 && wallNeighborsChanges.Count == 0)
-            {
-                change.LevelMapChanges = new RoomMapChanges
-                {
-                    VisibleTerrainChanges = visibleTerrainChanges
-                };
-            }
-            else
-            {
-                change.LevelMapChanges = new RoomMapChanges
-                {
-                    ChangedProperties = null,
-                    TerrainChanges = knownTerrainChanges,
-                    WallNeighborsChanges = wallNeighborsChanges,
-                    VisibleTerrainChanges = visibleTerrainChanges
-                };
-            }
-        }
-    }
+        => TerrainChangeBuilder.WriteSnapshotToRoomChange(room, change);
 
     public void RegisterOnGroups(GameManager manager)
     {
@@ -258,12 +267,14 @@ public class RoomChangeBuilder
     /// </summary>
     public void RegisterPlayerBuilder(GameEntity playerEntity, GameManager manager)
     {
-        _actorBuilder.ResetBaseline(playerEntity);
+        _actorBuilder.ResetProjection(playerEntity);
+        _itemBuilder.ResetProjection(playerEntity);
+        _connectionBuilder.ResetProjection(playerEntity);
         foreach (var existing in PlayerBuilders)
         {
             if (existing.PlayerEntityId == playerEntity.Id)
             {
-                existing.Reset(playerEntity);
+                existing.ResetProjection(playerEntity);
                 return;
             }
         }
@@ -273,11 +284,12 @@ public class RoomChangeBuilder
         PlayerBuilders.Add(builder);
     }
 
-    internal void ResetActorBaseline(GameEntity playerEntity)
-        => _actorBuilder.ResetBaseline(playerEntity);
-
-    internal void TrackObserverTelegraphVisibility(GameEntity playerEntity)
-        => _actorBuilder.TrackObserverTelegraphVisibility(playerEntity);
+    internal void ResetRoomBaseline(GameEntity playerEntity)
+    {
+        _actorBuilder.ResetProjection(playerEntity);
+        _itemBuilder.ResetProjection(playerEntity);
+        _connectionBuilder.ResetProjection(playerEntity);
+    }
 
     public void UnregisterFromGroups(GameManager manager)
     {

@@ -1,6 +1,5 @@
 using MessagePack;
 using MessagePack.Formatters;
-using System.Collections;
 
 namespace UnicornHack.Hubs.MessagePack;
 
@@ -17,11 +16,10 @@ public abstract class FixedArrayFormatter<T> : IMessagePackFormatter<T?>
             return;
         }
 
-        if (GetChangedProperties(value) is { Length: 1 } changedProperties)
+        if (IsDeleted(value))
         {
             writer.WriteArrayHeader(1);
-            options.Resolver.GetFormatterWithVerify<BitArray?>()
-                .Serialize(ref writer, changedProperties, options);
+            writer.Write(0);
             return;
         }
 
@@ -61,7 +59,7 @@ public abstract class FixedArrayFormatter<T> : IMessagePackFormatter<T?>
     protected abstract void DeserializeField(
         ref MessagePackReader reader, T value, int field, MessagePackSerializerOptions options);
 
-    protected virtual BitArray? GetChangedProperties(T value) => null;
+    protected virtual bool IsDeleted(T value) => false;
 
     protected static void WriteNullableInt(ref MessagePackWriter writer, int? value)
     {

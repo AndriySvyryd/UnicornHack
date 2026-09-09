@@ -1,4 +1,3 @@
-using System.Collections;
 using MessagePack;
 using MessagePack.Formatters;
 using UnicornHack.Hubs.ChangeTracking;
@@ -19,25 +18,25 @@ public sealed class ConnectionChangeFormatter : IMessagePackFormatter<Connection
 
         var resolver = options.Resolver;
         var values = value.ChangedProperties;
-        var length = ChangeSetFormatterHelper.GetSerializedLength(values, ConnectionChange.PropertyCount);
+        var length = values.GetSerializedLength(ConnectionChange.PropertyCount);
         writer.WriteArrayHeader(length);
-        resolver.GetFormatterWithVerify<BitArray?>().Serialize(ref writer, values, options);
+        resolver.GetFormatterWithVerify<byte?>().Serialize(ref writer, values, options);
         if (length == 1)
         {
             return;
         }
 
-        if (values == null || values[1])
+        if (values.IsPropertyChanged(1))
         {
             writer.Write(value.LevelX);
         }
 
-        if (values == null || values[2])
+        if (values.IsPropertyChanged(2))
         {
             writer.Write(value.LevelY);
         }
 
-        if (values == null || values[3])
+        if (values.IsPropertyChanged(3))
         {
             writer.Write((byte)value.Orientation);
         }
@@ -53,11 +52,11 @@ public sealed class ConnectionChangeFormatter : IMessagePackFormatter<Connection
         var resolver = options.Resolver;
         var length = reader.ReadArrayHeader();
         var result = new ConnectionChange();
-        BitArray? values = null;
+        byte? values = null;
 
         for (var i = 0; i < length; i++)
         {
-            if (values != null && !values[i])
+            if (values.HasValue && !values.IsPropertyChanged(i))
             {
                 continue;
             }
@@ -65,10 +64,10 @@ public sealed class ConnectionChangeFormatter : IMessagePackFormatter<Connection
             switch (i)
             {
                 case 0:
-                    values = resolver.GetFormatterWithVerify<BitArray?>().Deserialize(ref reader, options);
-                    if (values != null)
+                    values = resolver.GetFormatterWithVerify<byte?>().Deserialize(ref reader, options);
+                    if (values.HasValue)
                     {
-                        length = values.Length;
+                        length = values.GetValueOrDefault() == 0 ? 1 : ConnectionChange.PropertyCount;
                     }
 
                     result.ChangedProperties = values;

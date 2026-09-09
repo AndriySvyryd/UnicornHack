@@ -8,12 +8,15 @@ namespace UnicornHack.PerformanceTests.Systems;
 [MemoryDiagnoser]
 public class SoundPropagationPerfTest
 {
+    private const int EightListenerOperations = 128;
+    private const int OneListenerOperations = 1024;
+
     private readonly GameEntity[] _listeners = new GameEntity[8];
     private readonly SenseType[] _soundSenses = new SenseType[8];
     private GameEntity _source = null!;
     private GameManager _manager = null!;
 
-    [Params(15, 31)]
+    [Params(15)]
     public int RoomSize { get; set; }
 
     [GlobalSetup]
@@ -41,20 +44,31 @@ public class SoundPropagationPerfTest
 
     [Benchmark]
     public bool AStar_one_listener()
-        => _manager.SensorySystem.CanHear(
-            _listeners[0], _source, actionNoise: 200);
+    {
+        var heard = false;
+        for (var i = 0; i < OneListenerOperations; i++)
+        {
+            heard ^= _manager.SensorySystem.CanHear(
+                _listeners[0], _source, actionNoise: 200);
+        }
+
+        return heard;
+    }
 
     [Benchmark]
     public int AStar_eight_listeners()
     {
-        _manager.SensorySystem.CalculateSensedSound(
-            _source, actionNoise: 200, _listeners, _soundSenses);
         var heard = 0;
-        for (var i = 0; i < _soundSenses.Length; i++)
+        for (var operation = 0; operation < EightListenerOperations; operation++)
         {
-            if (_soundSenses[i] != SenseType.None)
+            _manager.SensorySystem.CalculateSensedSound(
+                _source, actionNoise: 200, _listeners, _soundSenses);
+            for (var i = 0; i < _soundSenses.Length; i++)
             {
-                heard++;
+                if (_soundSenses[i] != SenseType.None)
+                {
+                    heard++;
+                }
             }
         }
 

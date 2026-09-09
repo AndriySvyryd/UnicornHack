@@ -33,4 +33,13 @@ public class SubAttackStats
         get;
         set;
     } = null!;
+
+    public void Reset()
+    {
+        AbilityId = 0;
+        SuccessCondition = default;
+        HitProbability = 0;
+        Accuracy = 0;
+        Effects = null!;
+    }
 }

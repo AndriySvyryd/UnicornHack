@@ -75,7 +75,7 @@ public class RaceChangeTest
 
         ItemData.PotionOfOgreness.Instantiate(player.Entity);
         manager.Queue.ProcessQueue(manager);
-        listener.Reset(manager);
+        listener.RegisterPlayerBuilder(player.Entity, manager);
         var secondPotionAbility = manager.AffectableAbilitiesIndex[
             (player.Entity.Id, "potion of ogreness: Drink")]!;
         WebTestHelper.PerformAndVerify(

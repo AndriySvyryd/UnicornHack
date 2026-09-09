@@ -1,22 +1,34 @@
-using System.Collections;
 using MessagePack;
 
 namespace UnicornHack.Hubs.ChangeTracking;
 
 [MessagePackObject]
-public partial class AbilityChange
+public class AbilityChange
 {
     public const int PropertyCount = 15;
+    private ushort? _changedProperties = 1;
 
     [Key(0)]
-    public BitArray? ChangedProperties { get; set; } = new BitArray(PropertyCount) { [0] = true };
+    public ushort? ChangedProperties
+    {
+        get => _changedProperties;
+        set => _changedProperties = value;
+    }
+
+    private void MarkChanged(int propertyIndex)
+    {
+        if (_changedProperties.HasValue)
+        {
+            _changedProperties = (ushort)(_changedProperties.GetValueOrDefault() | (1 << propertyIndex));
+        }
+    }
     [Key(1)]
     public string? Name
     {
         get => field; set
         {
             field = value;
-            ChangedProperties?.Set(1, true);
+            MarkChanged(1);
         }
     }
     [Key(2)]
@@ -25,7 +37,7 @@ public partial class AbilityChange
         get => field; set
         {
             field = value;
-            ChangedProperties?.Set(2, true);
+            MarkChanged(2);
         }
     }
     [Key(3)]
@@ -34,7 +46,7 @@ public partial class AbilityChange
         get => field; set
         {
             field = value;
-            ChangedProperties?.Set(3, true);
+            MarkChanged(3);
         }
     }
     [Key(4)]
@@ -43,7 +55,7 @@ public partial class AbilityChange
         get => field; set
         {
             field = value;
-            ChangedProperties?.Set(4, true);
+            MarkChanged(4);
         }
     }
     [Key(5)]
@@ -52,7 +64,7 @@ public partial class AbilityChange
         get => field; set
         {
             field = value;
-            ChangedProperties?.Set(5, true);
+            MarkChanged(5);
         }
     }
     [Key(6)]
@@ -61,7 +73,7 @@ public partial class AbilityChange
         get => field; set
         {
             field = value;
-            ChangedProperties?.Set(6, true);
+            MarkChanged(6);
         }
     }
     [Key(7)]
@@ -70,7 +82,7 @@ public partial class AbilityChange
         get => field; set
         {
             field = value;
-            ChangedProperties?.Set(7, true);
+            MarkChanged(7);
         }
     }
     [Key(8)]
@@ -79,7 +91,7 @@ public partial class AbilityChange
         get => field; set
         {
             field = value;
-            ChangedProperties?.Set(8, true);
+            MarkChanged(8);
         }
     }
     [Key(9)]
@@ -88,7 +100,7 @@ public partial class AbilityChange
         get => field; set
         {
             field = value;
-            ChangedProperties?.Set(9, true);
+            MarkChanged(9);
         }
     }
     [Key(10)]
@@ -97,7 +109,7 @@ public partial class AbilityChange
         get => field; set
         {
             field = value;
-            ChangedProperties?.Set(10, true);
+            MarkChanged(10);
         }
     }
     [Key(11)]
@@ -106,7 +118,7 @@ public partial class AbilityChange
         get => field; set
         {
             field = value;
-            ChangedProperties?.Set(11, true);
+            MarkChanged(11);
         }
     }
     [Key(12)]
@@ -115,7 +127,7 @@ public partial class AbilityChange
         get => field; set
         {
             field = value;
-            ChangedProperties?.Set(12, true);
+            MarkChanged(12);
         }
     }
     [Key(13)]
@@ -124,7 +136,7 @@ public partial class AbilityChange
         get => field; set
         {
             field = value;
-            ChangedProperties?.Set(13, true);
+            MarkChanged(13);
         }
     }
     [Key(14)]
@@ -133,7 +145,7 @@ public partial class AbilityChange
         get => field; set
         {
             field = value;
-            ChangedProperties?.Set(14, true);
+            MarkChanged(14);
         }
     }
 }

@@ -104,7 +104,8 @@ public sealed class GameConnection : IAsyncDisposable
             {
                 _logger.LogInformation("Fetching initial state for {Name}", _options.PlayerName);
                 var snapshot = await _hub.InvokeAsync<PlayerChange>(
-                    "GetState", _options.PlayerName, cancellationToken).ConfigureAwait(false);
+                    "GetState", _options.PlayerName, cancellationToken)
+                    .ConfigureAwait(false);
                 _state.ApplyInitialSnapshot(snapshot);
                 _stateReady = true;
             }

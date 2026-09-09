@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
@@ -64,7 +63,8 @@ public class GameHub : Hub
     {
         var results = (GameQueryType)intQueryType == GameQueryType.Clear
             ? DialogData.Deleted()
-            : await QueryGameAsync(playerName, intQueryType, arguments).ConfigureAwait(false);
+            : await QueryGameAsync(playerName, intQueryType, arguments)
+                .ConfigureAwait(false);
 
         // TODO: only send to clients watching this player
         await Clients.All.SendAsync("ReceiveUIRequest", results).ConfigureAwait(false);
@@ -73,7 +73,8 @@ public class GameHub : Hub
     public Task<DialogData> QueryGame(string playerName, int intQueryType, int[] arguments)
         => QueryGameAsync(playerName, intQueryType, arguments);
 
-    private async Task<DialogData> QueryGameAsync(string playerName, int intQueryType, int[] arguments)
+    private async Task<DialogData> QueryGameAsync(
+        string playerName, int intQueryType, int[] arguments)
     {
         var queryType = (GameQueryType)intQueryType;
         if (queryType == GameQueryType.Clear)
@@ -111,15 +112,16 @@ public class GameHub : Hub
         GameSession session, int intQueryType, GameQueryType queryType, int[] arguments)
     {
         var player = session.Player;
-        var result = new DialogData();
-        var setValues = new bool[13];
-        setValues[intQueryType + 1] = true;
+        var result = new DialogData
+        {
+            ChangedProperties = (ushort)(1 << (intQueryType + 1))
+        };
         if (queryType == GameQueryType.SlottableAbilities)
         {
             // SlottableAbilities tags an extra bit at intQueryType to mark that a slot id follows.
-            setValues[intQueryType] = true;
+            result.ChangedProperties = (ushort)(
+                result.ChangedProperties.GetValueOrDefault() | (1 << intQueryType));
         }
-        result.ChangedProperties = new BitArray(setValues);
 
         var manager = player.Entity.Manager;
         var context = new SerializationContext(session.DbContext, player.Entity, _gameServices);

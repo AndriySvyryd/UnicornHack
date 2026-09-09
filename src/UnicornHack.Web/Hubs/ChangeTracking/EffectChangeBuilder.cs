@@ -14,7 +14,12 @@ internal sealed class EffectChangeBuilder(int playerEntityId) : IEntityChangeLis
         int ExpirationTick,
         int Magnitude);
 
-    private readonly Dictionary<int, EffectChange> _changes = [];
+    private readonly record struct PendingEffect(
+        EffectType EffectType,
+        DamageOverTimeEffect? Initial,
+        DamageOverTimeEffect? Current);
+
+    private readonly Dictionary<int, PendingEffect> _changes = [];
 
     public bool HasChanges => _changes.Count != 0;
 
@@ -24,12 +29,31 @@ internal sealed class EffectChangeBuilder(int playerEntityId) : IEntityChangeLis
     public void UnregisterFromGroups(GameManager manager)
         => manager.AffectableEntities.RemoveListener(this);
 
-    public void WriteTo(Dictionary<int, EffectChange> output)
+    public Dictionary<int, EffectChange>? BuildChanges()
     {
-        foreach (var (id, change) in _changes)
+        if (_changes.Count == 0)
         {
-            output[id] = change;
+            return null;
         }
+
+        var output = new Dictionary<int, EffectChange>(_changes.Count);
+        foreach (var (id, pending) in _changes)
+        {
+            if (pending.Initial == null)
+            {
+                output.Add(id, CreateSnapshot(pending.EffectType, pending.Current!.Value));
+            }
+            else if (pending.Current == null)
+            {
+                output.Add(id, new EffectChange { ChangedProperties = 0 });
+            }
+            else
+            {
+                output.Add(id, CreateDelta(pending.Initial.Value, pending.Current.Value));
+            }
+        }
+
+        return output;
     }
 
     public void Reset() => _changes.Clear();
@@ -130,68 +154,18 @@ internal sealed class EffectChangeBuilder(int playerEntityId) : IEntityChangeLis
         var key = GetKey(effectType);
         if (!_changes.TryGetValue(key, out var pending))
         {
-            if (oldValue == null)
-            {
-                pending = CreateSnapshot(effectType, newValue!.Value);
-                pending.State = EntityState.Added;
-            }
-            else if (newValue == null)
-            {
-                pending = CreateRemoval(entity);
-            }
-            else
-            {
-                pending = CreateDelta(entity, oldValue.Value, newValue.Value);
-            }
-
-            pending.Entity = entity;
-            _changes[key] = pending;
+            _changes[key] = new PendingEffect(effectType, oldValue, newValue);
             return;
         }
 
-        switch (pending.State)
+        pending = pending with { Current = newValue };
+        if (pending.Initial == pending.Current)
         {
-            case EntityState.Added:
-                if (newValue == null)
-                {
-                    _changes.Remove(key);
-                }
-                else
-                {
-                    var snapshot = CreateSnapshot(effectType, newValue.Value);
-                    snapshot.Entity = entity;
-                    snapshot.State = EntityState.Added;
-                    _changes[key] = snapshot;
-                }
-
-                break;
-            case EntityState.Modified:
-                if (newValue == null)
-                {
-                    _changes[key] = CreateRemoval(entity);
-                }
-                else
-                {
-                    pending.ExpirationTick = newValue.Value.ExpirationTick;
-                    pending.Magnitude = newValue.Value.Magnitude;
-                }
-
-                break;
-            case EntityState.Deleted:
-                if (newValue != null)
-                {
-                    var delta = new EffectChange
-                    {
-                        Entity = entity,
-                        State = EntityState.Modified,
-                        ExpirationTick = newValue.Value.ExpirationTick,
-                        Magnitude = newValue.Value.Magnitude
-                    };
-                    _changes[key] = delta;
-                }
-
-                break;
+            _changes.Remove(key);
+            return;
         }
+
+        _changes[key] = pending;
     }
 
     private void TrackCollectionChange(
@@ -298,9 +272,9 @@ internal sealed class EffectChangeBuilder(int playerEntityId) : IEntityChangeLis
         };
 
     private static EffectChange CreateDelta(
-        GameEntity entity, DamageOverTimeEffect oldValue, DamageOverTimeEffect newValue)
+        DamageOverTimeEffect oldValue, DamageOverTimeEffect newValue)
     {
-        var change = new EffectChange { Entity = entity, State = EntityState.Modified };
+        var change = new EffectChange();
         if (oldValue.ExpirationTick != newValue.ExpirationTick)
         {
             change.ExpirationTick = newValue.ExpirationTick;
@@ -313,14 +287,6 @@ internal sealed class EffectChangeBuilder(int playerEntityId) : IEntityChangeLis
 
         return change;
     }
-
-    private static EffectChange CreateRemoval(GameEntity entity)
-        => new()
-        {
-            Entity = entity,
-            State = EntityState.Deleted,
-            ChangedProperties = SerializationContext.DeletedBitArray
-        };
 
     private static int GetKey(EffectType effectType) => -(int)effectType - 1;
 

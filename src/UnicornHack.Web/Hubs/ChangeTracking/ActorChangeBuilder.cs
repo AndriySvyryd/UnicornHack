@@ -1,5 +1,4 @@
-using System.Text;
-using UnicornHack.Systems.Abilities;
+using UnicornHack.Services;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Knowledge;
@@ -8,527 +7,478 @@ using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Hubs.ChangeTracking;
 
-public class ActorChangeBuilder : ChangeBuilder<ActorChange>
+public class ActorChangeBuilder
+    : IEntityChangeListener<GameEntity>, IDependentEntityChangeListener<GameEntity>
 {
-    /// <summary>
-    ///     Persistent cache, keyed by knowledge-entity id, of the last emitted values
-    ///     for fields that are recomputed each cycle. Used to suppress redundant emissions
-    ///     in deltas when the computed values are identical to what the client already has.
-    ///     Updated in <see cref="OnAfterEmit" />.
-    /// </summary>
-    private readonly Dictionary<int, LastEmittedValues> _lastEmittedValues = [];
+    private const uint LevelXDirty = 1u << 1;
+    private const uint LevelYDirty = 1u << 2;
+    private const uint HeadingDirty = 1u << 3;
+    private const uint BaseNameDirty = 1u << 4;
+    private const uint NameDirty = 1u << 5;
+    private const uint IsCurrentlyPerceivedDirty = 1u << 6;
+    private const uint HpDirty = 1u << 7;
+    private const uint MaxHpDirty = 1u << 8;
+    private const uint EpDirty = 1u << 9;
+    private const uint MaxEpDirty = 1u << 10;
+    private const uint NextActionTickDirty = 1u << 11;
+    private const uint NextActionDirty = 1u << 12;
+    private const uint MembershipDirty = 1u << 31;
+    private const uint AllSharedDirty = (1u << ActorChange.PropertyCount) - 2;
+    private const uint IdentificationDirty = BaseNameDirty | NameDirty | IsCurrentlyPerceivedDirty
+                                                | HpDirty | MaxHpDirty | EpDirty | MaxEpDirty
+                                                | NextActionTickDirty | NextActionDirty;
+    private const uint PerceptionDirty = IsCurrentlyPerceivedDirty | HpDirty | MaxHpDirty | EpDirty
+                                             | MaxEpDirty | NextActionTickDirty | NextActionDirty;
 
-    protected override bool CaptureSnapshots => false;
+    private readonly record struct PendingChange(
+        GameEntity Entity,
+        EntityState State,
+        uint DirtyMask,
+        int InitialRoomId,
+        int FinalRoomId);
 
-    protected override bool WasKnownAtCycleStart(int id) => _lastEmittedValues.ContainsKey(id);
-
-    private readonly record struct LastEmittedValues(
+    private readonly record struct SharedProjection(
+        int RoomId,
+        byte LevelX,
+        byte LevelY,
+        byte Heading,
+        string? BaseName,
+        string? Name,
         bool IsCurrentlyPerceived,
         int Hp,
         int MaxHp,
         int Ep,
         int MaxEp,
         int NextActionTick,
-        ActorActionChange? NextAction,
-        AttackSummary? MeleeAttack,
-        AttackSummary? RangeAttack,
-        AttackSummary? MeleeDefense,
-        AttackSummary? RangeDefense);
+        ActionProjection? NextAction);
 
-    public override void RegisterOnGroups(GameManager manager)
+    private readonly record struct ActionProjection(
+        ActorActionType Type,
+        string? Name,
+        int Target,
+        TargetingShape TargetingShape,
+        int TargetingShapeSize);
+
+    private readonly Dictionary<int, PendingChange> _pending = [];
+    private readonly Dictionary<int, SharedProjection> _sharedProjection = [];
+    private readonly Dictionary<int, SharedProjection> _preparedShared = [];
+
+    public bool HasChanges => _pending.Count != 0;
+
+    public void RegisterOnGroups(GameManager manager)
     {
         manager.KnownPositions.AddListener(this);
         manager.KnownActorsToCellRelationship.AddDependentsListener(this);
         manager.RoomActors.AddListener(this);
     }
 
-    public override void UnregisterFromGroups(GameManager manager)
+    public void UnregisterFromGroups(GameManager manager)
     {
         manager.KnownPositions.RemoveListener(this);
         manager.KnownActorsToCellRelationship.RemoveDependentsListener(this);
         manager.RoomActors.RemoveListener(this);
     }
 
-    public void TrackObserverTelegraphVisibility(GameEntity observer)
+    public bool HasChangesForRoom(RoomComponent room, GameServices services)
     {
+        var roomId = room.EntityId;
+        var canPerceiveIntentions = CanPerceiveIntentions(room);
+        foreach (var (id, pending) in _pending)
+        {
+            if (ShouldDelete(id, pending, roomId)
+                || TryPrepareShared(
+                    id, pending, roomId, services, room.Entity.Game.Manager, canPerceiveIntentions, out _))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public Dictionary<int, ActorChange>? BuildCommonChanges(RoomComponent room, GameServices services)
+    {
+        var roomId = room.EntityId;
+        var canPerceiveIntentions = CanPerceiveIntentions(room);
+        var outputCount = 0;
+        foreach (var (id, pending) in _pending)
+        {
+            if (ShouldDelete(id, pending, roomId)
+                || TryPrepareShared(
+                    id, pending, roomId, services, room.Entity.Game.Manager, canPerceiveIntentions, out _))
+            {
+                outputCount++;
+            }
+        }
+
+        if (outputCount == 0)
+        {
+            return null;
+        }
+
+        var output = new Dictionary<int, ActorChange>(outputCount);
+        foreach (var (id, pending) in _pending)
+        {
+            ActorChange? change = null;
+            if (ShouldDelete(id, pending, roomId))
+            {
+                change = new ActorChange { ChangedProperties = 0 };
+                _sharedProjection.Remove(id);
+            }
+            else if (TryPrepareShared(
+                         id, pending, roomId, services, room.Entity.Game.Manager, canPerceiveIntentions, out var current))
+            {
+                change = _sharedProjection.TryGetValue(id, out var previous)
+                         && previous.RoomId == roomId
+                    ? SerializeSharedDelta(current, pending.DirtyMask)
+                    : SerializeSharedFull(current);
+                _sharedProjection[id] = current;
+            }
+
+            if (change != null)
+            {
+                output.Add(id, change);
+            }
+        }
+
+        return output;
+    }
+
+    private void InvalidateRoomIntentions(RoomComponent? room)
+    {
+        if (room == null)
+        {
+            return;
+        }
+
+        foreach (var actor in room.KnownActors.Values)
+        {
+            if (actor.Knowledge?.KnownEntity.AI != null)
+            {
+                TrackModified(actor, room.EntityId, NextActionDirty);
+            }
+        }
+    }
+
+    public void Reset()
+    {
+        _pending.Clear();
+        _preparedShared.Clear();
+    }
+
+    public void ResetProjection(GameEntity observer)
+    {
+        _sharedProjection.Clear();
         if (observer.Position?.RoomEntity.Room is not { } room)
         {
             return;
         }
 
-        foreach (var knowledgeEntity in room.KnownActors.Values)
+        var services = observer.Game.Services;
+        var canPerceiveIntentions = CanPerceiveIntentions(room);
+        foreach (var actor in room.KnownActors.Values)
         {
-            if (knowledgeEntity.Knowledge?.KnownEntity.AI == null)
+            if (TryGetShared(
+                    actor,
+                    services,
+                    observer.Game.Manager,
+                    canPerceiveIntentions,
+                    AllSharedDirty | MembershipDirty,
+                    null,
+                    out var shared))
             {
-                continue;
+                _sharedProjection[actor.Id] = shared;
             }
-
-            GetOrCreateChange(knowledgeEntity, EntityState.Modified).ChangedProperties![12] = true;
         }
     }
 
-    /// <summary>
-    ///     Routes property changes from the <c>LevelActors</c> group (where the entity is a
-    ///     living being) to its corresponding knowledge entity — that's what the client
-    ///     actually tracks. Property changes on the knowledge entity itself (from
-    ///     <c>KnownPositions</c>) go to <see cref="TrackPropertyChanges" /> on that entity.
-    /// </summary>
-    protected override void OnBaseGroupPropertyValuesChanged(in EntityChange<GameEntity> entityChange)
+    void IDependentEntityChangeListener<GameEntity>.OnEntityAdded(
+        in EntityChange<GameEntity> entityChange, GameEntity principal)
+    {
+        if (IsRelevant(entityChange.Entity))
+        {
+            TrackAdded(entityChange.Entity, principal.Id);
+        }
+    }
+
+    void IDependentEntityChangeListener<GameEntity>.OnEntityRemoved(
+        in EntityChange<GameEntity> entityChange, GameEntity principal)
+    {
+        if (!IsRelevant(entityChange.Entity)
+            && !IsRelevantOnRemove(entityChange))
+        {
+            return;
+        }
+
+        var finalRoomId = HasRoomIdChange(entityChange.PropertyChanges)
+            ? entityChange.Entity.Position?.RoomId ?? 0
+            : 0;
+        TrackRemoved(entityChange.Entity, principal.Id, finalRoomId);
+    }
+
+    void IDependentEntityChangeListener<GameEntity>.OnPropertyValuesChanged(
+        in EntityChange<GameEntity> entityChange, GameEntity principal)
+    {
+        if (_pending.ContainsKey(entityChange.Entity.Id)
+            || IsRelevant(entityChange.Entity))
+        {
+            TrackModified(
+                entityChange.Entity,
+                principal.Id,
+                GetKnowledgeDirtyMask(entityChange.Entity, entityChange.PropertyChanges));
+        }
+    }
+
+    void IEntityChangeListener<GameEntity>.OnEntityAdded(in EntityChange<GameEntity> entityChange)
+    {
+        if (entityChange.Entity.Player != null)
+        {
+            InvalidateRoomIntentions(entityChange.Entity.Position?.RoomEntity.Room);
+        }
+    }
+
+    void IEntityChangeListener<GameEntity>.OnEntityRemoved(in EntityChange<GameEntity> entityChange)
     {
         var entity = entityChange.Entity;
-        var changes = entityChange.PropertyChanges;
+        if (entity.Player == null && entityChange.RemovedComponent is not PlayerComponent)
+        {
+            return;
+        }
 
+        var roomId = entityChange.RemovedComponent is PositionComponent removedPosition
+            ? removedPosition.RoomId
+            : entity.Position?.RoomId;
+        if (roomId != null)
+        {
+            InvalidateRoomIntentions(entity.Game.Manager.FindEntity(roomId.Value)?.Room);
+        }
+    }
+
+    void IEntityChangeListener<GameEntity>.OnPropertyValuesChanged(in EntityChange<GameEntity> entityChange)
+    {
+        var entity = entityChange.Entity;
         if (entity.Being != null)
         {
-            var knowledgeEntity = FindKnowledgeEntity(entity);
-            if (knowledgeEntity == null)
+            TrackPlayerIntentionVisibility(entity, entityChange.PropertyChanges);
+            if (entity.Position?.Knowledge is { } knowledge)
             {
-                return;
+                TrackModified(
+                    knowledge,
+                    knowledge.Position!.RoomId,
+                    GetBeingDirtyMask(entity, entityChange.PropertyChanges));
             }
 
-            var tracked = GetOrCreateChange(knowledgeEntity, EntityState.Modified);
-
-            TrackBeingPropertyChanges(entity, tracked, changes);
             return;
         }
 
-        if (Changes.TryGetValue(entity.Id, out var knowledgeTracked))
+        if (IsRelevant(entity))
         {
-            TrackPropertyChanges(entity, knowledgeTracked, changes);
-            return;
-        }
-
-        // The entity isn't tracked yet this turn. Check whether the property change
-        // warrants creating a new entry — only SensedType changes need this.
-        if (entity.Knowledge?.KnownEntity.Being == null)
-        {
-            return;
-        }
-
-        for (var i = 0; i < changes.Count; i++)
-        {
-            if (changes.GetChangedComponent(i).ComponentId == (int)EntityComponent.Knowledge
-                && changes.GetChangedPropertyName(i) == nameof(KnowledgeComponent.SensedType))
-            {
-                knowledgeTracked = GetOrCreateChange(entity, EntityState.Modified);
-                TrackPropertyChanges(entity, knowledgeTracked, changes);
-                return;
-            }
+            TrackModified(
+                entity,
+                entity.Position!.RoomId,
+                GetKnowledgeDirtyMask(entity, entityChange.PropertyChanges));
         }
     }
 
-    protected override void TrackPropertyChanges(
-        GameEntity entity, ActorChange change, IPropertyValueChanges changes)
+    private void TrackPlayerIntentionVisibility(GameEntity entity, IPropertyValueChanges changes)
     {
+        if (entity.Player == null)
+        {
+            return;
+        }
+
         for (var i = 0; i < changes.Count; i++)
         {
             var componentId = changes.GetChangedComponent(i).ComponentId;
             var propertyName = changes.GetChangedPropertyName(i);
-
-            if (componentId == (int)EntityComponent.Position)
+            if (componentId == (int)EntityComponent.Being
+                && propertyName == nameof(BeingComponent.CanPerceiveIntention))
             {
-                switch (propertyName)
-                {
-                    case nameof(PositionComponent.CellX):
-                        change.LevelX = entity.Position!.CellX!.Value;
-                        break;
-                    case nameof(PositionComponent.CellY):
-                        change.LevelY = entity.Position!.CellY!.Value;
-                        break;
-                    case nameof(PositionComponent.Heading):
-                        change.Heading = (byte)entity.Position!.Heading!;
-                        break;
-                }
+                InvalidateRoomIntentions(entity.Position?.RoomEntity.Room);
             }
-            else if (componentId == (int)EntityComponent.Knowledge)
+            else if (componentId == (int)EntityComponent.Position
+                     && propertyName == nameof(PositionComponent.RoomId))
             {
-                if (propertyName == nameof(KnowledgeComponent.SensedType))
-                {
-                    var newSensedType = changes.GetValue<SenseType>(i, Utils.MessagingECS.ValueType.Current);
-                    var oldSensedType = changes.GetValue<SenseType>(i, Utils.MessagingECS.ValueType.Old);
-                    if (newSensedType.CanIdentify() != oldSensedType.CanIdentify())
-                    {
-                        change.IsCurrentlyPerceived = newSensedType.CanIdentify();
-                    }
-                }
-                else if (propertyName == nameof(KnowledgeComponent.IsIdentified))
-                {
-                    var knowledge = entity.Knowledge!;
-                    var knownEntity = knowledge.KnownEntity;
-                    var canIdentify = knowledge.IsIdentified;
-                    change.BaseName = !canIdentify
-                        ? null
-                        : knownEntity.AI != null
-                            ? entity.Game.Services.Language.GetTemplateName(
-                                knownEntity.Being!.Races.First().Ability!, abbreviate: false)
-                            : "player";
-                    change.Name = !canIdentify
-                        ? null
-                        : entity.Game.Services.Language.GetActorName(knownEntity, canIdentify);
-                }
+                var oldRoomId = changes.GetValue<int>(i, Utils.MessagingECS.ValueType.Old);
+                InvalidateRoomIntentions(entity.Game.Manager.FindEntity(oldRoomId)?.Room);
+                InvalidateRoomIntentions(entity.Position?.RoomEntity.Room);
             }
         }
     }
 
-    private static void TrackBeingPropertyChanges(
-        GameEntity entity, ActorChange change, IPropertyValueChanges changes)
+    private bool TryPrepareShared(
+        int id,
+        PendingChange pending,
+        int roomId,
+        GameServices services,
+        GameManager manager,
+        bool canPerceiveIntentions,
+        out SharedProjection current)
     {
-        for (var i = 0; i < changes.Count; i++)
+        if (pending.FinalRoomId != roomId)
         {
-            var componentId = changes.GetChangedComponent(i).ComponentId;
-            var propertyName = changes.GetChangedPropertyName(i);
-
-            if (componentId == (int)EntityComponent.Being)
-            {
-                switch (propertyName)
-                {
-                    case nameof(BeingComponent.HitPoints):
-                        var hitPoints = entity.Being!.HitPoints;
-                        if (changes.GetValue<int>(i, Utils.MessagingECS.ValueType.Old) != hitPoints)
-                        {
-                            change.Hp = hitPoints;
-                        }
-                        break;
-                    case nameof(BeingComponent.HitPointMaximum):
-                        change.MaxHp = entity.Being!.HitPointMaximum;
-                        break;
-                    case nameof(BeingComponent.EnergyPoints):
-                        change.Ep = entity.Being!.EnergyPoints;
-                        break;
-                    case nameof(BeingComponent.EnergyPointMaximum):
-                        change.MaxEp = entity.Being!.EnergyPointMaximum;
-                        break;
-                }
-            }
-            else if (componentId == (int)EntityComponent.AI)
-            {
-                if (propertyName == nameof(AIComponent.NextActionTick))
-                {
-                    change.NextActionTick = entity.AI!.NextActionTick ?? 0;
-                }
-            }
-            else if (componentId == (int)EntityComponent.Player)
-            {
-                if (propertyName == nameof(PlayerComponent.NextActionTick))
-                {
-                    change.NextActionTick = entity.Player!.NextActionTick ?? 0;
-                }
-            }
-        }
-    }
-
-    protected override ActorChange ProduceFullSnapshot(GameEntity entity, SerializationContext context)
-        => SerializeActor(entity, context);
-
-    protected override ActorChange? ProduceDelta(GameEntity entity, ActorChange tracked, SerializationContext context)
-    {
-        var actorKnowledge = entity.Knowledge;
-        var knownEntity = actorKnowledge?.KnownEntity;
-        var being = knownEntity?.Being;
-        if (actorKnowledge == null || being == null)
-        {
-            return new ActorChange { ChangedProperties = SerializationContext.DeletedBitArray };
+            current = default;
+            return false;
         }
 
-        var ai = knownEntity!.AI;
-        var currentlyPerceived = actorKnowledge.SensedType.CanIdentify();
-        var perceptionChanged = tracked.ChangedProperties![6];
-        var last = _lastEmittedValues.GetValueOrDefault(entity.Id);
-
-        if (tracked.ChangedProperties[7] && being.HitPoints == last.Hp)
-        {
-            tracked.ChangedProperties[7] = false;
-        }
-        if (tracked.ChangedProperties[8] && being.HitPointMaximum == last.MaxHp)
-        {
-            tracked.ChangedProperties[8] = false;
-        }
-        if (tracked.ChangedProperties[9] && being.EnergyPoints == last.Ep)
-        {
-            tracked.ChangedProperties[9] = false;
-        }
-        if (tracked.ChangedProperties[10] && being.EnergyPointMaximum == last.MaxEp)
-        {
-            tracked.ChangedProperties[10] = false;
-        }
-
-        if (perceptionChanged
-            && (tracked.ChangedProperties[4] || tracked.ChangedProperties[5]))
-        {
-            tracked.Hp = being.HitPoints;
-            tracked.MaxHp = being.HitPointMaximum;
-            tracked.Ep = being.EnergyPoints;
-            tracked.MaxEp = being.EnergyPointMaximum;
-        }
-
-        if (perceptionChanged && !currentlyPerceived)
-        {
-            tracked.NextActionTick = 0;
-            tracked.NextAction = null;
-        }
-        else if (ai != null && currentlyPerceived
-            && (perceptionChanged || tracked.ChangedProperties[11]
-                || tracked.ChangedProperties[1] || tracked.ChangedProperties[12]))
-        {
-            tracked.NextActionTick = ai.NextActionTick ?? 0;
-            var nextAction = SerializeNextAction(ai, context);
-            var lastNextAction = _lastEmittedValues.GetValueOrDefault(entity.Id).NextAction;
-            tracked.ChangedProperties[12] = false;
-            if (!NextActionEquals(nextAction, lastNextAction))
-            {
-                tracked.NextAction = nextAction;
-            }
-        }
-        else if (knownEntity.Player is { } player && currentlyPerceived
-            && (perceptionChanged || tracked.ChangedProperties[11]
-                || tracked.ChangedProperties[1]))
-        {
-            tracked.NextActionTick = player.NextActionTick ?? 0;
-        }
-        else if (tracked.ChangedProperties[11])
-        {
-            tracked.ChangedProperties[11] = false;
-        }
-
-        if (ai != null)
-        {
-            if (currentlyPerceived)
-            {
-                if (actorKnowledge.IsIdentified)
-                {
-                    var manager = context.Manager;
-                    var meleeAbility = manager.AISystem.GetDefaultAttack(knownEntity, context.Observer, melee: true, manager);
-                    var newMeleeAttack = SerializeAttackSummary(meleeAbility, knownEntity, context.Observer, manager);
-                    var rangedAbility = manager.AISystem.GetDefaultAttack(knownEntity, context.Observer, melee: false, manager);
-                    var newRangeAttack = SerializeAttackSummary(rangedAbility, knownEntity, context.Observer, manager);
-                    meleeAbility = manager.PlayerSystem.GetDefaultAttack(context.Observer, melee: true, manager);
-                    var newMeleeDefense = SerializeAttackSummary(meleeAbility, context.Observer, knownEntity, manager);
-                    rangedAbility = manager.PlayerSystem.GetDefaultAttack(context.Observer, melee: false, manager);
-                    var newRangeDefense = SerializeAttackSummary(rangedAbility, context.Observer, knownEntity, manager);
-
-                    // Suppress redundant attack-summary emissions: only assign (and thereby
-                    // set the dirty bit) when the value differs from what the client last
-                    // received. The setters auto-set bits 13/14/15/16, so when nothing
-                    // changed we leave tracked alone and the bits stay false.
-                    if (!AttackSummaryEquals(newMeleeAttack, last.MeleeAttack))
-                    {
-                        tracked.MeleeAttack = newMeleeAttack;
-                    }
-                    if (!AttackSummaryEquals(newRangeAttack, last.RangeAttack))
-                    {
-                        tracked.RangeAttack = newRangeAttack;
-                    }
-                    if (!AttackSummaryEquals(newMeleeDefense, last.MeleeDefense))
-                    {
-                        tracked.MeleeDefense = newMeleeDefense;
-                    }
-                    if (!AttackSummaryEquals(newRangeDefense, last.RangeDefense))
-                    {
-                        tracked.RangeDefense = newRangeDefense;
-                    }
-                }
-            }
-            else if (perceptionChanged)
-            {
-                // Actor moved out of view: clear summaries on the client. Only emit if
-                // the client actually had a non-null value to clear.
-                if (last.MeleeAttack != null)
-                {
-                    tracked.MeleeAttack = null;
-                }
-                if (last.RangeAttack != null)
-                {
-                    tracked.RangeAttack = null;
-                }
-                if (last.MeleeDefense != null)
-                {
-                    tracked.MeleeDefense = null;
-                }
-                if (last.RangeDefense != null)
-                {
-                    tracked.RangeDefense = null;
-                }
-            }
-        }
-
-        if (perceptionChanged
-            && currentlyPerceived == last.IsCurrentlyPerceived)
-        {
-            tracked.ChangedProperties[6] = false;
-        }
-
-        if (tracked.ChangedProperties[11]
-            && tracked.NextActionTick == last.NextActionTick)
-        {
-            tracked.ChangedProperties[11] = false;
-        }
-
-        if (tracked.ChangedProperties[12]
-            && NextActionEquals(tracked.NextAction, last.NextAction))
-        {
-            tracked.ChangedProperties[12] = false;
-        }
-
-        return HasModifiedBits(tracked.ChangedProperties) ? tracked : null;
-    }
-
-    /// <summary>
-    ///     After each emission, update the persistent cache so the next
-    ///     cycle's <see cref="ProduceDelta" /> can suppress redundant fields.
-    /// </summary>
-    protected override void OnAfterEmit(int id, GameEntity? entity, ActorChange? emitted, EntityState dispatchedState)
-    {
-        if (dispatchedState == EntityState.Deleted)
-        {
-            _lastEmittedValues.Remove(id);
-            return;
-        }
-
-        if (emitted == null)
-        {
-            // No-op delta — client's view is unchanged, cache stays as-is.
-            return;
-        }
-
-        // Update only the fields that were actually emitted (bits set or full snapshot).
-        var bits = emitted.ChangedProperties;
-        var isFullSnapshot = bits == null;
-        var existing = _lastEmittedValues.GetValueOrDefault(id);
-        var currentlyPerceived = isFullSnapshot || (bits != null && bits.Length > 6 && bits[6])
-            ? emitted.IsCurrentlyPerceived
-            : existing.IsCurrentlyPerceived;
-        var hp = isFullSnapshot || (bits != null && bits.Length > 7 && bits[7]) ? emitted.Hp : existing.Hp;
-        var maxHp = isFullSnapshot || (bits != null && bits.Length > 8 && bits[8]) ? emitted.MaxHp : existing.MaxHp;
-        var ep = isFullSnapshot || (bits != null && bits.Length > 9 && bits[9]) ? emitted.Ep : existing.Ep;
-        var maxEp = isFullSnapshot || (bits != null && bits.Length > 10 && bits[10]) ? emitted.MaxEp : existing.MaxEp;
-        var nextActionTick = isFullSnapshot || (bits != null && bits.Length > 11 && bits[11])
-            ? emitted.NextActionTick
-            : existing.NextActionTick;
-        var nextAction = (isFullSnapshot || (bits != null && bits.Length > 12 && bits[12])) ? emitted.NextAction : existing.NextAction;
-        var melee = (isFullSnapshot || (bits != null && bits.Length > 13 && bits[13])) ? emitted.MeleeAttack : existing.MeleeAttack;
-        var range = (isFullSnapshot || (bits != null && bits.Length > 14 && bits[14])) ? emitted.RangeAttack : existing.RangeAttack;
-        var meleeDef = (isFullSnapshot || (bits != null && bits.Length > 15 && bits[15])) ? emitted.MeleeDefense : existing.MeleeDefense;
-        var rangeDef = (isFullSnapshot || (bits != null && bits.Length > 16 && bits[16])) ? emitted.RangeDefense : existing.RangeDefense;
-        _lastEmittedValues[id] = new LastEmittedValues(
-            currentlyPerceived, hp, maxHp, ep, maxEp,
-            nextActionTick, nextAction, melee, range, meleeDef, rangeDef);
-    }
-
-    internal void ResetBaseline(GameEntity playerEntity)
-    {
-        _lastEmittedValues.Clear();
-        if (playerEntity.Position?.RoomEntity.Room is not { } room)
-        {
-            return;
-        }
-
-        var context = new SerializationContext(null!, playerEntity, playerEntity.Game.Services);
-        foreach (var knowledgeEntity in room.KnownActors.Values)
-        {
-            var snapshot = SerializeActor(knowledgeEntity, context);
-            OnAfterEmit(knowledgeEntity.Id, knowledgeEntity, snapshot, EntityState.Added);
-        }
-    }
-
-    private static bool NextActionEquals(ActorActionChange? a, ActorActionChange? b)
-    {
-        if (ReferenceEquals(a, b))
+        if (_preparedShared.TryGetValue(id, out current))
         {
             return true;
         }
 
-        if (a is null || b is null)
+        var hasPrevious = _sharedProjection.TryGetValue(id, out var previous)
+                          && previous.RoomId == roomId;
+        if (!TryGetShared(
+                pending.Entity,
+                services,
+                manager,
+                canPerceiveIntentions,
+                pending.DirtyMask,
+                hasPrevious ? previous : null,
+                out current))
         {
             return false;
         }
 
-        return a.Type == b.Type
-               && a.Name == b.Name
-               && a.Target == b.Target
-               && a.TargetingShape == b.TargetingShape
-               && a.TargetingShapeSize == b.TargetingShapeSize;
+        _preparedShared[id] = current;
+        return true;
     }
 
-    private static bool AttackSummaryEquals(AttackSummary? a, AttackSummary? b)
+    private static bool TryGetShared(
+        GameEntity actor,
+        GameServices services,
+        GameManager manager,
+        bool canPerceiveIntentions,
+        uint dirtyMask,
+        SharedProjection? previous,
+        out SharedProjection projection)
     {
-        if (ReferenceEquals(a, b))
+        if (actor is not
+            {
+                Knowledge: { } knowledge,
+                Position: { CellX: { } levelX, CellY: { } levelY, Heading: { } heading } position
+            }
+            || knowledge.KnownEntity.Being is not { } being)
         {
-            return true;
-        }
-
-        if (a is null || b is null)
-        {
+            projection = default;
             return false;
         }
 
-        return a.Delay == b.Delay
-               && a.HitProbabilities == b.HitProbabilities
-               && a.Damages == b.Damages
-               && a.TicksToKill == b.TicksToKill;
+        var refreshAll = previous == null || (dirtyMask & MembershipDirty) != 0;
+        var prior = previous.GetValueOrDefault();
+        var identified = knowledge.IsIdentified;
+        var perceived = identified && knowledge.SensedType.CanIdentify();
+        var knownEntity = knowledge.KnownEntity;
+        var ai = knownEntity.AI;
+
+        projection = new SharedProjection(
+            position.RoomId,
+            refreshAll || (dirtyMask & LevelXDirty) != 0 ? levelX : prior.LevelX,
+            refreshAll || (dirtyMask & LevelYDirty) != 0 ? levelY : prior.LevelY,
+            refreshAll || (dirtyMask & HeadingDirty) != 0 ? (byte)heading : prior.Heading,
+            refreshAll || (dirtyMask & BaseNameDirty) != 0
+                ? !identified ? null : ai != null
+                    ? services.Language.GetTemplateName(being.Races.First().Ability!, abbreviate: false)
+                    : "player"
+                : prior.BaseName,
+            refreshAll || (dirtyMask & NameDirty) != 0
+                ? !identified ? null : services.Language.GetActorName(knownEntity, identified)
+                : prior.Name,
+            refreshAll || (dirtyMask & IsCurrentlyPerceivedDirty) != 0
+                ? perceived
+                : prior.IsCurrentlyPerceived,
+            refreshAll || (dirtyMask & HpDirty) != 0 ? identified ? being.HitPoints : 0 : prior.Hp,
+            refreshAll || (dirtyMask & MaxHpDirty) != 0 ? identified ? being.HitPointMaximum : 0 : prior.MaxHp,
+            refreshAll || (dirtyMask & EpDirty) != 0 ? identified ? being.EnergyPoints : 0 : prior.Ep,
+            refreshAll || (dirtyMask & MaxEpDirty) != 0 ? identified ? being.EnergyPointMaximum : 0 : prior.MaxEp,
+            (refreshAll || (dirtyMask & NextActionTickDirty) != 0) && identified && perceived
+                ? ai?.NextActionTick ?? knownEntity.Player?.NextActionTick ?? 0
+                : refreshAll || (dirtyMask & NextActionTickDirty) != 0 ? 0 : prior.NextActionTick,
+            refreshAll || (dirtyMask & NextActionDirty) != 0
+                ? identified && perceived && canPerceiveIntentions && ai != null
+                    ? ToProjection(SerializeNextAction(ai, manager, services))
+                    : null
+                : prior.NextAction);
+        return true;
     }
 
-    public static ActorChange SerializeActor(GameEntity knowledgeEntity, SerializationContext context)
+    private static ActionProjection? ToProjection(ActorActionChange? action)
+        => action == null
+            ? null
+            : new ActionProjection(
+                action.Type, action.Name, action.Target, action.TargetingShape, action.TargetingShapeSize);
+
+    internal static bool CanPerceiveIntentions(RoomComponent room)
+    {
+        foreach (var actor in room.Actors.Values)
+        {
+            if (actor.Player != null && actor.Being!.CanPerceiveIntention)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static ActorChange SerializeSharedFull(SharedProjection current)
+        => new()
+        {
+            ChangedProperties = null,
+            LevelX = current.LevelX,
+            LevelY = current.LevelY,
+            Heading = current.Heading,
+            BaseName = current.BaseName,
+            Name = current.Name,
+            IsCurrentlyPerceived = current.IsCurrentlyPerceived,
+            Hp = current.Hp,
+            MaxHp = current.MaxHp,
+            Ep = current.Ep,
+            MaxEp = current.MaxEp,
+            NextActionTick = current.NextActionTick,
+            NextAction = ToChange(current.NextAction)
+        };
+
+    private static ActorChange SerializeSharedDelta(SharedProjection current, uint dirtyMask)
+    {
+        var change = new ActorChange();
+        if ((dirtyMask & LevelXDirty) != 0) change.LevelX = current.LevelX;
+        if ((dirtyMask & LevelYDirty) != 0) change.LevelY = current.LevelY;
+        if ((dirtyMask & HeadingDirty) != 0) change.Heading = current.Heading;
+        if ((dirtyMask & BaseNameDirty) != 0) change.BaseName = current.BaseName;
+        if ((dirtyMask & NameDirty) != 0) change.Name = current.Name;
+        if ((dirtyMask & IsCurrentlyPerceivedDirty) != 0) change.IsCurrentlyPerceived = current.IsCurrentlyPerceived;
+        if ((dirtyMask & HpDirty) != 0) change.Hp = current.Hp;
+        if ((dirtyMask & MaxHpDirty) != 0) change.MaxHp = current.MaxHp;
+        if ((dirtyMask & EpDirty) != 0) change.Ep = current.Ep;
+        if ((dirtyMask & MaxEpDirty) != 0) change.MaxEp = current.MaxEp;
+        if ((dirtyMask & NextActionTickDirty) != 0) change.NextActionTick = current.NextActionTick;
+        if ((dirtyMask & NextActionDirty) != 0) change.NextAction = ToChange(current.NextAction);
+        return change;
+    }
+
+    private static ActorActionChange? ToChange(ActionProjection? action)
+        => action is not { } value
+            ? null
+            : new ActorActionChange
+            {
+                Type = value.Type,
+                Name = value.Name,
+                Target = value.Target,
+                TargetingShape = value.TargetingShape,
+                TargetingShapeSize = value.TargetingShapeSize
+            };
+
+    public static ActorChange SerializeActor(
+        GameEntity knowledgeEntity, in SerializationContext context, bool canPerceiveIntentions)
     {
         var actorKnowledge = knowledgeEntity.Knowledge!;
         var knownEntity = actorKnowledge.KnownEntity;
         var ai = knownEntity.AI;
         var position = knowledgeEntity.Position!;
         var being = knownEntity.Being!;
-        var manager = context.Manager;
 
-        var canIdentify = actorKnowledge.IsIdentified;
-        if (canIdentify)
-        {
-            var currentlyPerceived = actorKnowledge.SensedType.CanIdentify();
-
-            var change = new ActorChange
-            {
-                ChangedProperties = null,
-                LevelX = position.CellX!.Value,
-                LevelY = position.CellY!.Value,
-                Heading = (byte)position.Heading!,
-                BaseName = ai != null
-                    ? context.Services.Language.GetTemplateName(
-                        knownEntity.Being!.Races.First().Ability!, abbreviate: false)
-                    : "player",
-                Name = context.Services.Language.GetActorName(knownEntity, actorKnowledge.IsIdentified),
-                IsCurrentlyPerceived = currentlyPerceived,
-                Hp = being.HitPoints,
-                MaxHp = being.HitPointMaximum,
-                Ep = being.EnergyPoints,
-                MaxEp = being.EnergyPointMaximum
-            };
-
-            if (ai != null)
-            {
-                change.NextActionTick = currentlyPerceived ? ai.NextActionTick ?? 0 : 0;
-                change.NextAction = currentlyPerceived ? SerializeNextAction(ai, context) : null;
-                if (currentlyPerceived)
-                {
-                    var meleeAttack =
-                        manager.AISystem.GetDefaultAttack(knownEntity, context.Observer, melee: true, manager);
-                    change.MeleeAttack = SerializeAttackSummary(meleeAttack, knownEntity, context.Observer, manager);
-
-                    var rangedAttack =
-                        manager.AISystem.GetDefaultAttack(knownEntity, context.Observer, melee: false, manager);
-                    change.RangeAttack = SerializeAttackSummary(rangedAttack, knownEntity, context.Observer, manager);
-
-                    meleeAttack = manager.PlayerSystem.GetDefaultAttack(context.Observer, melee: true, manager);
-                    change.MeleeDefense = SerializeAttackSummary(meleeAttack, context.Observer, knownEntity, manager);
-
-                    rangedAttack = manager.PlayerSystem.GetDefaultAttack(context.Observer, melee: false, manager);
-                    change.RangeDefense = SerializeAttackSummary(rangedAttack, context.Observer, knownEntity, manager);
-                }
-            }
-            else
-            {
-                var player = being.Entity.Player;
-                change.NextActionTick = currentlyPerceived ? player?.NextActionTick ?? 0 : 0;
-            }
-
-            return change;
-        }
-        else
+        if (!actorKnowledge.IsIdentified)
         {
             return new ActorChange
             {
@@ -538,17 +488,47 @@ public class ActorChangeBuilder : ChangeBuilder<ActorChange>
                 Heading = (byte)position.Heading!
             };
         }
+
+        var currentlyPerceived = actorKnowledge.SensedType.CanIdentify();
+        var change = new ActorChange
+        {
+            ChangedProperties = null,
+            LevelX = position.CellX!.Value,
+            LevelY = position.CellY!.Value,
+            Heading = (byte)position.Heading!,
+            BaseName = ai != null
+                ? context.Services.Language.GetTemplateName(
+                    being.Races.First().Ability!, abbreviate: false)
+                : "player",
+            Name = context.Services.Language.GetActorName(knownEntity, actorKnowledge.IsIdentified),
+            IsCurrentlyPerceived = currentlyPerceived,
+            Hp = being.HitPoints,
+            MaxHp = being.HitPointMaximum,
+            Ep = being.EnergyPoints,
+            MaxEp = being.EnergyPointMaximum
+        };
+
+        if (ai == null)
+        {
+            change.NextActionTick = currentlyPerceived ? knownEntity.Player?.NextActionTick ?? 0 : 0;
+            return change;
+        }
+
+        change.NextActionTick = currentlyPerceived ? ai.NextActionTick ?? 0 : 0;
+        change.NextAction = currentlyPerceived && canPerceiveIntentions
+            ? SerializeNextAction(ai, context.Manager, context.Services)
+            : null;
+        return change;
     }
 
-    private static ActorActionChange? SerializeNextAction(AIComponent ai, SerializationContext context)
+    private static ActorActionChange? SerializeNextAction(
+        AIComponent ai, GameManager manager, GameServices services)
     {
-        if (ai.NextAction == null
-            || context.Observer.Being is { CanPerceiveIntention: false })
+        if (ai.NextAction == null)
         {
             return null;
         }
 
-        var manager = context.Manager;
         switch (ai.NextAction)
         {
             case ActorActionType.UseAbilitySlot:
@@ -567,8 +547,8 @@ public class ActorChangeBuilder : ChangeBuilder<ActorChange>
                 var ability = abilityEntity.Ability!;
                 return new ActorActionChange
                 {
-                    Type = ai.NextAction!.Value,
-                    Name = context.Services.Language.GetString(ability),
+                    Type = ai.NextAction.Value,
+                    Name = services.Language.GetString(ability),
                     Target = ai.NextActionTarget2 ?? 0,
                     TargetingShape = ability.TargetingShape,
                     TargetingShapeSize = ability.TargetingShapeSize
@@ -579,8 +559,8 @@ public class ActorChangeBuilder : ChangeBuilder<ActorChange>
                 var actionLabel = ai.NextAction == ActorActionType.MoveOneCell ? "Move " : "Turn ";
                 return new ActorActionChange
                 {
-                    Type = ai.NextAction!.Value,
-                    Name = actionLabel + context.Services.Language.GetString(direction, abbreviate: true),
+                    Type = ai.NextAction.Value,
+                    Name = actionLabel + services.Language.GetString(direction, abbreviate: true),
                     Target = ai.Entity.Position!.Cell!.Value.Translate(direction.AsVector()).ToInt32(),
                     TargetingShape = TargetingShape.Line,
                     TargetingShapeSize = 0
@@ -597,76 +577,226 @@ public class ActorChangeBuilder : ChangeBuilder<ActorChange>
         }
     }
 
-    private static AttackSummary? SerializeAttackSummary(
-        GameEntity? attackEntity, GameEntity attackerEntity, GameEntity victimEntity, GameManager manager)
+    private void TrackAdded(GameEntity entity, int roomId)
     {
-        AttackStats? stats = null;
-        if (attackEntity != null)
+        if (_pending.TryGetValue(entity.Id, out var pending))
         {
-            var activateMessage = ActivateAbilityMessage.Create(manager);
-            activateMessage.AbilityEntity = attackEntity;
-            activateMessage.ActivatorEntity = attackerEntity;
-            activateMessage.TargetEntity = victimEntity;
-            stats = manager.AbilityActivationSystem.GetAttackStats(activateMessage);
-            manager.ReturnMessage(activateMessage);
-        }
-
-        if (stats == null)
-        {
-            return null;
-        }
-
-        // Hot path: this method is called up to 4× per perceived AI actor per cycle. The
-        // previous implementation used LINQ (Select/ToList/string.Join) which allocated
-        // an enumerator, a delegate, a List<int>, and per-element boxed strings on every
-        // call. Replace with a single pass that fills the damages array, computes
-        // expected damage, and builds both formatted strings inline.
-        var subAttacks = stats.SubAttacks;
-        var subAttackCount = subAttacks.Count;
-        var damageSystem = manager.EffectApplicationSystem;
-        var hp = victimEntity.Being!.HitPoints;
-
-        if (subAttackCount == 0)
-        {
-            return new AttackSummary
+            var wasKnownInRoom = _sharedProjection.TryGetValue(entity.Id, out var previous)
+                                 && previous.RoomId == roomId
+                                 && pending.InitialRoomId == roomId;
+            var dirtyMask = wasKnownInRoom
+                ? pending.DirtyMask & ~MembershipDirty
+                : pending.DirtyMask | MembershipDirty;
+            if (dirtyMask == 0)
             {
-                Delay = stats.Delay,
-                HitProbabilities = "",
-                Damages = "",
-                TicksToKill = 0
-            };
-        }
-
-        var hitProbBuilder = new StringBuilder(subAttackCount * 6);
-        var damagesBuilder = new StringBuilder(subAttackCount * 4);
-        var expectedDamage = 0;
-        for (var i = 0; i < subAttackCount; i++)
-        {
-            var sub = subAttacks[i];
-            var dmg = damageSystem.GetExpectedDamage(sub.Effects, attackerEntity, victimEntity);
-            expectedDamage += dmg * sub.HitProbability;
-
-            if (i > 0)
-            {
-                hitProbBuilder.Append(", ");
-                damagesBuilder.Append(", ");
+                _pending.Remove(entity.Id);
+                return;
             }
-            hitProbBuilder.Append(sub.HitProbability).Append('%');
-            damagesBuilder.Append(dmg);
+
+            _pending[entity.Id] = pending with
+            {
+                Entity = entity,
+                State = wasKnownInRoom ? EntityState.Modified : EntityState.Added,
+                DirtyMask = dirtyMask,
+                FinalRoomId = roomId
+            };
+            return;
         }
 
-        var ticksToKill = expectedDamage <= 0
-            ? 0
-            : (int)(Math.Ceiling(hp * 100f / expectedDamage) * stats.Delay);
-
-        return new AttackSummary
-        {
-            Delay = stats.Delay,
-            HitProbabilities = hitProbBuilder.ToString(),
-            Damages = damagesBuilder.ToString(),
-            TicksToKill = ticksToKill
-        };
+        _pending[entity.Id] = new PendingChange(
+            entity,
+            _sharedProjection.ContainsKey(entity.Id) ? EntityState.Modified : EntityState.Added,
+            MembershipDirty | AllSharedDirty,
+            InitialRoomId: 0,
+            FinalRoomId: roomId);
     }
 
-    private static GameEntity? FindKnowledgeEntity(GameEntity beingEntity) => beingEntity.Position?.Knowledge;
+    private void TrackRemoved(GameEntity entity, int initialRoomId, int finalRoomId)
+    {
+        if (_pending.TryGetValue(entity.Id, out var pending))
+        {
+            if (pending.State == EntityState.Added
+                && !_sharedProjection.ContainsKey(entity.Id)
+                && finalRoomId == 0)
+            {
+                _pending.Remove(entity.Id);
+                return;
+            }
+
+            _pending[entity.Id] = pending with
+            {
+                Entity = entity,
+                State = EntityState.Deleted,
+                DirtyMask = pending.DirtyMask | MembershipDirty,
+                FinalRoomId = finalRoomId
+            };
+            return;
+        }
+
+        if (_sharedProjection.ContainsKey(entity.Id))
+        {
+            _pending[entity.Id] = new PendingChange(
+                entity, EntityState.Deleted, MembershipDirty, initialRoomId, finalRoomId);
+        }
+    }
+
+    private void TrackModified(GameEntity entity, int roomId, uint dirtyMask)
+    {
+        if (dirtyMask == 0)
+        {
+            return;
+        }
+
+        if (_pending.TryGetValue(entity.Id, out var pending))
+        {
+            _pending[entity.Id] = pending with
+            {
+                Entity = entity,
+                DirtyMask = pending.DirtyMask | dirtyMask,
+                FinalRoomId = pending.State == EntityState.Deleted ? pending.FinalRoomId : roomId
+            };
+            return;
+        }
+
+        _pending[entity.Id] = new PendingChange(
+            entity,
+            _sharedProjection.ContainsKey(entity.Id) ? EntityState.Modified : EntityState.Added,
+            dirtyMask,
+            roomId,
+            roomId);
+    }
+
+    private bool ShouldDelete(int id, PendingChange pending, int roomId)
+        => pending.InitialRoomId == roomId
+            && pending.FinalRoomId != roomId
+            && _sharedProjection.TryGetValue(id, out var previous)
+            && previous.RoomId == roomId;
+
+    private static uint GetKnowledgeDirtyMask(GameEntity entity, IPropertyValueChanges changes)
+    {
+        var dirtyMask = 0u;
+        for (var i = 0; i < changes.Count; i++)
+        {
+            var componentId = changes.GetChangedComponent(i).ComponentId;
+            var propertyName = changes.GetChangedPropertyName(i);
+            if (componentId == (int)EntityComponent.Position
+                && propertyName == nameof(PositionComponent.CellX))
+            {
+                dirtyMask |= LevelXDirty;
+                dirtyMask |= NextActionDirty;
+            }
+            else if (componentId == (int)EntityComponent.Position
+                     && propertyName == nameof(PositionComponent.CellY))
+            {
+                dirtyMask |= LevelYDirty;
+                dirtyMask |= NextActionDirty;
+            }
+            else if (componentId == (int)EntityComponent.Position
+                     && propertyName == nameof(PositionComponent.Heading))
+            {
+                dirtyMask |= HeadingDirty;
+            }
+            else if (componentId == (int)EntityComponent.Knowledge)
+            {
+                if (propertyName == nameof(KnowledgeComponent.SensedType))
+                {
+                    dirtyMask |= PerceptionDirty;
+                }
+                else if (propertyName is nameof(KnowledgeComponent.IsIdentified)
+                         or nameof(KnowledgeComponent.KnownEntityId))
+                {
+                    dirtyMask |= IdentificationDirty;
+                }
+            }
+        }
+
+        return dirtyMask;
+    }
+
+    private static uint GetBeingDirtyMask(GameEntity entity, IPropertyValueChanges changes)
+    {
+        var dirtyMask = 0u;
+        var knowledge = entity.Position?.Knowledge?.Knowledge;
+        var isIdentified = knowledge is { IsIdentified: true };
+        var canIdentify = knowledge is
+            {
+                IsIdentified: true,
+                SensedType: var sensedType
+            }
+            && sensedType.CanIdentify();
+        for (var i = 0; i < changes.Count; i++)
+        {
+            var componentId = changes.GetChangedComponent(i).ComponentId;
+            var propertyName = changes.GetChangedPropertyName(i);
+            if (componentId == (int)EntityComponent.Being)
+            {
+                if (propertyName is nameof(BeingComponent.HitPoints)
+                    or nameof(BeingComponent.HitPointMaximum)
+                    or nameof(BeingComponent.EnergyPoints)
+                    or nameof(BeingComponent.EnergyPointMaximum)
+                    && isIdentified)
+                {
+                    dirtyMask |= propertyName switch
+                    {
+                        nameof(BeingComponent.HitPoints) => HpDirty,
+                        nameof(BeingComponent.HitPointMaximum) => MaxHpDirty,
+                        nameof(BeingComponent.EnergyPoints) => EpDirty,
+                        nameof(BeingComponent.EnergyPointMaximum) => MaxEpDirty,
+                        _ => 0
+                    };
+                }
+
+            }
+            else if (componentId == (int)EntityComponent.AI)
+            {
+                if (canIdentify && propertyName == nameof(AIComponent.NextActionTick))
+                {
+                    dirtyMask |= NextActionTickDirty;
+                }
+                else if (canIdentify
+                         && propertyName is nameof(AIComponent.NextAction)
+                             or nameof(AIComponent.NextActionTarget)
+                             or nameof(AIComponent.NextActionTarget2))
+                {
+                    dirtyMask |= NextActionDirty;
+                }
+            }
+            else if (componentId == (int)EntityComponent.Player
+                     && canIdentify
+                     && propertyName == nameof(PlayerComponent.NextActionTick))
+            {
+                dirtyMask |= NextActionTickDirty;
+            }
+            else if (componentId == (int)EntityComponent.Position)
+            {
+                if (canIdentify)
+                {
+                    dirtyMask |= NextActionDirty;
+                }
+            }
+        }
+
+        return dirtyMask;
+    }
+
+    private static bool IsRelevant(GameEntity entity)
+        => entity.Knowledge?.KnownEntity.Being != null;
+
+    private static bool IsRelevantOnRemove(in EntityChange<GameEntity> entityChange)
+        => entityChange.RemovedComponent is KnowledgeComponent knowledge
+            && knowledge.KnownEntity.Being != null;
+
+    private static bool HasRoomIdChange(IPropertyValueChanges changes)
+    {
+        for (var i = 0; i < changes.Count; i++)
+        {
+            if (changes.GetChangedComponent(i).ComponentId == (int)EntityComponent.Position
+                && changes.GetChangedPropertyName(i) == nameof(PositionComponent.RoomId))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

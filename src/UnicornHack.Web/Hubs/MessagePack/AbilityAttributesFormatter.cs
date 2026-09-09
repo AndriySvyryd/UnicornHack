@@ -1,4 +1,3 @@
-using System.Collections;
 using MessagePack;
 
 namespace UnicornHack.Hubs.MessagePack;
@@ -12,7 +11,7 @@ public sealed class AbilityAttributesFormatter : FixedArrayFormatter<AbilityAttr
         ref MessagePackWriter writer, AbilityAttributes value, MessagePackSerializerOptions options)
     {
         var resolver = options.Resolver;
-        resolver.GetFormatterWithVerify<BitArray?>().Serialize(ref writer, value.ChangedProperties, options);
+        resolver.GetFormatterWithVerify<uint?>().Serialize(ref writer, value.ChangedProperties, options);
         writer.Write(value.Id);
         writer.Write(value.Name);
         writer.Write(value.Level);
@@ -46,7 +45,7 @@ public sealed class AbilityAttributesFormatter : FixedArrayFormatter<AbilityAttr
         var resolver = options.Resolver;
         switch (field)
         {
-            case 0: value.ChangedProperties = resolver.GetFormatterWithVerify<BitArray?>().Deserialize(ref reader, options); break;
+            case 0: value.ChangedProperties = resolver.GetFormatterWithVerify<uint?>().Deserialize(ref reader, options); break;
             case 1: value.Id = reader.ReadInt32(); break;
             case 2: value.Name = reader.ReadString(); break;
             case 3: value.Level = reader.ReadInt32(); break;

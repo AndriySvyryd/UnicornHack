@@ -12,15 +12,14 @@ namespace UnicornHack.DiagnosticClient.State;
 ///     custom formatters in <c>UnicornHack.Web/Hubs/MessagePack/*</c> only invoke a
 ///     property setter when its <c>ChangedProperties</c> bit is true, so the setter
 ///     side effect (re-setting the same bit) is always a no-op on the deserialized
-///     delta. On the canonical instance we keep <c>ChangedProperties</c> at <c>null</c>
-///     so writes against it are also no-ops via the <c>?.</c> guard in each setter.
+///     delta. On canonical instances <c>ChangedProperties</c> remains <c>null</c>, so
+///     property setters leave the mask disabled.
 /// </summary>
 internal static class StateApplier
 {
     /// <summary>
     ///     Adopts a server full snapshot (<c>ChangedProperties == null</c>) as the canonical
-    ///     state. Replaces the BitArray with a fully-set one so downstream callers can treat
-    ///     all fields as "current".
+    ///     state and normalizes its collections for downstream readers.
     /// </summary>
     public static PlayerChange AdoptFullSnapshot(PlayerChange snapshot)
     {
@@ -57,18 +56,18 @@ internal static class StateApplier
 
         canonical.PreviousTick = delta.PreviousTick;
         canonical.CurrentTick = delta.CurrentTick;
-        if (bits[1])
+        if (bits.IsPropertyChanged(1))
         {
             canonical.Name = delta.Name;
         }
-        if (bits[2])
+        if (bits.IsPropertyChanged(2))
         {
             canonical.Id = delta.Id;
         }
 
-        for (var i = 5; i < bits.Length; i++)
+        for (var i = 5; i < PlayerChange.PropertyCount; i++)
         {
-            if (!bits[i])
+            if (!bits.IsPropertyChanged(i))
             {
                 continue;
             }
@@ -122,6 +121,7 @@ internal static class StateApplier
         {
             NormalizeRoom(r);
         }
+
     }
 
     // ---------- Room ----------
@@ -141,9 +141,9 @@ internal static class StateApplier
             return delta;
         }
 
-        for (var i = 1; i < bits.Length; i++)
+        for (var i = 1; i < RoomChange.PropertyCount; i++)
         {
-            if (!bits[i])
+            if (!bits.IsPropertyChanged(i))
             {
                 continue;
             }
@@ -256,9 +256,9 @@ internal static class StateApplier
             store[id] = delta;
             return;
         }
-        if (bits.Length <= 1)
+        if (bits == 0)
         {
-            // Removal sentinel: server emits `new BitArray(1)` for Deleted entries.
+            // Removal sentinel: an all-clear integer mask represents a deleted entry.
             store.Remove(id);
             return;
         }
@@ -266,9 +266,9 @@ internal static class StateApplier
         {
             throw OrphanDelta("Actor", id);
         }
-        for (var i = 1; i < bits.Length; i++)
+        for (var i = 1; i < ActorChange.PropertyCount; i++)
         {
-            if (!bits[i]) continue;
+            if (!bits.IsPropertyChanged(i)) continue;
             switch (i)
             {
                 case 1: current.LevelX = delta.LevelX; break;
@@ -283,10 +283,6 @@ internal static class StateApplier
                 case 10: current.MaxEp = delta.MaxEp; break;
                 case 11: current.NextActionTick = delta.NextActionTick; break;
                 case 12: current.NextAction = delta.NextAction; break;
-                case 13: current.MeleeAttack = delta.MeleeAttack; break;
-                case 14: current.RangeAttack = delta.RangeAttack; break;
-                case 15: current.MeleeDefense = delta.MeleeDefense; break;
-                case 16: current.RangeDefense = delta.RangeDefense; break;
             }
         }
     }
@@ -305,14 +301,14 @@ internal static class StateApplier
     {
         var bits = delta.ChangedProperties;
         if (bits is null) { store[id] = delta; return; }
-        if (bits.Length <= 1) { store.Remove(id); return; }
+        if (bits == 0) { store.Remove(id); return; }
         if (!store.TryGetValue(id, out var current))
         {
             throw OrphanDelta("Item", id);
         }
-        for (var i = 1; i < bits.Length; i++)
+        for (var i = 1; i < ItemChange.PropertyCount; i++)
         {
-            if (!bits[i]) continue;
+            if (!bits.IsPropertyChanged(i)) continue;
             switch (i)
             {
                 case 1: current.LevelX = delta.LevelX; break;
@@ -333,14 +329,14 @@ internal static class StateApplier
         {
             var bits = child.ChangedProperties;
             if (bits is null) { room.Connections[id] = child; continue; }
-            if (bits.Length <= 1) { room.Connections.Remove(id); continue; }
+            if (bits == 0) { room.Connections.Remove(id); continue; }
             if (!room.Connections.TryGetValue(id, out var current))
             {
                 throw OrphanDelta("Connection", id);
             }
-            for (var i = 1; i < bits.Length; i++)
+            for (var i = 1; i < ConnectionChange.PropertyCount; i++)
             {
-                if (!bits[i]) continue;
+                if (!bits.IsPropertyChanged(i)) continue;
                 switch (i)
                 {
                     case 1: current.LevelX = child.LevelX; break;
@@ -359,14 +355,14 @@ internal static class StateApplier
         {
             var bits = child.ChangedProperties;
             if (bits is null) { player.Abilities[id] = child; continue; }
-            if (bits.Length <= 1) { player.Abilities.Remove(id); continue; }
+            if (bits == 0) { player.Abilities.Remove(id); continue; }
             if (!player.Abilities.TryGetValue(id, out var current))
             {
                 throw OrphanDelta("Ability", id);
             }
-            for (var i = 1; i < bits.Length; i++)
+            for (var i = 1; i < AbilityChange.PropertyCount; i++)
             {
-                if (!bits[i]) continue;
+                if (!bits.IsPropertyChanged(i)) continue;
                 switch (i)
                 {
                     case 1: current.Name = child.Name; break;
@@ -407,14 +403,14 @@ internal static class StateApplier
         {
             var bits = child.ChangedProperties;
             if (bits is null) { player.Effects[id] = child; continue; }
-            if (bits.Length <= 1) { player.Effects.Remove(id); continue; }
+            if (bits == 0) { player.Effects.Remove(id); continue; }
             if (!player.Effects.TryGetValue(id, out var current))
             {
                 throw OrphanDelta("Effect", id);
             }
-            for (var i = 1; i < bits.Length; i++)
+            for (var i = 1; i < EffectChange.PropertyCount; i++)
             {
-                if (!bits[i]) continue;
+                if (!bits.IsPropertyChanged(i)) continue;
                 switch (i)
                 {
                     case 1: current.EffectType = child.EffectType; break;

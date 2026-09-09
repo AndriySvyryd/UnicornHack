@@ -134,13 +134,18 @@ public class AbilityActivationSystem :
     public AttackStats GetAttackStats(ActivateAbilityMessage activateAbilityMessage)
     {
         var stats = new AttackStats();
+        PopulateAttackStats(activateAbilityMessage, stats);
+        return stats;
+    }
+
+    public void PopulateAttackStats(ActivateAbilityMessage activateAbilityMessage, AttackStats stats)
+    {
+        stats.Reset();
         var activated = Activate(activateAbilityMessage, pretend: true, stats);
         if (!string.IsNullOrEmpty(activated?.ActivationError))
         {
             throw new InvalidOperationException(activated.ActivationError);
         }
-
-        return stats;
     }
 
     MessageProcessingResult IMessageConsumer<ActivateAbilityMessage, GameManager>.Process(
@@ -406,11 +411,9 @@ public class AbilityActivationSystem :
                 {
                     if (target == activateMessage.TargetEntity)
                     {
-                        var subStats = new SubAttackStats
-                        {
-                            AbilityId = targetMessage.AbilityEntity.Ability!.EntityId,
-                            SuccessCondition = targetMessage.AbilityEntity.Ability!.SuccessCondition
-                        };
+                        var subStats = stats!.RentSubAttack();
+                        subStats.AbilityId = targetMessage.AbilityEntity.Ability!.EntityId;
+                        subStats.SuccessCondition = targetMessage.AbilityEntity.Ability!.SuccessCondition;
 
                         var accuracy = manager.AbilityActivationSystem.GetAccuracy(
                             ability, targetMessage.ActivatorEntity);
@@ -425,7 +428,7 @@ public class AbilityActivationSystem :
 
                         subStats.Effects = targetMessage.EffectsToApply;
 
-                        stats!.SubAttacks.Add(subStats);
+                        stats.SubAttacks.Add(subStats);
 
                         manager.ReturnMessage(targetMessage);
                     }

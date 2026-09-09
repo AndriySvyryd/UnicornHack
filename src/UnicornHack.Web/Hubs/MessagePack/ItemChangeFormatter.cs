@@ -1,4 +1,3 @@
-using System.Collections;
 using MessagePack;
 using MessagePack.Formatters;
 using UnicornHack.Hubs.ChangeTracking;
@@ -19,40 +18,40 @@ public sealed class ItemChangeFormatter : IMessagePackFormatter<ItemChange?>
 
         var resolver = options.Resolver;
         var values = value.ChangedProperties;
-        var length = ChangeSetFormatterHelper.GetSerializedLength(values, ItemChange.PropertyCount);
+        var length = values.GetSerializedLength(ItemChange.PropertyCount);
         writer.WriteArrayHeader(length);
-        resolver.GetFormatterWithVerify<BitArray?>().Serialize(ref writer, values, options);
+        resolver.GetFormatterWithVerify<byte?>().Serialize(ref writer, values, options);
         if (length == 1)
         {
             return;
         }
 
-        if (values == null || values[1])
+        if (values.IsPropertyChanged(1))
         {
             writer.Write(value.LevelX);
         }
 
-        if (values == null || values[2])
+        if (values.IsPropertyChanged(2))
         {
             writer.Write(value.LevelY);
         }
 
-        if (values == null || values[3])
+        if (values.IsPropertyChanged(3))
         {
             writer.Write((int)value.Type);
         }
 
-        if (values == null || values[4])
+        if (values.IsPropertyChanged(4))
         {
             writer.Write(value.BaseName ?? "");
         }
 
-        if (values == null || values[5])
+        if (values.IsPropertyChanged(5))
         {
             writer.Write(value.Name ?? "");
         }
 
-        if (values == null || values[6])
+        if (values.IsPropertyChanged(6))
         {
             writer.Write(value.IsCurrentlyPerceived);
         }
@@ -68,11 +67,11 @@ public sealed class ItemChangeFormatter : IMessagePackFormatter<ItemChange?>
         var resolver = options.Resolver;
         var length = reader.ReadArrayHeader();
         var result = new ItemChange();
-        BitArray? values = null;
+        byte? values = null;
 
         for (var i = 0; i < length; i++)
         {
-            if (values != null && !values[i])
+            if (values.HasValue && !values.IsPropertyChanged(i))
             {
                 continue;
             }
@@ -80,10 +79,10 @@ public sealed class ItemChangeFormatter : IMessagePackFormatter<ItemChange?>
             switch (i)
             {
                 case 0:
-                    values = resolver.GetFormatterWithVerify<BitArray?>().Deserialize(ref reader, options);
-                    if (values != null)
+                    values = resolver.GetFormatterWithVerify<byte?>().Deserialize(ref reader, options);
+                    if (values.HasValue)
                     {
-                        length = values.Length;
+                        length = values.GetValueOrDefault() == 0 ? 1 : ItemChange.PropertyCount;
                     }
 
                     result.ChangedProperties = values;

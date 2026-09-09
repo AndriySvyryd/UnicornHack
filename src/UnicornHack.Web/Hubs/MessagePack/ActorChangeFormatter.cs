@@ -1,4 +1,3 @@
-using System.Collections;
 using MessagePack;
 using MessagePack.Formatters;
 using UnicornHack.Hubs.ChangeTracking;
@@ -19,92 +18,73 @@ public sealed class ActorChangeFormatter : IMessagePackFormatter<ActorChange?>
 
         var resolver = options.Resolver;
         var values = value.ChangedProperties;
-        var length = ChangeSetFormatterHelper.GetSerializedLength(values, ActorChange.PropertyCount);
+        var length = values.GetSerializedLength(ActorChange.PropertyCount);
         writer.WriteArrayHeader(length);
-        resolver.GetFormatterWithVerify<BitArray?>().Serialize(ref writer, values, options);
+        resolver.GetFormatterWithVerify<ushort?>().Serialize(ref writer, values, options);
         if (length == 1)
         {
             return;
         }
 
-        if (values == null || values[1])
+        if (values.IsPropertyChanged(1))
         {
             writer.Write(value.LevelX);
         }
 
-        if (values == null || values[2])
+        if (values.IsPropertyChanged(2))
         {
             writer.Write(value.LevelY);
         }
 
-        if (values == null || values[3])
+        if (values.IsPropertyChanged(3))
         {
             writer.Write(value.Heading);
         }
 
-        if (values == null || values[4])
+        if (values.IsPropertyChanged(4))
         {
             writer.Write(value.BaseName ?? "");
         }
 
-        if (values == null || values[5])
+        if (values.IsPropertyChanged(5))
         {
             writer.Write(value.Name ?? "");
         }
 
-        if (values == null || values[6])
+        if (values.IsPropertyChanged(6))
         {
             writer.Write(value.IsCurrentlyPerceived);
         }
 
-        if (values == null || values[7])
+        if (values.IsPropertyChanged(7))
         {
             writer.Write(value.Hp);
         }
 
-        if (values == null || values[8])
+        if (values.IsPropertyChanged(8))
         {
             writer.Write(value.MaxHp);
         }
 
-        if (values == null || values[9])
+        if (values.IsPropertyChanged(9))
         {
             writer.Write(value.Ep);
         }
 
-        if (values == null || values[10])
+        if (values.IsPropertyChanged(10))
         {
             writer.Write(value.MaxEp);
         }
 
-        if (values == null || values[11])
+        if (values.IsPropertyChanged(11))
         {
             writer.Write(value.NextActionTick);
         }
 
-        if (values == null || values[12])
+        if (values.IsPropertyChanged(12))
         {
-            resolver.GetFormatterWithVerify<ActorActionChange?>().Serialize(ref writer, value.NextAction, options);
-        }
-
-        if (values == null || values[13])
-        {
-            resolver.GetFormatterWithVerify<AttackSummary?>().Serialize(ref writer, value.MeleeAttack, options);
-        }
-
-        if (values == null || values[14])
-        {
-            resolver.GetFormatterWithVerify<AttackSummary?>().Serialize(ref writer, value.RangeAttack, options);
-        }
-
-        if (values == null || values[15])
-        {
-            resolver.GetFormatterWithVerify<AttackSummary?>().Serialize(ref writer, value.MeleeDefense, options);
-        }
-
-        if (values == null || values[16])
-        {
-            resolver.GetFormatterWithVerify<AttackSummary?>().Serialize(ref writer, value.RangeDefense, options);
+            resolver.GetFormatterWithVerify<ActorActionChange?>()
+                .Serialize(ref writer, value.NextAction, options);
         }
 
     }
@@ -119,11 +99,11 @@ public sealed class ActorChangeFormatter : IMessagePackFormatter<ActorChange?>
         var resolver = options.Resolver;
         var length = reader.ReadArrayHeader();
         var result = new ActorChange();
-        BitArray? values = null;
+        ushort? values = null;
 
         for (var i = 0; i < length; i++)
         {
-            if (values != null && !values[i])
+            if (values.HasValue && !values.IsPropertyChanged(i))
             {
                 continue;
             }
@@ -131,10 +111,10 @@ public sealed class ActorChangeFormatter : IMessagePackFormatter<ActorChange?>
             switch (i)
             {
                 case 0:
-                    values = resolver.GetFormatterWithVerify<BitArray?>().Deserialize(ref reader, options);
-                    if (values != null)
+                    values = resolver.GetFormatterWithVerify<ushort?>().Deserialize(ref reader, options);
+                    if (values.HasValue)
                     {
-                        length = values.Length;
+                        length = values.GetValueOrDefault() == 0 ? 1 : ActorChange.PropertyCount;
                     }
 
                     result.ChangedProperties = values;
@@ -173,19 +153,8 @@ public sealed class ActorChangeFormatter : IMessagePackFormatter<ActorChange?>
                     result.NextActionTick = reader.ReadInt32();
                     break;
                 case 12:
-                    result.NextAction = resolver.GetFormatterWithVerify<ActorActionChange?>().Deserialize(ref reader, options);
-                    break;
-                case 13:
-                    result.MeleeAttack = resolver.GetFormatterWithVerify<AttackSummary?>().Deserialize(ref reader, options);
-                    break;
-                case 14:
-                    result.RangeAttack = resolver.GetFormatterWithVerify<AttackSummary?>().Deserialize(ref reader, options);
-                    break;
-                case 15:
-                    result.MeleeDefense = resolver.GetFormatterWithVerify<AttackSummary?>().Deserialize(ref reader, options);
-                    break;
-                case 16:
-                    result.RangeDefense = resolver.GetFormatterWithVerify<AttackSummary?>().Deserialize(ref reader, options);
+                    result.NextAction = resolver.GetFormatterWithVerify<ActorActionChange?>()
+                        .Deserialize(ref reader, options);
                     break;
                 default:
                     reader.Skip();

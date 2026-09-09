@@ -1,4 +1,3 @@
-using System.Collections;
 using MessagePack;
 using MessagePack.Formatters;
 using UnicornHack.Hubs.ChangeTracking;
@@ -19,15 +18,15 @@ public sealed class LogEntryChangeFormatter : IMessagePackFormatter<LogEntryChan
 
         var resolver = options.Resolver;
         var values = value.ChangedProperties;
-        var length = ChangeSetFormatterHelper.GetSerializedLength(values, LogEntryChange.PropertyCount);
+        var length = values.GetSerializedLength(LogEntryChange.PropertyCount);
         writer.WriteArrayHeader(length);
-        resolver.GetFormatterWithVerify<BitArray?>().Serialize(ref writer, values, options);
-        if (values == null || values[1])
+        resolver.GetFormatterWithVerify<byte?>().Serialize(ref writer, values, options);
+        if (values.IsPropertyChanged(1))
         {
             writer.Write(value.Message ?? "");
         }
 
-        if (values == null || values[2])
+        if (values.IsPropertyChanged(2))
         {
             writer.Write(value.Ticks);
         }
@@ -43,11 +42,11 @@ public sealed class LogEntryChangeFormatter : IMessagePackFormatter<LogEntryChan
         var resolver = options.Resolver;
         var length = reader.ReadArrayHeader();
         var result = new LogEntryChange();
-        BitArray? values = null;
+        byte? values = null;
 
         for (var i = 0; i < length; i++)
         {
-            if (values != null && !values[i])
+            if (values.HasValue && !values.IsPropertyChanged(i))
             {
                 continue;
             }
@@ -55,10 +54,10 @@ public sealed class LogEntryChangeFormatter : IMessagePackFormatter<LogEntryChan
             switch (i)
             {
                 case 0:
-                    values = resolver.GetFormatterWithVerify<BitArray?>().Deserialize(ref reader, options);
-                    if (values != null)
+                    values = resolver.GetFormatterWithVerify<byte?>().Deserialize(ref reader, options);
+                    if (values.HasValue)
                     {
-                        length = values.Length;
+                        length = values.GetValueOrDefault() == 0 ? 1 : LogEntryChange.PropertyCount;
                     }
 
                     result.ChangedProperties = values;

@@ -1,4 +1,3 @@
-using System.Collections;
 using UnicornHack.Generation.Effects;
 using UnicornHack.Services;
 using UnicornHack.Systems.Abilities;
@@ -7,45 +6,87 @@ using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Hubs.ChangeTracking;
 
-public class AbilityChangeBuilder : ChangeBuilder<AbilityChange>
+public class AbilityChangeBuilder
+    : IEntityChangeListener<GameEntity>, IDependentEntityChangeListener<GameEntity>
 {
+    private const uint NameDirty = 1u << 1;
+    private const uint ActivationDirty = 1u << 2;
+    private const uint SlotDirty = 1u << 3;
+    private const uint CooldownTickDirty = 1u << 4;
+    private const uint CooldownXpLeftDirty = 1u << 5;
+    private const uint TargetingShapeDirty = 1u << 6;
+    private const uint TargetingShapeSizeDirty = 1u << 7;
+    private const uint TypeDirty = 1u << 8;
+    private const uint AccumulatorDirty = 1u << 9;
+    private const uint LevelDirty = 1u << 10;
+    private const uint LevelReductionDirty = 1u << 11;
+    private const uint ExpirationTargetDirty = 1u << 12;
+    private const uint ExpirationEventDirty = 1u << 13;
+    private const uint NoiseDirty = 1u << 14;
+    private const uint ExpirationDirty = ExpirationTargetDirty | ExpirationEventDirty;
+    private const uint MembershipDirty = 1u << 31;
+    private const uint AllValuesDirty = (1u << AbilityChange.PropertyCount) - 2;
+
+    private readonly record struct PendingChange(GameEntity Entity, uint DirtyMask);
+
+    private readonly record struct Projection(
+        string? Name,
+        int Activation,
+        int? Slot,
+        int? CooldownTick,
+        int? CooldownXpLeft,
+        int TargetingShape,
+        int TargetingShapeSize,
+        int Type,
+        int? Accumulator,
+        int Level,
+        int LevelReduction,
+        int? ExpirationTarget,
+        int? ExpirationEvent,
+        int? Noise);
+
     private readonly int _playerEntityId;
+    private readonly Dictionary<int, PendingChange> _pending = [];
+    private readonly Dictionary<int, Projection> _projection = [];
+    private readonly Dictionary<int, Projection> _prepared = [];
     private readonly Dictionary<int, int> _accumulatorPlaceholders = [];
-    private bool _accumulatorsChanged;
+    private readonly HashSet<EffectType> _dirtyAccumulatorTypes = [];
 
     public AbilityChangeBuilder(int playerEntityId)
     {
         _playerEntityId = playerEntityId;
     }
 
-    public bool HasAccumulatorChanges => _accumulatorsChanged;
+    public bool HasAccumulatorChanges => _dirtyAccumulatorTypes.Count != 0;
 
-    public override void RegisterOnGroups(GameManager manager)
+    public bool HasChanges => _pending.Count != 0;
+
+    public void RegisterOnGroups(GameManager manager)
     {
         manager.Abilities.AddListener(this);
         manager.AffectableEntities.AddListener(this);
         manager.AbilitiesToAffectableRelationship.AddDependentsListener(this);
     }
 
-    public override void UnregisterFromGroups(GameManager manager)
+    public void UnregisterFromGroups(GameManager manager)
     {
         manager.Abilities.RemoveListener(this);
         manager.AffectableEntities.RemoveListener(this);
         manager.AbilitiesToAffectableRelationship.RemoveDependentsListener(this);
     }
 
-    protected override bool IsRelevantPrincipal(GameEntity principal)
+    private bool IsRelevantPrincipal(GameEntity principal)
         => principal.Id == _playerEntityId;
 
     // Client-visible abilities have a slot or are slot-less status-like/race carriers. Status-like abilities
     // drive the HUD; races are included so generic ability transport can replace the dedicated race DTO.
-    protected override bool IsRelevant(GameEntity entity)
+    private bool IsRelevant(GameEntity entity)
         => entity.Ability is { } ability
             && ability.OwnerId == _playerEntityId
             && !ability.IsLeveledSupplement
             && IsClientVisible(ability);
 
-    protected override bool IsRelevantOnRemove(in EntityChange<GameEntity> entityChange)
+    private bool IsRelevantOnRemove(in EntityChange<GameEntity> entityChange)
         => entityChange.RemovedComponent is AbilityComponent ability
             && ability.OwnerId == _playerEntityId
             && !ability.IsLeveledSupplement
@@ -56,7 +97,7 @@ public class AbilityChangeBuilder : ChangeBuilder<AbilityChange>
     ///     presence is what determines client visibility — the relationship events only
     ///     fire on ownership changes.
     /// </summary>
-    protected override void OnBaseGroupPropertyValuesChanged(in EntityChange<GameEntity> entityChange)
+    private void OnBaseGroupPropertyValuesChanged(in EntityChange<GameEntity> entityChange)
     {
         var entity = entityChange.Entity;
         if (entity.Id == _playerEntityId
@@ -72,89 +113,7 @@ public class AbilityChangeBuilder : ChangeBuilder<AbilityChange>
             return;
         }
 
-        var changes = entityChange.PropertyChanges;
-        int? oldSlot = null;
-        var hasSlotPropertyChange = false;
-        for (var i = 0; i < changes.Count; i++)
-        {
-            if (changes.GetChangedComponent(i).ComponentId != (int)EntityComponent.Ability)
-            {
-                continue;
-            }
-
-            if (changes.GetChangedPropertyName(i) == nameof(AbilityComponent.Slot))
-            {
-                hasSlotPropertyChange = true;
-                oldSlot = changes.GetValue<int?>(i, Utils.MessagingECS.ValueType.Old);
-            }
-        }
-
-        var currentSlot = entity.Ability!.Slot;
-
-        if (hasSlotPropertyChange && currentSlot == null && !Changes.ContainsKey(entity.Id))
-        {
-            // Slot cleared, not tracked this turn → entity leaves the client's view.
-            Debug.Assert(oldSlot != null,
-                "Ability not yet tracked but slot has just been cleared — oldSlot must have been non-null "
-                + "for the client to have known this ability.");
-            // HandleRemoved will capture a snapshot; capture it now using Old slot value.
-            EnsureSnapshot(entity, changes);
-            HandleRemoved(entity);
-            return;
-        }
-
-        if (currentSlot == null && !Changes.ContainsKey(entity.Id))
-        {
-            // Not visible and not tracked — nothing to do.
-            return;
-        }
-
-        var tracked = GetOrCreateChange(entity);
-
-        if (hasSlotPropertyChange)
-        {
-            if (currentSlot == null)
-            {
-                // Slot cleared on a tracked entity.
-                if (tracked.State == EntityState.Added && !Snapshots.ContainsKey(entity.Id))
-                {
-                    // Add-then-Remove on a brand-new ability within this cycle: cancel.
-                    // The client never knew this ability — emitting a removal sentinel
-                    // would target an unknown id.
-                    Changes.Remove(entity.Id);
-                    return;
-                }
-
-                // Capture snapshot if not yet present (oldSlot was non-null, so the client
-                // knew this ability).
-                if (oldSlot != null)
-                {
-                    EnsureSnapshot(entity, changes);
-                }
-
-                tracked.State = EntityState.Deleted;
-            }
-            else if (oldSlot == null)
-            {
-                // Slot just went null → non-null. The client did not know this ability
-                // before this cycle (slot was null at cycle start), so the dependent
-                // listener's Property event may have spuriously captured a snapshot —
-                // drop it. Force Added unless we're re-restoring a prior in-cycle Deleted.
-                var snapshot = Snapshots.TryGetValue(entity.Id, out var s) ? s : null;
-                if (tracked.State is EntityState.Deleted && snapshot is { Slot: not null })
-                {
-                    // Genuine re-Add: the snapshot was captured from a non-null slot earlier
-                    // in this cycle. Reconcile bits accumulated during the deleted phase.
-                    OnReconcileAfterReAdd(entity, tracked);
-                    tracked.State = EntityState.Modified;
-                }
-                else
-                {
-                    Snapshots.Remove(entity.Id);
-                    tracked.State = EntityState.Added;
-                }
-            }
-        }
+        MarkCandidate(entity, GetAbilityDirtyMask(entityChange.PropertyChanges));
     }
 
     private void TrackComponentEffectChanges(in EntityChange<GameEntity> entityChange)
@@ -179,6 +138,12 @@ public class AbilityChangeBuilder : ChangeBuilder<AbilityChange>
 
     private void TrackComponentEffectRecord(ActiveComponentEffect? record, GameEntity ownerEntity)
     {
+        if (record?.TargetName is { } targetName
+            && Effect.FindMetadata(targetName) is { } metadata)
+        {
+            _dirtyAccumulatorTypes.Add(metadata.EffectType);
+        }
+
         if (record is { EffectType: EffectType.DecreaseAbilityLevel })
         {
             TrackDecreasedAbilities(record, ownerEntity);
@@ -197,13 +162,7 @@ public class AbilityChangeBuilder : ChangeBuilder<AbilityChange>
             return;
         }
 
-        var change = GetOrCreateChange(abilityEntity, EntityState.Modified);
-        change.Level = Math.Max(0, EffectApplicationSystem.GetAbilityLevel(ownerEntity, addedName));
-        if (ability.Type.IsStatusLike())
-        {
-            change.ExpirationTarget = record.ExpirationTarget;
-            change.ExpirationEvent = GetExpirationEvent(record);
-        }
+        MarkCandidate(abilityEntity, ExpirationDirty);
     }
 
     private void TrackDecreasedAbilities(ActiveComponentEffect decrease, GameEntity ownerEntity)
@@ -239,10 +198,7 @@ public class AbilityChangeBuilder : ChangeBuilder<AbilityChange>
 
     private void TrackEffectiveLevel(GameEntity abilityEntity, GameEntity ownerEntity)
     {
-        var abilityName = abilityEntity.Ability!.Name!;
-        var change = GetOrCreateChange(abilityEntity, EntityState.Modified);
-        change.Level = Math.Max(0, EffectApplicationSystem.GetAbilityLevel(ownerEntity, abilityName));
-        change.LevelReduction = EffectApplicationSystem.GetAbilityLevelReduction(ownerEntity, abilityName);
+        MarkCandidate(abilityEntity, LevelReductionDirty);
     }
 
     internal static bool IsClientVisible(AbilityComponent ability)
@@ -295,7 +251,7 @@ public class AbilityChangeBuilder : ChangeBuilder<AbilityChange>
 
     private void TrackAccumulator(EffectType effectType, GameEntity ownerEntity)
     {
-        _accumulatorsChanged = true;
+        _dirtyAccumulatorTypes.Add(effectType);
         var metadata = Effect.GetMetadata(effectType);
         if (metadata.StatusAbilityName is not { } statusAbilityName
             || ownerEntity.Manager.AffectableAbilitiesIndex[
@@ -304,30 +260,34 @@ public class AbilityChangeBuilder : ChangeBuilder<AbilityChange>
             return;
         }
 
-        GetOrCreateChange(abilityEntity, EntityState.Modified).Accumulator = GetAccumulator(abilityEntity);
+        MarkCandidate(abilityEntity, AccumulatorDirty);
     }
 
-    public void WriteAccumulatorPlaceholdersTo(
+    private void WriteAccumulatorPlaceholdersTo(
         Dictionary<int, AbilityChange> output, GameEntity ownerEntity)
     {
-        var current = GetAccumulatorPlaceholders(ownerEntity);
-        foreach (var (id, placeholder) in current)
+        foreach (var effectType in _dirtyAccumulatorTypes)
         {
-            if (!_accumulatorPlaceholders.TryGetValue(id, out var previousValue))
+            var id = GetAccumulatorPlaceholderId(effectType);
+            var currentValue = GetAccumulatorPlaceholderValue(ownerEntity, effectType);
+            if (currentValue is { } value)
             {
-                output[id] = placeholder;
-            }
-            else if (previousValue != placeholder.Accumulator)
-            {
-                output[id] = new AbilityChange { Accumulator = placeholder.Accumulator };
-            }
-        }
+                if (!_accumulatorPlaceholders.ContainsKey(id))
+                {
+                    output.Add(id, CreateAccumulatorPlaceholder(effectType, value));
+                }
+                else
+                {
+                    output.Add(id, new AbilityChange { Accumulator = value });
+                }
 
-        foreach (var id in _accumulatorPlaceholders.Keys)
-        {
-            if (!current.ContainsKey(id))
+                _accumulatorPlaceholders[id] = value;
+            }
+            else if (_accumulatorPlaceholders.Remove(id))
             {
-                output[id] = new AbilityChange { ChangedProperties = SerializationContext.DeletedBitArray };
+                output.Add(
+                    id,
+                    new AbilityChange { ChangedProperties = 0 });
             }
         }
     }
@@ -335,17 +295,34 @@ public class AbilityChangeBuilder : ChangeBuilder<AbilityChange>
     public void ResetAccumulatorPlaceholders(GameEntity ownerEntity)
     {
         _accumulatorPlaceholders.Clear();
-        foreach (var (id, placeholder) in GetAccumulatorPlaceholders(ownerEntity))
+        foreach (var accumulator in ownerEntity.ActiveEffects!.Accumulators)
         {
-            _accumulatorPlaceholders.Add(id, placeholder.Accumulator!.Value);
+            if (GetAccumulatorPlaceholderValue(ownerEntity, accumulator.EffectType) is { } value)
+            {
+                _accumulatorPlaceholders.Add(
+                    GetAccumulatorPlaceholderId(accumulator.EffectType), value);
+            }
         }
 
-        _accumulatorsChanged = false;
+        _dirtyAccumulatorTypes.Clear();
     }
+
+    public void ResetAccumulatorChanges() => _dirtyAccumulatorTypes.Clear();
 
     public static Dictionary<int, AbilityChange> GetAccumulatorPlaceholders(GameEntity ownerEntity)
     {
-        var placeholders = new Dictionary<int, AbilityChange>();
+        var placeholderCount = 0;
+        foreach (var accumulator in ownerEntity.ActiveEffects!.Accumulators)
+        {
+            var metadata = Effect.GetMetadata(accumulator.EffectType);
+            if (metadata.StatusAbilityName is { } abilityName
+                && ownerEntity.Manager.AffectableAbilitiesIndex[(ownerEntity.Id, abilityName)] == null)
+            {
+                placeholderCount++;
+            }
+        }
+
+        var placeholders = new Dictionary<int, AbilityChange>(placeholderCount);
         foreach (var accumulator in ownerEntity.ActiveEffects!.Accumulators)
         {
             var metadata = Effect.GetMetadata(accumulator.EffectType);
@@ -356,15 +333,7 @@ public class AbilityChangeBuilder : ChangeBuilder<AbilityChange>
             }
 
             var id = GetAccumulatorPlaceholderId(accumulator.EffectType);
-            placeholders.Add(id, new AbilityChange
-            {
-                ChangedProperties = null,
-                Name = GetAccumulatorPlaceholderName(accumulator.EffectType),
-                Activation = (int)ActivationType.Always,
-                Type = (int)AbilityType.Debuff,
-                Accumulator = accumulator.Value,
-                Level = 0
-            });
+            placeholders.Add(id, CreateAccumulatorPlaceholder(accumulator.EffectType, accumulator.Value));
         }
 
         return placeholders;
@@ -378,97 +347,270 @@ public class AbilityChangeBuilder : ChangeBuilder<AbilityChange>
     private static string Capitalize(string value)
         => value.Length == 0 ? value : char.ToUpperInvariant(value[0]) + value[1..];
 
-    protected override void TrackPropertyChanges(
-        GameEntity entity, AbilityChange change, IPropertyValueChanges changes)
+    private static int? GetAccumulatorPlaceholderValue(GameEntity ownerEntity, EffectType effectType)
     {
-        for (var i = 0; i < changes.Count; i++)
-        {
-            if (changes.GetChangedComponent(i).ComponentId != (int)EntityComponent.Ability)
-            {
-                continue;
-            }
-
-            switch (changes.GetChangedPropertyName(i))
-            {
-                case nameof(AbilityComponent.Name):
-                    change.Name = entity.Game.Services.Language.GetString(entity.Ability!);
-                    break;
-                case nameof(AbilityComponent.Activation):
-                    change.Activation = (int)entity.Ability!.Activation;
-                    break;
-                case nameof(AbilityComponent.Slot):
-                    change.Slot = entity.Ability!.Slot;
-                    break;
-                case nameof(AbilityComponent.CooldownTick):
-                    change.CooldownTick = entity.Ability!.CooldownTick;
-                    break;
-                case nameof(AbilityComponent.CooldownXpLeft):
-                    change.CooldownXpLeft = entity.Ability!.CooldownXpLeft;
-                    break;
-                case nameof(AbilityComponent.TargetingShape):
-                    change.TargetingShape = (int)entity.Ability!.TargetingShape;
-                    break;
-                case nameof(AbilityComponent.TargetingShapeSize):
-                    change.TargetingShapeSize = entity.Ability!.TargetingShapeSize;
-                    break;
-                case nameof(AbilityComponent.Level):
-                    change.Level = entity.Ability!.Level;
-                    break;
-                case nameof(AbilityComponent.Noise):
-                    change.Noise = entity.Ability!.Noise;
-                    break;
-            }
-        }
-    }
-
-    protected override AbilityChange ProduceFullSnapshot(GameEntity entity, SerializationContext context)
-        => SerializeAbility(entity, context.Services);
-
-    /// <summary>
-    ///     Captures the entity's pre-cycle state. Uses <c>Old</c> values from
-    ///     <paramref name="changes" /> for properties that just changed and the entity's
-    ///     current values for the rest — the result represents what the client last saw at
-    ///     the start of the cycle.
-    ///     <para>
-    ///         When invoked from <see cref="ChangeBuilder{TChange}.HandleRemoved" /> via the
-    ///         dependent-relationship Remove path, the <see cref="AbilityComponent" /> has
-    ///         already been removed from the entity. In that case there is no in-cycle
-    ///         re-Add path that needs reconciliation, so returning <c>null</c> is safe — the
-    ///         snapshot key still records "client knew this entity".
-    ///     </para>
-    /// </summary>
-    protected override AbilityChange? CaptureSnapshot(GameEntity entity, IPropertyValueChanges? changes)
-    {
-        var ability = entity.Ability;
-        if (ability == null)
+        var metadata = Effect.GetMetadata(effectType);
+        if (metadata.StatusAbilityName is not { } abilityName
+            || ownerEntity.Manager.AffectableAbilitiesIndex[(ownerEntity.Id, abilityName)] != null)
         {
             return null;
         }
 
-        var statusRecord = GetStatusRecord(ability.Entity);
-        var snapshot = new AbilityChange
+        return ownerEntity.ActiveEffects!.Accumulators.GetValueOrDefault(effectType)?.Value;
+    }
+
+    private static AbilityChange CreateAccumulatorPlaceholder(EffectType effectType, int value)
+        => new()
         {
             ChangedProperties = null,
-            Activation = (int)ability.Activation,
-            Slot = ability.Slot,
-            CooldownTick = ability.CooldownTick,
-            CooldownXpLeft = ability.CooldownXpLeft,
-            TargetingShape = (int)ability.TargetingShape,
-            TargetingShapeSize = ability.TargetingShapeSize,
-            Type = (int)ability.Type,
-            Accumulator = GetAccumulator(ability.Entity),
-            Level = ability.Level,
-            LevelReduction = GetLevelReduction(ability.Entity),
-            ExpirationTarget = statusRecord?.ExpirationTarget,
-            Noise = ability.Noise,
-            ExpirationEvent = GetExpirationEvent(statusRecord)
+            Name = GetAccumulatorPlaceholderName(effectType),
+            Activation = (int)ActivationType.Always,
+            Type = (int)AbilityType.Debuff,
+            Accumulator = value,
+            Level = 0
         };
 
-        if (changes == null)
+    public Dictionary<int, AbilityChange>? BuildChanges(
+        in SerializationContext context, GameEntity ownerEntity)
+    {
+        var outputCount = CountAbilityChanges(context.Services)
+                          + CountAccumulatorPlaceholderChanges(ownerEntity);
+        if (outputCount == 0)
         {
-            return snapshot;
+            return null;
         }
 
+        var output = new Dictionary<int, AbilityChange>(outputCount);
+        foreach (var (id, pending) in _pending)
+        {
+            var hasPrevious = _projection.TryGetValue(id, out var previous);
+            if (!TryGetProjection(
+                    pending.Entity,
+                    context.Services,
+                    pending.DirtyMask,
+                    hasPrevious ? previous : null,
+                    out var current))
+            {
+                if (_projection.Remove(id))
+                {
+                    output.Add(
+                        id,
+                        new AbilityChange { ChangedProperties = 0 });
+                }
+
+                continue;
+            }
+
+            var change = hasPrevious
+                ? SerializeDelta(current, pending.DirtyMask)
+                : SerializeFull(current);
+
+            _projection[id] = current;
+            if (change != null)
+            {
+                output.Add(id, change);
+            }
+        }
+
+        WriteAccumulatorPlaceholdersTo(output, ownerEntity);
+        return output;
+    }
+
+    private int CountAbilityChanges(GameServices services)
+    {
+        var count = 0;
+        foreach (var (id, pending) in _pending)
+        {
+            var hasPrevious = _projection.TryGetValue(id, out var previous);
+            if (!TryGetProjection(
+                    pending.Entity,
+                    services,
+                    pending.DirtyMask,
+                    hasPrevious ? previous : null,
+                    out var current))
+            {
+                if (_projection.ContainsKey(id))
+                {
+                    count++;
+                }
+
+                continue;
+            }
+
+            count++;
+        }
+
+        return count;
+    }
+
+    private int CountAccumulatorPlaceholderChanges(GameEntity ownerEntity)
+    {
+        var count = 0;
+        foreach (var effectType in _dirtyAccumulatorTypes)
+        {
+            var id = GetAccumulatorPlaceholderId(effectType);
+            var currentValue = GetAccumulatorPlaceholderValue(ownerEntity, effectType);
+            if (currentValue != null)
+            {
+                count++;
+            }
+            else if (_accumulatorPlaceholders.ContainsKey(id))
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    public void Reset()
+    {
+        _pending.Clear();
+        _prepared.Clear();
+    }
+
+    public void ResetProjection(GameEntity ownerEntity)
+    {
+        _projection.Clear();
+        _prepared.Clear();
+        foreach (var abilityEntity in ownerEntity.Being!.Abilities)
+        {
+            if (TryGetProjection(
+                    abilityEntity,
+                    ownerEntity.Game.Services,
+                    MembershipDirty | AllValuesDirty,
+                    previous: null,
+                    out var projection))
+            {
+                _projection[abilityEntity.Id] = projection;
+            }
+        }
+
+        _prepared.Clear();
+    }
+
+    void IEntityChangeListener<GameEntity>.OnEntityAdded(in EntityChange<GameEntity> entityChange)
+    {
+        if (IsRelevant(entityChange.Entity))
+        {
+            MarkCandidate(entityChange.Entity, MembershipDirty | AllValuesDirty);
+        }
+    }
+
+    void IEntityChangeListener<GameEntity>.OnEntityRemoved(in EntityChange<GameEntity> entityChange)
+    {
+        if (_projection.ContainsKey(entityChange.Entity.Id)
+            || IsRelevantOnRemove(entityChange))
+        {
+            MarkCandidate(entityChange.Entity, MembershipDirty | AllValuesDirty);
+        }
+    }
+
+    void IEntityChangeListener<GameEntity>.OnPropertyValuesChanged(in EntityChange<GameEntity> entityChange)
+        => OnBaseGroupPropertyValuesChanged(entityChange);
+
+    void IDependentEntityChangeListener<GameEntity>.OnEntityAdded(
+        in EntityChange<GameEntity> entityChange, GameEntity principal)
+    {
+        if (IsRelevantPrincipal(principal))
+        {
+            MarkCandidate(entityChange.Entity, MembershipDirty | AllValuesDirty);
+        }
+    }
+
+    void IDependentEntityChangeListener<GameEntity>.OnEntityRemoved(
+        in EntityChange<GameEntity> entityChange, GameEntity principal)
+    {
+        if (IsRelevantPrincipal(principal)
+            && (_projection.ContainsKey(entityChange.Entity.Id) || IsRelevantOnRemove(entityChange)))
+        {
+            MarkCandidate(entityChange.Entity, MembershipDirty | AllValuesDirty);
+        }
+    }
+
+    void IDependentEntityChangeListener<GameEntity>.OnPropertyValuesChanged(
+        in EntityChange<GameEntity> entityChange, GameEntity principal)
+    {
+        if (IsRelevantPrincipal(principal))
+        {
+            MarkCandidate(entityChange.Entity, GetAbilityDirtyMask(entityChange.PropertyChanges));
+        }
+    }
+
+    private void MarkCandidate(GameEntity entity, uint dirtyMask)
+    {
+        if (dirtyMask == 0)
+        {
+            return;
+        }
+
+        _pending[entity.Id] = _pending.TryGetValue(entity.Id, out var pending)
+            ? pending with { Entity = entity, DirtyMask = pending.DirtyMask | dirtyMask }
+            : new PendingChange(entity, dirtyMask);
+    }
+
+    private bool TryGetProjection(
+        GameEntity entity,
+        GameServices services,
+        uint dirtyMask,
+        Projection? previous,
+        out Projection projection)
+    {
+        if (_prepared.TryGetValue(entity.Id, out projection))
+        {
+            return true;
+        }
+
+        if (entity.Ability is not { } ability
+            || ability.OwnerId != _playerEntityId
+            || ability.IsLeveledSupplement
+            || !IsClientVisible(ability))
+        {
+            projection = default;
+            return false;
+        }
+
+        var refreshAll = previous == null || (dirtyMask & MembershipDirty) != 0;
+        var prior = previous.GetValueOrDefault();
+        var statusRecord = refreshAll || (dirtyMask & ExpirationDirty) != 0
+            ? GetStatusRecord(entity)
+            : null;
+        projection = new Projection(
+            refreshAll || (dirtyMask & NameDirty) != 0
+                ? ability.Type == AbilityType.Race
+                ? services.Language.GetTemplateName(ability, abbreviate: false)
+                : services.Language.GetString(ability)
+                : prior.Name,
+            refreshAll || (dirtyMask & ActivationDirty) != 0 ? (int)ability.Activation : prior.Activation,
+            refreshAll || (dirtyMask & SlotDirty) != 0 ? ability.Slot : prior.Slot,
+            refreshAll || (dirtyMask & CooldownTickDirty) != 0 ? ability.CooldownTick : prior.CooldownTick,
+            refreshAll || (dirtyMask & CooldownXpLeftDirty) != 0 ? ability.CooldownXpLeft : prior.CooldownXpLeft,
+            refreshAll || (dirtyMask & TargetingShapeDirty) != 0
+                ? (int)ability.TargetingShape
+                : prior.TargetingShape,
+            refreshAll || (dirtyMask & TargetingShapeSizeDirty) != 0
+                ? ability.TargetingShapeSize
+                : prior.TargetingShapeSize,
+            refreshAll || (dirtyMask & TypeDirty) != 0 ? (int)ability.Type : prior.Type,
+            refreshAll || (dirtyMask & AccumulatorDirty) != 0 ? GetAccumulator(entity) : prior.Accumulator,
+            refreshAll || (dirtyMask & LevelDirty) != 0 ? ability.Level : prior.Level,
+            refreshAll || (dirtyMask & LevelReductionDirty) != 0
+                ? GetLevelReduction(entity)
+                : prior.LevelReduction,
+            refreshAll || (dirtyMask & ExpirationTargetDirty) != 0
+                ? statusRecord?.ExpirationTarget
+                : prior.ExpirationTarget,
+            refreshAll || (dirtyMask & ExpirationEventDirty) != 0
+                ? GetExpirationEvent(statusRecord)
+                : prior.ExpirationEvent,
+            refreshAll || (dirtyMask & NoiseDirty) != 0 ? ability.Noise : prior.Noise);
+        _prepared[entity.Id] = projection;
+        return true;
+    }
+
+    private static uint GetAbilityDirtyMask(IPropertyValueChanges changes)
+    {
+        var dirtyMask = 0u;
         for (var i = 0; i < changes.Count; i++)
         {
             if (changes.GetChangedComponent(i).ComponentId != (int)EntityComponent.Ability)
@@ -476,115 +618,68 @@ public class AbilityChangeBuilder : ChangeBuilder<AbilityChange>
                 continue;
             }
 
-            switch (changes.GetChangedPropertyName(i))
+            dirtyMask |= changes.GetChangedPropertyName(i) switch
             {
-                case nameof(AbilityComponent.Activation):
-                    snapshot.Activation = (int)changes.GetValue<ActivationType>(
-                        i, Utils.MessagingECS.ValueType.Old);
-                    break;
-                case nameof(AbilityComponent.Slot):
-                    snapshot.Slot = changes.GetValue<int?>(i, Utils.MessagingECS.ValueType.Old);
-                    break;
-                case nameof(AbilityComponent.CooldownTick):
-                    snapshot.CooldownTick = changes.GetValue<int?>(i, Utils.MessagingECS.ValueType.Old);
-                    break;
-                case nameof(AbilityComponent.CooldownXpLeft):
-                    snapshot.CooldownXpLeft = changes.GetValue<int?>(
-                        i, Utils.MessagingECS.ValueType.Old);
-                    break;
-                case nameof(AbilityComponent.TargetingShape):
-                    snapshot.TargetingShape = (int)changes.GetValue<TargetingShape>(
-                        i, Utils.MessagingECS.ValueType.Old);
-                    break;
-                case nameof(AbilityComponent.TargetingShapeSize):
-                    snapshot.TargetingShapeSize = changes.GetValue<int>(
-                        i, Utils.MessagingECS.ValueType.Old);
-                    break;
-                case nameof(AbilityComponent.Noise):
-                    snapshot.Noise = changes.GetValue<int?>(i, Utils.MessagingECS.ValueType.Old);
-                    break;
-            }
+                nameof(AbilityComponent.Name) => NameDirty | AccumulatorDirty | LevelReductionDirty
+                                                  | ExpirationDirty | MembershipDirty,
+                nameof(AbilityComponent.Activation) => ActivationDirty,
+                nameof(AbilityComponent.Slot) => SlotDirty | MembershipDirty,
+                nameof(AbilityComponent.CooldownTick) => CooldownTickDirty,
+                nameof(AbilityComponent.CooldownXpLeft) => CooldownXpLeftDirty,
+                nameof(AbilityComponent.TargetingShape) => TargetingShapeDirty,
+                nameof(AbilityComponent.TargetingShapeSize) => TargetingShapeSizeDirty,
+                nameof(AbilityComponent.Type) => NameDirty | TypeDirty | AccumulatorDirty
+                                                  | ExpirationDirty | MembershipDirty,
+                nameof(AbilityComponent.Level) => LevelDirty,
+                nameof(AbilityComponent.Noise) => NoiseDirty,
+                nameof(AbilityComponent.Action) => NameDirty,
+                nameof(AbilityComponent.OwnerId) => MembershipDirty | AllValuesDirty,
+                _ => 0
+            };
         }
 
-        return snapshot;
+        return dirtyMask;
     }
 
-    /// <summary>
-    ///     After a transient Deleted → Added cycle within one turn, the tracked change has
-    ///     accumulated bits from both phases. Compare each property against the snapshot
-    ///     captured at the start of the cycle (what the client last saw) and clear bits
-    ///     where the value round-tripped.
-    /// </summary>
-    protected override void OnReconcileAfterReAdd(GameEntity entity, AbilityChange tracked)
+    private static AbilityChange SerializeDelta(Projection current, uint dirtyMask)
     {
-        if (tracked.ChangedProperties == null
-            || tracked.ChangedProperties.Length == 1)
-        {
-            tracked.ChangedProperties = new BitArray(AbilityChange.PropertyCount);
-        }
-
-        var bits = tracked.ChangedProperties;
-
-        if (!Snapshots.TryGetValue(entity.Id, out var snapshot) || snapshot == null)
-        {
-            return;
-        }
-
-        if (bits[2] && tracked.Activation == snapshot.Activation)
-        {
-            bits[2] = false;
-        }
-
-        if (bits[3] && tracked.Slot == snapshot.Slot)
-        {
-            bits[3] = false;
-        }
-
-        if (bits[4] && tracked.CooldownTick == snapshot.CooldownTick)
-        {
-            bits[4] = false;
-        }
-
-        if (bits[5] && tracked.CooldownXpLeft == snapshot.CooldownXpLeft)
-        {
-            bits[5] = false;
-        }
-
-        if (bits[6] && tracked.TargetingShape == snapshot.TargetingShape)
-        {
-            bits[6] = false;
-        }
-
-        if (bits[7] && tracked.TargetingShapeSize == snapshot.TargetingShapeSize)
-        {
-            bits[7] = false;
-        }
-
-        if (bits[10] && tracked.Level == snapshot.Level)
-        {
-            bits[10] = false;
-        }
-
-        if (bits[11] && tracked.LevelReduction == snapshot.LevelReduction)
-        {
-            bits[11] = false;
-        }
-
-        if (bits[12] && tracked.ExpirationTarget == snapshot.ExpirationTarget)
-        {
-            bits[12] = false;
-        }
-
-        if (bits[13] && tracked.ExpirationEvent == snapshot.ExpirationEvent)
-        {
-            bits[13] = false;
-        }
-
-        if (bits[14] && tracked.Noise == snapshot.Noise)
-        {
-            bits[14] = false;
-        }
+        var change = new AbilityChange();
+        if ((dirtyMask & NameDirty) != 0) change.Name = current.Name;
+        if ((dirtyMask & ActivationDirty) != 0) change.Activation = current.Activation;
+        if ((dirtyMask & SlotDirty) != 0) change.Slot = current.Slot;
+        if ((dirtyMask & CooldownTickDirty) != 0) change.CooldownTick = current.CooldownTick;
+        if ((dirtyMask & CooldownXpLeftDirty) != 0) change.CooldownXpLeft = current.CooldownXpLeft;
+        if ((dirtyMask & TargetingShapeDirty) != 0) change.TargetingShape = current.TargetingShape;
+        if ((dirtyMask & TargetingShapeSizeDirty) != 0) change.TargetingShapeSize = current.TargetingShapeSize;
+        if ((dirtyMask & TypeDirty) != 0) change.Type = current.Type;
+        if ((dirtyMask & AccumulatorDirty) != 0) change.Accumulator = current.Accumulator;
+        if ((dirtyMask & LevelDirty) != 0) change.Level = current.Level;
+        if ((dirtyMask & LevelReductionDirty) != 0) change.LevelReduction = current.LevelReduction;
+        if ((dirtyMask & ExpirationTargetDirty) != 0) change.ExpirationTarget = current.ExpirationTarget;
+        if ((dirtyMask & ExpirationEventDirty) != 0) change.ExpirationEvent = current.ExpirationEvent;
+        if ((dirtyMask & NoiseDirty) != 0) change.Noise = current.Noise;
+        return change;
     }
+
+    private static AbilityChange SerializeFull(Projection projection)
+        => new()
+        {
+            ChangedProperties = null,
+            Name = projection.Name,
+            Activation = projection.Activation,
+            Slot = projection.Slot,
+            CooldownTick = projection.CooldownTick,
+            CooldownXpLeft = projection.CooldownXpLeft,
+            TargetingShape = projection.TargetingShape,
+            TargetingShapeSize = projection.TargetingShapeSize,
+            Type = projection.Type,
+            Accumulator = projection.Accumulator,
+            Level = projection.Level,
+            LevelReduction = projection.LevelReduction,
+            ExpirationTarget = projection.ExpirationTarget,
+            ExpirationEvent = projection.ExpirationEvent,
+            Noise = projection.Noise
+        };
 
     public static AbilityChange SerializeAbility(GameEntity abilityEntity, GameServices services)
     {

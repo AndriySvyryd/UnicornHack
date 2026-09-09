@@ -12,81 +12,173 @@ public static class TerrainChangeBuilder
 
     public static void WriteToRoomChange(RoomComponent room, RoomChange change)
     {
-        var wallNeighborsChanges = new List<(short, DirectionFlags)>();
-        var knownTerrainChanges = new List<(short, MapFeature)>(room.KnownTerrainChanges!.Count);
-        if (room.KnownTerrainChanges.Count > 0)
+        var knownTerrainChangeCount = room.KnownTerrainChanges!.Count;
+        var wallNeighborsChangeCount = knownTerrainChangeCount;
+        foreach (var terrainChange in room.TerrainChanges!)
         {
+            if (room.VisibleTerrain[terrainChange.Key] != 0)
+            {
+                knownTerrainChangeCount++;
+            }
+        }
+
+        foreach (var neighborChange in room.NeighborChanges!)
+        {
+            if (room.VisibleTerrain[neighborChange.Key] != 0)
+            {
+                wallNeighborsChangeCount++;
+            }
+        }
+
+        var visibleTerrainChangeCount = room.VisibleTerrainChanges!.Count;
+        var mapChanges = CreateMapChanges(
+            room, change, knownTerrainChangeCount, wallNeighborsChangeCount, visibleTerrainChangeCount);
+        if (mapChanges == null)
+        {
+            return;
+        }
+
+        if (knownTerrainChangeCount != 0)
+        {
+            var knownTerrainChanges = mapChanges.TerrainChanges!;
             foreach (var terrainChange in room.KnownTerrainChanges)
             {
                 knownTerrainChanges.Add((terrainChange.Key, terrainChange.Value));
-                wallNeighborsChanges.Add((terrainChange.Key, room.Neighbors[terrainChange.Key]));
             }
-        }
 
-        if (room.TerrainChanges!.Count > 0)
-        {
             foreach (var terrainChange in room.TerrainChanges)
             {
-                if (room.VisibleTerrain[terrainChange.Key] == 0)
+                if (room.VisibleTerrain[terrainChange.Key] != 0)
                 {
-                    continue;
+                    knownTerrainChanges.Add((terrainChange.Key, terrainChange.Value));
                 }
-
-                knownTerrainChanges.Add((terrainChange.Key, terrainChange.Value));
             }
         }
 
-        if (room.NeighborChanges!.Count > 0)
+        if (wallNeighborsChangeCount != 0)
         {
-            foreach (var wallNeighborsChange in room.NeighborChanges)
+            var wallNeighborsChanges = mapChanges.WallNeighborsChanges!;
+            foreach (var terrainChange in room.KnownTerrainChanges)
             {
-                if (room.VisibleTerrain[wallNeighborsChange.Key] == 0)
-                {
-                    continue;
-                }
+                wallNeighborsChanges.Add((terrainChange.Key, room.Neighbors[terrainChange.Key]));
+            }
 
-                wallNeighborsChanges.Add((wallNeighborsChange.Key, wallNeighborsChange.Value));
+            foreach (var neighborChange in room.NeighborChanges)
+            {
+                if (room.VisibleTerrain[neighborChange.Key] != 0)
+                {
+                    wallNeighborsChanges.Add((neighborChange.Key, neighborChange.Value));
+                }
             }
         }
 
-        var changesCount = knownTerrainChanges.Count + wallNeighborsChanges.Count + room.VisibleTerrainChanges!.Count;
-        if (changesCount == 0)
+        if (visibleTerrainChangeCount != 0)
+        {
+            var visibleTerrainChanges = mapChanges.VisibleTerrainChanges!;
+            foreach (var visibleTerrainChange in room.VisibleTerrainChanges)
+            {
+                visibleTerrainChanges.Add((visibleTerrainChange.Key, visibleTerrainChange.Value));
+            }
+        }
+
+        change.LevelMapChanges = mapChanges;
+    }
+
+    public static void WriteSnapshotToRoomChange(RoomComponent room, RoomChange change)
+    {
+        var tileCount = room.TileCount;
+        var terrainCount = 0;
+        var wallNeighborsCount = 0;
+        var visibleTerrainCount = 0;
+        for (short i = 0; i < tileCount; i++)
+        {
+            if (room.KnownTerrain[i] != MapFeature.Unexplored)
+            {
+                terrainCount++;
+                if (room.Neighbors[i] != DirectionFlags.None)
+                {
+                    wallNeighborsCount++;
+                }
+            }
+
+            if (room.VisibleTerrain[i] != 0)
+            {
+                visibleTerrainCount++;
+            }
+        }
+
+        var mapChanges = CreateMapChanges(
+            room, change, terrainCount, wallNeighborsCount, visibleTerrainCount);
+        if (mapChanges == null)
         {
             return;
         }
 
-        if (changesCount > room.TileCount)
+        var terrainChanges = mapChanges.TerrainChanges;
+        var wallNeighborsChanges = mapChanges.WallNeighborsChanges;
+        var visibleTerrainChanges = mapChanges.VisibleTerrainChanges;
+        for (short i = 0; i < tileCount; i++)
         {
+            var feature = room.KnownTerrain[i];
+            if (feature != MapFeature.Unexplored)
+            {
+                terrainChanges!.Add((i, feature));
+                var neighbors = room.Neighbors[i];
+                if (neighbors != DirectionFlags.None)
+                {
+                    wallNeighborsChanges!.Add((i, neighbors));
+                }
+            }
+
+            var visibility = room.VisibleTerrain[i];
+            if (visibility != 0)
+            {
+                visibleTerrainChanges!.Add((i, visibility));
+            }
+        }
+
+        change.LevelMapChanges = mapChanges;
+    }
+
+    private static RoomMapChanges? CreateMapChanges(
+        RoomComponent room,
+        RoomChange change,
+        int terrainCount,
+        int wallNeighborsCount,
+        int visibleTerrainCount)
+    {
+        var changeCount = terrainCount + wallNeighborsCount + visibleTerrainCount;
+        if (changeCount == 0)
+        {
+            return null;
+        }
+
+        if (changeCount > room.TileCount)
+        {
+            var tileCount = room.TileCount;
+            var terrain = new MapFeature[tileCount];
+            var visibleTerrain = new byte[tileCount];
+            Array.Copy(room.KnownTerrain, terrain, tileCount);
+            Array.Copy(room.VisibleTerrain, visibleTerrain, tileCount);
             change.LevelMap = new RoomMap
             {
-                Terrain = room.KnownTerrain,
+                Terrain = terrain,
                 WallNeighbors = MaskWallNeighborsToExplored(room),
-                VisibleTerrain = room.VisibleTerrain
+                VisibleTerrain = visibleTerrain
             };
-            return;
+            return null;
         }
 
-        var visibleTerrainChanges = new List<(short, byte)>(room.VisibleTerrainChanges!.Count);
-        foreach (var visibleTerrainChange in room.VisibleTerrainChanges)
-        {
-            visibleTerrainChanges.Add((visibleTerrainChange.Key, visibleTerrainChange.Value));
-        }
-
-        if (knownTerrainChanges.Count == 0 && wallNeighborsChanges.Count == 0)
-        {
-            change.LevelMapChanges = new RoomMapChanges
-            {
-                VisibleTerrainChanges = visibleTerrainChanges
-            };
-            return;
-        }
-
-        change.LevelMapChanges = new RoomMapChanges
+        return new RoomMapChanges
         {
             ChangedProperties = null,
-            TerrainChanges = knownTerrainChanges,
-            WallNeighborsChanges = wallNeighborsChanges,
-            VisibleTerrainChanges = visibleTerrainChanges
+            TerrainChanges = terrainCount == 0 ? null : new List<(short, MapFeature)>(terrainCount),
+            WallNeighborsChanges = wallNeighborsCount == 0
+                ? null
+                : new List<(short, DirectionFlags)>(wallNeighborsCount),
+            VisibleTerrainChanges = visibleTerrainCount == 0
+                ? null
+                : new List<(short, byte)>(visibleTerrainCount)
         };
     }
 

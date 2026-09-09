@@ -3,46 +3,44 @@ param(
     [string] $CoreResultsPath,
 
     [Parameter(Mandatory = $true)]
-    [string] $WebResultsPath
+    [string] $WebResultsPath,
+
+    [switch] $UpdateBaselines,
+
+    [string] $CoreBaselinePath = (Join-Path $PSScriptRoot `
+        'UnicornHack.Core.PerformanceTests\Baselines\PerformanceBaseline.csv'),
+
+    [string] $WebBaselinePath = (Join-Path $PSScriptRoot `
+        'UnicornHack.Web.PerformanceTests\Baselines\PerformanceBaseline.csv')
 )
 
 $ErrorActionPreference = 'Stop'
 $InvariantCulture = [System.Globalization.CultureInfo]::InvariantCulture
 $NumberStyles = [System.Globalization.NumberStyles]::Float -bor [System.Globalization.NumberStyles]::AllowThousands
+$TimeRegressionRatio = 2.0
+$AllocationRegressionRatio = 1.10
 
 function Get-BenchmarkRows([string] $resultsPath, [string] $requiredMethod) {
-    $files = Get-ChildItem -Path $resultsPath -Recurse -Filter '*-report.csv' |
-        Sort-Object LastWriteTimeUtc -Descending
-
-    foreach ($file in $files) {
-        $rows = @(Import-Csv $file.FullName)
-        if ($rows.Method -contains $requiredMethod) {
-            return $rows
-        }
+    $reports = @(Get-ChildItem -Path $resultsPath -Recurse -Filter '*-report.csv' |
+        ForEach-Object {
+            $file = $_
+            $rows = @(Import-Csv $file.FullName)
+            if ($rows.Method -contains $requiredMethod) {
+                [pscustomobject]@{
+                    Rows = $rows
+                    CaseCount = $rows.Count
+                    LastWriteTimeUtc = $file.LastWriteTimeUtc
+                }
+            }
+        })
+    $report = $reports |
+        Sort-Object CaseCount, LastWriteTimeUtc -Descending |
+        Select-Object -First 1
+    if ($null -ne $report) {
+        return @($report.Rows)
     }
 
     throw "No benchmark report containing '$requiredMethod' was found under '$resultsPath'."
-}
-
-function Get-BenchmarkCase(
-    [object[]] $rows,
-    [string] $method,
-    [string] $parameter,
-    [int] $value) {
-    $benchmarkCases = @($rows | Where-Object {
-        $_.Method -eq $method -and $_.$parameter -eq [string] $value
-    })
-    if ($benchmarkCases.Count -eq 0) {
-        throw "Benchmark case '$method' with $parameter=$value was not found."
-    }
-
-    $shortRunMatches = @($benchmarkCases | Where-Object Job -eq 'ShortRun')
-    if ($shortRunMatches.Count -ne 0) {
-        return $shortRunMatches[0]
-    }
-
-    $measuredMatches = @($benchmarkCases | Where-Object Job -ne 'Dry')
-    return ($measuredMatches.Count -ne 0 ? $measuredMatches[0] : $benchmarkCases[0])
 }
 
 function Get-Metric([object] $row, [string] $prefix) {
@@ -56,6 +54,67 @@ function Get-Metric([object] $row, [string] $prefix) {
     return [double]::Parse($row.$column, $NumberStyles, $InvariantCulture)
 }
 
+function Get-OptionalValue([object] $row, [string] $propertyName) {
+    $property = $row.PSObject.Properties[$propertyName]
+    if ($null -eq $property -or $property.Value -eq '?') {
+        return ''
+    }
+
+    return [string] $property.Value
+}
+
+function Format-Metric([double] $value, [string] $format) {
+    return $value.ToString($format, $InvariantCulture)
+}
+
+function Get-CoreBaselineRows([object[]] $rows) {
+    return @($rows | ForEach-Object {
+        [pscustomobject]@{
+            Method = $_.Method
+            MeanMs = Format-Metric (Get-Metric $_ 'Mean ') 'F3'
+            AllocatedKB = Format-Metric (Get-Metric $_ 'Allocated ') 'F2'
+        }
+    } | Sort-Object Method)
+}
+
+function Get-WebBaselineRows([object[]] $rows) {
+    return @($rows | ForEach-Object {
+        $isProjection = $_.Method -eq 'BuildAndSerialize'
+        [pscustomobject]@{
+            Method = $_.Method
+            Scenario = Get-OptionalValue $_ 'Scenario'
+            MeanMs = Format-Metric (Get-Metric $_ 'Mean ') 'F3'
+            AllocatedKB = Format-Metric (Get-Metric $_ 'Allocated ') 'F2'
+            PayloadBytes = if ($isProjection) { [int] (Get-Metric $_ 'Payload B') } else { '' }
+        }
+    } | Sort-Object Method, Scenario)
+}
+
+function Get-CaseKey([object] $row, [string[]] $keyProperties) {
+    return ($keyProperties | ForEach-Object { [string] $row.$_ }) -join '|'
+}
+
+function ConvertTo-CaseMap(
+    [string] $name,
+    [object[]] $rows,
+    [string[]] $keyProperties) {
+    $caseMap = @{}
+    foreach ($row in $rows) {
+        $key = Get-CaseKey $row $keyProperties
+        if ($caseMap.ContainsKey($key)) {
+            throw "$name contains duplicate benchmark case '$key'."
+        }
+
+        $caseMap[$key] = $row
+    }
+
+    return $caseMap
+}
+
+function ConvertTo-BaselineMetric([object] $value) {
+    return [double]::Parse([string] $value, $NumberStyles, $InvariantCulture)
+}
+
 function Assert-Maximum([string] $name, [double] $actual, [double] $maximum) {
     if ($actual -gt $maximum) {
         throw "$name was $($actual.ToString('F3', $InvariantCulture)); maximum is $($maximum.ToString('F3', $InvariantCulture))."
@@ -64,47 +123,92 @@ function Assert-Maximum([string] $name, [double] $actual, [double] $maximum) {
     Write-Host "PASS: $name = $($actual.ToString('F3', $InvariantCulture)) <= $($maximum.ToString('F3', $InvariantCulture))"
 }
 
-$coreRows = @(Get-BenchmarkRows $CoreResultsPath 'Resolve_property')
-$effectThresholds = @(
-    @{ Method = 'Resolve_property'; MaximumRatio = 6.0 },
-    @{ Method = 'Apply_status'; MaximumRatio = 2.0 },
-    @{ Method = 'Query_effective_ability_level'; MaximumRatio = 2.0 },
-    @{ Method = 'Extend_movement_reactive_effects'; MaximumRatio = 2.0 }
-)
+function Assert-Equal([string] $name, [double] $actual, [double] $expected) {
+    if ($actual -ne $expected) {
+        throw "$name was $($actual.ToString('F3', $InvariantCulture)); expected $($expected.ToString('F3', $InvariantCulture))."
+    }
 
-foreach ($threshold in $effectThresholds) {
-    $small = Get-BenchmarkCase $coreRows $threshold.Method 'EffectCount' 16
-    $large = Get-BenchmarkCase $coreRows $threshold.Method 'EffectCount' 64
-    $ratio = (Get-Metric $large 'Mean ') / (Get-Metric $small 'Mean ')
-    Assert-Maximum "$($threshold.Method) 64/16 time ratio" $ratio $threshold.MaximumRatio
+    Write-Host "PASS: $name = $($actual.ToString('F3', $InvariantCulture))"
 }
 
-$abilityRemovalRows = @(Get-BenchmarkRows $CoreResultsPath 'Creature_death')
-$abilityRemoval64 = Get-BenchmarkCase $abilityRemovalRows 'Creature_death' 'Count' 64
-$abilityRemoval256 = Get-BenchmarkCase $abilityRemovalRows 'Creature_death' 'Count' 256
-Assert-Maximum 'Creature death 256/64 ability time ratio' `
-    ((Get-Metric $abilityRemoval256 'Mean ') / (Get-Metric $abilityRemoval64 'Mean ')) 6.0
-Assert-Maximum 'Creature death 256/64 ability allocation ratio' `
-    ((Get-Metric $abilityRemoval256 'Allocated ') / (Get-Metric $abilityRemoval64 'Allocated ')) 4.0
-$creatureInstantiation64 = Get-BenchmarkCase $abilityRemovalRows 'Instantiate_creatures' 'Count' 64
-$creatureInstantiation256 = Get-BenchmarkCase $abilityRemovalRows 'Instantiate_creatures' 'Count' 256
-Assert-Maximum 'Creature instantiation 256/64 time ratio' `
-    ((Get-Metric $creatureInstantiation256 'Mean ') / (Get-Metric $creatureInstantiation64 'Mean ')) 6.0
-Assert-Maximum 'Creature instantiation 256/64 allocation ratio' `
-    ((Get-Metric $creatureInstantiation256 'Allocated ') / (Get-Metric $creatureInstantiation64 'Allocated ')) 4.0
+function Assert-Baseline(
+    [string] $name,
+    [object[]] $actualRows,
+    [object[]] $baselineRows,
+    [string[]] $keyProperties,
+    [double] $timeScale,
+    [switch] $AssertPayload) {
+    $actualByKey = ConvertTo-CaseMap "$name results" $actualRows $keyProperties
+    $baselineByKey = ConvertTo-CaseMap "$name baseline" $baselineRows $keyProperties
+    if ($actualByKey.Count -ne $baselineByKey.Count) {
+        throw "$name results contain $($actualByKey.Count) cases; baseline contains $($baselineByKey.Count)."
+    }
 
+    foreach ($key in $baselineByKey.Keys) {
+        if (-not $actualByKey.ContainsKey($key)) {
+            throw "$name baseline case '$key' was not found in benchmark results."
+        }
+
+        $actual = $actualByKey[$key]
+        $baseline = $baselineByKey[$key]
+        Assert-Maximum "$name $key mean time" `
+            (ConvertTo-BaselineMetric $actual.MeanMs) `
+            ((ConvertTo-BaselineMetric $baseline.MeanMs) * $timeScale * $TimeRegressionRatio)
+        Assert-Maximum "$name $key allocation" `
+            (ConvertTo-BaselineMetric $actual.AllocatedKB) `
+            ((ConvertTo-BaselineMetric $baseline.AllocatedKB) * $AllocationRegressionRatio)
+
+        if ($AssertPayload -and $actual.Method -eq 'BuildAndSerialize') {
+            Assert-Equal "$name $key payload bytes" $actual.PayloadBytes ([int] $baseline.PayloadBytes)
+        }
+    }
+
+    Write-Host "PASS: $name contains all $($baselineByKey.Count) baseline cases."
+}
+
+function Export-Baseline([object[]] $rows, [string] $path) {
+    $directory = Split-Path -Parent $path
+    if (-not (Test-Path -LiteralPath $directory)) {
+        New-Item -ItemType Directory -Path $directory | Out-Null
+    }
+
+    $rows | Export-Csv -LiteralPath $path -NoTypeInformation
+    Write-Host "Updated baseline at '$path'."
+}
+
+$coreRows = @(Get-BenchmarkRows $CoreResultsPath 'Integer_workload')
 $webRows = @(Get-BenchmarkRows $WebResultsPath 'WaitTurn_Delta')
-foreach ($scenario in @('WaitTurn', 'Move')) {
-    $delta64 = Get-BenchmarkCase $webRows "${scenario}_Delta" 'NpcCount' 64
-    $snapshot64 = Get-BenchmarkCase $webRows "${scenario}_FullSnapshot" 'NpcCount' 64
-    $delta24 = Get-BenchmarkCase $webRows "${scenario}_Delta" 'NpcCount' 24
+$coreResults = @(Get-CoreBaselineRows $coreRows)
+$webResults = @(Get-WebBaselineRows $webRows)
 
-    Assert-Maximum "$scenario 64-NPC delta/full time ratio" `
-        ((Get-Metric $delta64 'Mean ') / (Get-Metric $snapshot64 'Mean ')) 1.25
-    Assert-Maximum "$scenario 64-NPC delta/full allocation ratio" `
-        ((Get-Metric $delta64 'Allocated ') / (Get-Metric $snapshot64 'Allocated ')) 0.65
-    Assert-Maximum "$scenario delta allocation 64/24 scaling" `
-        ((Get-Metric $delta64 'Allocated ') / (Get-Metric $delta24 'Allocated ')) 3.0
+if ($UpdateBaselines) {
+    Export-Baseline $coreResults $CoreBaselinePath
+    Export-Baseline $webResults $WebBaselinePath
+    return
 }
 
-Write-Host 'All performance regression thresholds passed.'
+foreach ($baselinePath in @($CoreBaselinePath, $WebBaselinePath)) {
+    if (-not (Test-Path -LiteralPath $baselinePath)) {
+        throw "Performance baseline was not found at '$baselinePath'."
+    }
+}
+
+$coreBaseline = @(Import-Csv -LiteralPath $CoreBaselinePath)
+$webBaseline = @(Import-Csv -LiteralPath $WebBaselinePath)
+$coreKeyProperties = @('Method')
+$webKeyProperties = @('Method', 'Scenario')
+$calibrationResult = @($coreResults | Where-Object Method -eq 'Integer_workload')
+$calibrationBaseline = @($coreBaseline | Where-Object Method -eq 'Integer_workload')
+if ($calibrationResult.Count -ne 1 -or $calibrationBaseline.Count -ne 1) {
+    throw 'Core results and baseline must each contain exactly one Integer_workload calibration case.'
+}
+
+$calibrationMean = ConvertTo-BaselineMetric $calibrationResult[0].MeanMs
+$referenceCalibrationMean = ConvertTo-BaselineMetric $calibrationBaseline[0].MeanMs
+$timeScale = [Math]::Max(1.0, $calibrationMean / $referenceCalibrationMean)
+Write-Host "Calibration mean = $($calibrationMean.ToString('F3', $InvariantCulture)) ms; time threshold scale = $($timeScale.ToString('F3', $InvariantCulture))."
+
+Assert-Baseline 'Core' $coreResults $coreBaseline $coreKeyProperties $timeScale
+Assert-Baseline 'Web' $webResults $webBaseline $webKeyProperties $timeScale -AssertPayload
+
+Write-Host 'All performance regression baselines passed.'

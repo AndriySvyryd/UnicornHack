@@ -1,15 +1,27 @@
-using System.Collections;
 using MessagePack;
 
 namespace UnicornHack.Hubs.ChangeTracking;
 
 [MessagePackObject]
-public partial class EffectChange
+public class EffectChange
 {
     public const int PropertyCount = 5;
+    private byte? _changedProperties = 1;
 
     [Key(0)]
-    public BitArray? ChangedProperties { get; set; } = new BitArray(PropertyCount) { [0] = true };
+    public byte? ChangedProperties
+    {
+        get => _changedProperties;
+        set => _changedProperties = value;
+    }
+
+    private void MarkChanged(int propertyIndex)
+    {
+        if (_changedProperties.HasValue)
+        {
+            _changedProperties = (byte)(_changedProperties.GetValueOrDefault() | (1 << propertyIndex));
+        }
+    }
 
     [Key(1)]
     public EffectType EffectType
@@ -17,7 +29,7 @@ public partial class EffectChange
         get => field; set
         {
             field = value;
-            ChangedProperties?.Set(1, true);
+            MarkChanged(1);
         }
     }
 
@@ -27,7 +39,7 @@ public partial class EffectChange
         get => field; set
         {
             field = value;
-            ChangedProperties?.Set(2, true);
+            MarkChanged(2);
         }
     }
 
@@ -37,7 +49,7 @@ public partial class EffectChange
         get => field; set
         {
             field = value;
-            ChangedProperties?.Set(3, true);
+            MarkChanged(3);
         }
     }
 
@@ -47,7 +59,7 @@ public partial class EffectChange
         get => field; set
         {
             field = value;
-            ChangedProperties?.Set(4, true);
+            MarkChanged(4);
         }
     }
 }

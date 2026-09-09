@@ -1,42 +1,43 @@
+using System.Collections.Specialized;
+using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Knowledge;
 
 namespace UnicornHack.Hubs.ChangeTracking;
 
 public class LogChangeBuilder
 {
-    private int _lastSentLogId;
+    private readonly List<LogEntry> _pendingEntries = [];
+    private readonly PlayerComponent _player;
 
-    public bool HasChanges(GameEntity playerEntity)
-        => playerEntity.Player!.LogEntries.Any(e => e.Id > _lastSentLogId);
-
-    public void Reset(GameEntity playerEntity)
+    public LogChangeBuilder(GameEntity playerEntity)
     {
-        var logEntries = playerEntity.Player!.LogEntries;
-        if (logEntries.Count > 0)
-        {
-            _lastSentLogId = logEntries.Max(e => e.Id);
-        }
+        _player = playerEntity.Player!;
+        _player.LogEntries.CollectionChanged += OnLogEntriesChanged;
     }
 
-    public Dictionary<int, LogEntryChange>? GetSerializedLogEntries(GameEntity playerEntity)
+    public bool HasChanges => _pendingEntries.Count != 0;
+
+    public void Reset() => _pendingEntries.Clear();
+
+    public void Unregister()
+        => _player.LogEntries.CollectionChanged -= OnLogEntriesChanged;
+
+    public Dictionary<int, LogEntryChange>? GetSerializedLogEntries()
     {
-        var logEntries = new Dictionary<int, LogEntryChange>();
-        foreach (var entry in playerEntity.Player!.LogEntries
-                     .Where(e => e.Id > _lastSentLogId)
-                     .OrderBy(e => e, LogEntry.Comparer))
+        if (_pendingEntries.Count == 0)
         {
-            logEntries[entry.Id] = SerializeLogEntry(entry);
+            return null;
         }
 
-        foreach (var id in logEntries.Keys)
+        _pendingEntries.Sort(LogEntry.Comparer);
+        var serialized = new Dictionary<int, LogEntryChange>(_pendingEntries.Count);
+        foreach (var entry in _pendingEntries)
         {
-            if (id > _lastSentLogId)
-            {
-                _lastSentLogId = id;
-            }
+            serialized.Add(entry.Id, SerializeLogEntry(entry));
         }
 
-        return logEntries.Count > 0 ? logEntries : null;
+        _pendingEntries.Clear();
+        return serialized;
     }
 
     public static LogEntryChange SerializeLogEntry(LogEntry entry)
@@ -46,4 +47,17 @@ public class LogChangeBuilder
             Message = entry.Message,
             Ticks = entry.Tick
         };
+
+    private void OnLogEntriesChanged(object? sender, NotifyCollectionChangedEventArgs args)
+    {
+        if (args.NewItems == null)
+        {
+            return;
+        }
+
+        foreach (LogEntry entry in args.NewItems)
+        {
+            _pendingEntries.Add(entry);
+        }
+    }
 }

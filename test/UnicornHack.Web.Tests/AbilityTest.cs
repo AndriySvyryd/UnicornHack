@@ -89,7 +89,7 @@ public class AbilityTest
         var delta = changeSets
             .SelectMany(changeSet => changeSet.PlayerState.Abilities ?? [])
             .Single(pair => pair.Key == attack.Id).Value;
-        Assert.True(delta.ChangedProperties![14]);
+        Assert.True(delta.ChangedProperties.IsPropertyChanged(14));
         Assert.Equal(23, delta.Noise);
 
         ClientStateHelpers.ApplyChangeSets(baseline, changeSets);
@@ -294,7 +294,7 @@ public class AbilityTest
 
         var toggledAbility = player.Entity.ActiveEffects!.Abilities
             .Single(entity => entity.Ability!.Name == "Surge of Luck");
-        listener.Reset(manager);
+        listener.RegisterPlayerBuilder(player.Entity, manager);
 
         WebTestHelper.PerformAndVerify(
             player, listener, services, ActorActionType.SetAbilitySlot, toggledAbility.Id, 2);

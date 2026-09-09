@@ -1,4 +1,3 @@
-using System.Collections;
 using MessagePack;
 using UnicornHack.Hubs.ChangeTracking;
 
@@ -9,14 +8,14 @@ public sealed class ActorAttributesFormatter : FixedArrayFormatter<ActorAttribut
     public static readonly ActorAttributesFormatter Instance = new();
     protected override int FieldCount => 46;
 
-    protected override BitArray? GetChangedProperties(ActorAttributes value)
-        => value.ChangedProperties;
+    protected override bool IsDeleted(ActorAttributes value)
+        => value.ChangedProperties == 0;
 
     protected override void SerializeFields(
         ref MessagePackWriter writer, ActorAttributes value, MessagePackSerializerOptions options)
     {
         var resolver = options.Resolver;
-        resolver.GetFormatterWithVerify<BitArray?>().Serialize(ref writer, value.ChangedProperties, options);
+        resolver.GetFormatterWithVerify<ulong?>().Serialize(ref writer, value.ChangedProperties, options);
         writer.Write(value.Name);
         writer.Write(value.Description);
         writer.Write(value.Level);
@@ -70,7 +69,7 @@ public sealed class ActorAttributesFormatter : FixedArrayFormatter<ActorAttribut
         var resolver = options.Resolver;
         switch (field)
         {
-            case 0: value.ChangedProperties = resolver.GetFormatterWithVerify<BitArray?>().Deserialize(ref reader, options); break;
+            case 0: value.ChangedProperties = resolver.GetFormatterWithVerify<ulong?>().Deserialize(ref reader, options); break;
             case 1: value.Name = reader.ReadString(); break;
             case 2: value.Description = reader.ReadString() ?? ""; break;
             case 3: value.Level = reader.ReadInt32(); break;

@@ -79,7 +79,6 @@ namespace MessagePack.Resolvers
                 { typeof(List<TurnChangeSet>), 32 },
                 { typeof(RoomMap), 33 },
                 { typeof(RoomMapChanges), 34 },
-                { typeof(AttackSummary), 35 },
                 { typeof(ActorActionChange), 36 },
                 { typeof(LevelMap), 37 },
                 { typeof(RoomEntry), 38 },
@@ -180,8 +179,6 @@ namespace MessagePack.Resolvers
                     return RoomMapFormatter.Instance;
                 case 34:
                     return RoomMapChangesFormatter.Instance;
-                case 35:
-                    return AttackSummaryFormatter.Instance;
                 case 36:
                     return NextActionChangeFormatter.Instance;
                 case 37:

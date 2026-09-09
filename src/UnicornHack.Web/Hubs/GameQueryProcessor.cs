@@ -140,7 +140,7 @@ public static class GameQueryProcessor
     {
         if (!isIdentified)
         {
-            return new ActorAttributes { ChangedProperties = SerializationContext.DeletedBitArray };
+            return new ActorAttributes { ChangedProperties = 0 };
         }
 
         var being = actorEntity!.Being!;
@@ -311,7 +311,7 @@ public static class GameQueryProcessor
     {
         if (!isIdentified)
         {
-            return new ItemAttributes { ChangedProperties = SerializationContext.DeletedBitArray };
+            return new ItemAttributes { ChangedProperties = 0 };
         }
 
         var manager = itemEntity!.Manager;

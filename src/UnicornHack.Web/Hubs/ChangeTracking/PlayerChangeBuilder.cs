@@ -1,3 +1,4 @@
+using System.Buffers;
 using UnicornHack.Services;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
@@ -8,17 +9,35 @@ namespace UnicornHack.Hubs.ChangeTracking;
 
 public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
 {
+    private const uint NextActionTickDirty = 1u << 5;
+    private const uint XpDirty = 1u << 10;
+    private const uint HpDirty = 1u << 11;
+    private const uint MaxHpDirty = 1u << 12;
+    private const uint EpDirty = 1u << 13;
+    private const uint MaxEpDirty = 1u << 14;
+    private const uint ReservedEpDirty = 1u << 15;
+    private const uint FortuneDirty = 1u << 16;
+
+    private struct PendingScalarChanges
+    {
+        public uint DirtyMask;
+        public int NextActionTick;
+        public int XP;
+        public int Hp;
+        public int MaxHp;
+        public int Ep;
+        public int MaxEp;
+        public int ReservedEp;
+        public int Fortune;
+    }
+
     private readonly int _playerEntityId;
     private readonly AbilityChangeBuilder _abilityBuilder;
     private readonly EffectChangeBuilder _effectBuilder;
-    private readonly LogChangeBuilder _logBuilder = new();
+    private readonly LogChangeBuilder _logBuilder;
+    private readonly RoomChangeBuilder _roomChangeBuilder;
 
-    private PlayerChange _pendingChange = new();
-
-    public RoomChangeBuilder RoomChangeBuilder
-    {
-        get;
-    }
+    private PendingScalarChanges _pendingScalars;
 
     public int PlayerEntityId => _playerEntityId;
 
@@ -44,29 +63,37 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
         _playerEntityId = playerEntity.Id;
         LastSentTick = playerEntity.Game.CurrentTick;
         LastSentRoomId = playerEntity.Position?.RoomId ?? 0;
-        RoomChangeBuilder = roomChangeBuilder;
+        _roomChangeBuilder = roomChangeBuilder;
 
         _abilityBuilder = new AbilityChangeBuilder(playerEntity.Id);
+        _abilityBuilder.ResetProjection(playerEntity);
         _abilityBuilder.ResetAccumulatorPlaceholders(playerEntity);
         _effectBuilder = new EffectChangeBuilder(playerEntity.Id);
-        _logBuilder.Reset(playerEntity);
+        _logBuilder = new LogChangeBuilder(playerEntity);
     }
 
     public bool HasObservableChanges(GameManager manager)
     {
         var playerEntity = manager.FindEntity(_playerEntityId);
         var position = playerEntity?.Position;
+        var hasAbilityChanges = _abilityBuilder.HasChanges || _abilityBuilder.HasAccumulatorChanges;
+        var hasEffectChanges = _effectBuilder.HasChanges;
+
         // The room the player occupies is tracked so the client keeps the actor list up to date.
         var currentRoom = position?.RoomEntity.Room;
-        if (RoomChangeBuilder.HasChanges(currentRoom)
-            || HasScalarChanges() || _abilityBuilder.HasChanges
-            || _abilityBuilder.HasAccumulatorChanges
-            || _effectBuilder.HasChanges)
+        var hasRoomChanges = false;
+        if (playerEntity != null && currentRoom != null)
+        {
+            var context = new SerializationContext(null, playerEntity, manager.Game.Services);
+            hasRoomChanges = _roomChangeBuilder.HasChanges(currentRoom, in context);
+        }
+
+        if (hasRoomChanges || HasScalarChanges() || hasAbilityChanges || hasEffectChanges)
         {
             return true;
         }
 
-        if (playerEntity != null && _logBuilder.HasChanges(playerEntity))
+        if (_logBuilder.HasChanges)
         {
             return true;
         }
@@ -100,6 +127,7 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
         var position = playerEntity.Position;
         var currentRoomEntity = position?.RoomEntity;
         var currentRoomId = currentRoomEntity?.Id ?? 0;
+        var context = new SerializationContext(null, playerEntity, services);
         if (currentRoomEntity == null)
         {
             // The player has no position at all (e.g. being torn down); there is no room to send.
@@ -109,85 +137,79 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
         {
             // Player moved to a different level. Emit a full snapshot.
             change.Room = RoomChangeBuilder.SerializeRoom(
-                currentRoomEntity, new SerializationContext(null!, playerEntity, services));
-            RoomChangeBuilder.ResetActorBaseline(playerEntity);
+                currentRoomEntity, in context, _roomChangeBuilder);
+            _roomChangeBuilder.ResetRoomBaseline(playerEntity);
             LastSentRoomId = currentRoomId;
         }
         else
         {
-            var levelChangeSet = RoomChangeBuilder.GetSerializedRoom(
-                currentRoomEntity, playerEntity, services);
+            var levelChangeSet = _roomChangeBuilder.GetSerializedRoom(currentRoomEntity, in context);
             if (levelChangeSet != null)
             {
                 change.Room = levelChangeSet;
             }
+
         }
 
-        Dictionary<int, AbilityChange>? serializedAbilities = null;
         if (_abilityBuilder.HasChanges || _abilityBuilder.HasAccumulatorChanges)
         {
-            serializedAbilities = new Dictionary<int, AbilityChange>();
-            if (_abilityBuilder.HasChanges)
+            var serializedAbilities = _abilityBuilder.BuildChanges(in context, playerEntity);
+            if (serializedAbilities != null)
             {
-                _abilityBuilder.WriteTo(serializedAbilities, new SerializationContext(null!, playerEntity, services));
+                change.Abilities = serializedAbilities;
             }
-
-            _abilityBuilder.WriteAccumulatorPlaceholdersTo(serializedAbilities, playerEntity);
-            change.Abilities = serializedAbilities;
         }
 
         if (_effectBuilder.HasChanges)
         {
-            var effectChanges = new Dictionary<int, EffectChange>();
-            _effectBuilder.WriteTo(effectChanges);
-            change.Effects = effectChanges;
+            change.Effects = _effectBuilder.BuildChanges();
         }
 
-        var serializedLog = _logBuilder.GetSerializedLogEntries(playerEntity);
+        var serializedLog = _logBuilder.GetSerializedLogEntries();
         if (serializedLog != null)
         {
             change.Log = serializedLog;
         }
 
-        var pendingBits = _pendingChange.ChangedProperties!;
-        if (pendingBits[5])
+        var pendingMask = _pendingScalars.DirtyMask;
+        if ((pendingMask & NextActionTickDirty) != 0)
         {
-            change.NextActionTick = _pendingChange.NextActionTick;
+            change.NextActionTick = _pendingScalars.NextActionTick;
         }
 
-        if (pendingBits[10])
+        if ((pendingMask & XpDirty) != 0)
         {
-            change.XP = _pendingChange.XP;
+            change.XP = _pendingScalars.XP;
         }
 
-        if (pendingBits[11])
+        if ((pendingMask & HpDirty) != 0)
         {
-            change.Hp = _pendingChange.Hp;
+            change.Hp = _pendingScalars.Hp;
         }
 
-        if (pendingBits[12])
+        if ((pendingMask & MaxHpDirty) != 0)
         {
-            change.MaxHp = _pendingChange.MaxHp;
+            change.MaxHp = _pendingScalars.MaxHp;
         }
 
-        if (pendingBits[13])
+        if ((pendingMask & EpDirty) != 0)
         {
-            change.Ep = _pendingChange.Ep;
+            change.Ep = _pendingScalars.Ep;
         }
 
-        if (pendingBits[14])
+        if ((pendingMask & MaxEpDirty) != 0)
         {
-            change.MaxEp = _pendingChange.MaxEp;
+            change.MaxEp = _pendingScalars.MaxEp;
         }
 
-        if (pendingBits[15])
+        if ((pendingMask & ReservedEpDirty) != 0)
         {
-            change.ReservedEp = _pendingChange.ReservedEp;
+            change.ReservedEp = _pendingScalars.ReservedEp;
         }
 
-        if (pendingBits[16])
+        if ((pendingMask & FortuneDirty) != 0)
         {
-            change.Fortune = _pendingChange.Fortune;
+            change.Fortune = _pendingScalars.Fortune;
         }
 
         return change;
@@ -195,17 +217,24 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
 
     public void Reset(GameEntity playerEntity)
     {
-        _pendingChange = new PlayerChange();
+        _pendingScalars = default;
         _abilityBuilder.Reset();
-        _abilityBuilder.ResetAccumulatorPlaceholders(playerEntity);
+        _abilityBuilder.ResetAccumulatorChanges();
         _effectBuilder.Reset();
 
         LastSentRoomId = playerEntity.Position?.RoomId ?? 0;
-        _logBuilder.Reset(playerEntity);
+        _logBuilder.Reset();
+    }
+
+    internal void ResetProjection(GameEntity playerEntity)
+    {
+        Reset(playerEntity);
+        _abilityBuilder.ResetProjection(playerEntity);
+        _abilityBuilder.ResetAccumulatorPlaceholders(playerEntity);
     }
 
     public static PlayerChange SerializePlayer(
-        GameEntity playerEntity, SerializationContext context)
+        GameEntity playerEntity, in SerializationContext context)
     {
         var player = playerEntity.Player!;
         var being = playerEntity.Being!;
@@ -214,29 +243,62 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
         var onMap = position is { Cell: not null };
         var serializedLevel = position == null
             ? null
-            : RoomChangeBuilder.SerializeRoom(position.RoomEntity, context);
+            : RoomChangeBuilder.SerializeRoom(position.RoomEntity, in context);
 
-        var abilities = new Dictionary<int, AbilityChange>();
-        foreach (var ability in being.Abilities
-                     .Select(a => a.Ability!)
-                     .Where(a => !a.IsLeveledSupplement
-                                 && AbilityChangeBuilder.IsClientVisible(a))
-                     .Select(a => a.Entity))
+        var visibleAbilityCount = 0;
+        foreach (var abilityEntity in being.Abilities)
         {
-            abilities.Add(ability.Id, AbilityChangeBuilder.SerializeAbility(ability, context.Services));
+            var ability = abilityEntity.Ability!;
+            if (!ability.IsLeveledSupplement && AbilityChangeBuilder.IsClientVisible(ability))
+            {
+                visibleAbilityCount++;
+            }
         }
 
-        foreach (var (id, placeholder) in AbilityChangeBuilder.GetAccumulatorPlaceholders(playerEntity))
+        var placeholders = AbilityChangeBuilder.GetAccumulatorPlaceholders(playerEntity);
+        var abilities = new Dictionary<int, AbilityChange>(visibleAbilityCount + placeholders.Count);
+        foreach (var abilityEntity in being.Abilities)
+        {
+            var ability = abilityEntity.Ability!;
+            if (!ability.IsLeveledSupplement && AbilityChangeBuilder.IsClientVisible(ability))
+            {
+                abilities.Add(
+                    abilityEntity.Id,
+                    AbilityChangeBuilder.SerializeAbility(abilityEntity, context.Services));
+            }
+        }
+
+        foreach (var (id, placeholder) in placeholders)
         {
             abilities.Add(id, placeholder);
         }
 
-        var logEntries = new Dictionary<int, LogEntryChange>();
-        foreach (var logEntry in player.LogEntries
-                     .OrderBy(e => e, LogEntry.Comparer)
-                     .Skip(Math.Max(0, player.LogEntries.Count - 10)))
+        var logCount = player.LogEntries.Count;
+        var serializedLogCount = Math.Min(logCount, 10);
+        var logEntries = new Dictionary<int, LogEntryChange>(serializedLogCount);
+        if (logCount != 0)
         {
-            logEntries.Add(logEntry.Id, LogChangeBuilder.SerializeLogEntry(logEntry));
+            var logBuffer = ArrayPool<LogEntry>.Shared.Rent(logCount);
+            var index = 0;
+            try
+            {
+                foreach (var logEntry in player.LogEntries)
+                {
+                    logBuffer[index++] = logEntry;
+                }
+
+                Array.Sort(logBuffer, 0, logCount, LogEntry.Comparer);
+                for (var i = logCount - serializedLogCount; i < logCount; i++)
+                {
+                    var logEntry = logBuffer[i];
+                    logEntries.Add(logEntry.Id, LogChangeBuilder.SerializeLogEntry(logEntry));
+                }
+            }
+            finally
+            {
+                Array.Clear(logBuffer, 0, logCount);
+                ArrayPool<LogEntry>.Shared.Return(logBuffer);
+            }
         }
 
         return new PlayerChange
@@ -273,6 +335,7 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
         manager.RoomActors.RemoveListener(this);
         _abilityBuilder.UnregisterFromGroups(manager);
         _effectBuilder.UnregisterFromGroups(manager);
+        _logBuilder.Unregister();
     }
 
     void IEntityChangeListener<GameEntity>.OnEntityAdded(in EntityChange<GameEntity> entityChange)
@@ -286,19 +349,7 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
     void IEntityChangeListener<GameEntity>.OnPropertyValuesChanged(in EntityChange<GameEntity> entityChange)
         => HandleScalarPropertyChanges(entityChange);
 
-    private bool HasScalarChanges()
-    {
-        var bits = _pendingChange.ChangedProperties!;
-        for (var i = 5; i < PlayerChange.PropertyCount; i++)
-        {
-            if (bits[i])
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
+    private bool HasScalarChanges() => _pendingScalars.DirtyMask != 0;
 
     private bool HandleScalarPropertyChanges(in EntityChange<GameEntity> entityChange)
     {
@@ -318,7 +369,8 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
             {
                 if (propertyName == nameof(PlayerComponent.NextActionTick))
                 {
-                    _pendingChange.NextActionTick = entityChange.Entity.Player!.NextActionTick ?? 0;
+                    _pendingScalars.NextActionTick = entityChange.Entity.Player!.NextActionTick ?? 0;
+                    _pendingScalars.DirtyMask |= NextActionTickDirty;
                     handled = true;
                 }
             }
@@ -327,35 +379,41 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
                 switch (propertyName)
                 {
                     case nameof(BeingComponent.ExperiencePoints):
-                        _pendingChange.XP = entityChange.Entity.Being!.ExperiencePoints;
+                        _pendingScalars.XP = entityChange.Entity.Being!.ExperiencePoints;
+                        _pendingScalars.DirtyMask |= XpDirty;
                         handled = true;
                         break;
                     case nameof(BeingComponent.HitPoints):
-                        _pendingChange.Hp = entityChange.Entity.Being!.HitPoints;
+                        _pendingScalars.Hp = entityChange.Entity.Being!.HitPoints;
+                        _pendingScalars.DirtyMask |= HpDirty;
                         handled = true;
                         break;
                     case nameof(BeingComponent.HitPointMaximum):
-                        _pendingChange.MaxHp = entityChange.Entity.Being!.HitPointMaximum;
+                        _pendingScalars.MaxHp = entityChange.Entity.Being!.HitPointMaximum;
+                        _pendingScalars.DirtyMask |= MaxHpDirty;
                         handled = true;
                         break;
                     case nameof(BeingComponent.EnergyPoints):
-                        _pendingChange.Ep = entityChange.Entity.Being!.EnergyPoints;
+                        _pendingScalars.Ep = entityChange.Entity.Being!.EnergyPoints;
+                        _pendingScalars.DirtyMask |= EpDirty;
                         handled = true;
                         break;
                     case nameof(BeingComponent.EnergyPointMaximum):
-                        _pendingChange.MaxEp = entityChange.Entity.Being!.EnergyPointMaximum;
+                        _pendingScalars.MaxEp = entityChange.Entity.Being!.EnergyPointMaximum;
+                        _pendingScalars.DirtyMask |= MaxEpDirty;
                         handled = true;
                         break;
                     case nameof(BeingComponent.ReservedEnergyPoints):
-                        _pendingChange.ReservedEp = entityChange.Entity.Being!.ReservedEnergyPoints;
+                        _pendingScalars.ReservedEp = entityChange.Entity.Being!.ReservedEnergyPoints;
+                        _pendingScalars.DirtyMask |= ReservedEpDirty;
                         handled = true;
                         break;
                     case nameof(BeingComponent.EntropyState):
-                        _pendingChange.Fortune = entityChange.Entity.Being!.EntropyState;
+                        _pendingScalars.Fortune = entityChange.Entity.Being!.EntropyState;
+                        _pendingScalars.DirtyMask |= FortuneDirty;
                         handled = true;
                         break;
                     case nameof(BeingComponent.CanPerceiveIntention):
-                        RoomChangeBuilder.TrackObserverTelegraphVisibility(entityChange.Entity);
                         handled = true;
                         break;
                 }

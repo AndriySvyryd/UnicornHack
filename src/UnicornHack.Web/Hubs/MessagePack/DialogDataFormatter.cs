@@ -1,4 +1,3 @@
-using System.Collections;
 using MessagePack;
 using MessagePack.Formatters;
 using UnicornHack.Hubs.ChangeTracking;
@@ -20,25 +19,21 @@ public sealed class DialogDataFormatter : IMessagePackFormatter<DialogData?>
 
         var resolver = options.Resolver;
         var values = value.ChangedProperties;
-        writer.WriteArrayHeader(ChangeSetFormatterHelper.GetSerializedLength(values, 13));
-        resolver.GetFormatterWithVerify<BitArray?>().Serialize(ref writer, value.ChangedProperties, options);
-        if (values is { Length: 1 })
-        {
-            return;
-        }
+        writer.WriteArrayHeader(values.GetSerializedLength(13));
+        resolver.GetFormatterWithVerify<ushort?>().Serialize(ref writer, values, options);
 
-        if (values == null || values[1]) WriteNullableInt(ref writer, value.AbilitySlot);
-        if (values == null || values[2]) resolver.GetFormatterWithVerify<Dictionary<int, AbilityChange>>().Serialize(ref writer, value.SlottableAbilities, options);
-        if (values == null || values[3]) resolver.GetFormatterWithVerify<ActorAttributes?>().Serialize(ref writer, value.PlayerAttributes, options);
-        if (values == null || values[4]) resolver.GetFormatterWithVerify<PlayerInventory?>().Serialize(ref writer, value.PlayerInventory, options);
-        if (values == null || values[5]) resolver.GetFormatterWithVerify<PlayerAdaptations?>().Serialize(ref writer, value.PlayerAdaptations, options);
-        if (values == null || values[6]) resolver.GetFormatterWithVerify<PlayerSkills?>().Serialize(ref writer, value.PlayerSkills, options);
-        if (values == null || values[7]) resolver.GetFormatterWithVerify<AbilityAttributes?>().Serialize(ref writer, value.AbilityAttributes, options);
-        if (values == null || values[8]) resolver.GetFormatterWithVerify<ActorAttributes?>().Serialize(ref writer, value.ActorAttributes, options);
-        if (values == null || values[9]) resolver.GetFormatterWithVerify<ItemAttributes?>().Serialize(ref writer, value.ItemAttributes, options);
-        if (values == null || values[10]) writer.Write(value.StaticDescription);
-        if (values == null || values[11]) resolver.GetFormatterWithVerify<PostGameStatistics?>().Serialize(ref writer, value.PostGameStatistics, options);
-        if (values == null || values[12]) resolver.GetFormatterWithVerify<LevelMap?>().Serialize(ref writer, value.LevelMap, options);
+        if (values.IsPropertyChanged(1)) WriteNullableInt(ref writer, value.AbilitySlot);
+        if (values.IsPropertyChanged(2)) resolver.GetFormatterWithVerify<Dictionary<int, AbilityChange>>().Serialize(ref writer, value.SlottableAbilities, options);
+        if (values.IsPropertyChanged(3)) resolver.GetFormatterWithVerify<ActorAttributes?>().Serialize(ref writer, value.PlayerAttributes, options);
+        if (values.IsPropertyChanged(4)) resolver.GetFormatterWithVerify<PlayerInventory?>().Serialize(ref writer, value.PlayerInventory, options);
+        if (values.IsPropertyChanged(5)) resolver.GetFormatterWithVerify<PlayerAdaptations?>().Serialize(ref writer, value.PlayerAdaptations, options);
+        if (values.IsPropertyChanged(6)) resolver.GetFormatterWithVerify<PlayerSkills?>().Serialize(ref writer, value.PlayerSkills, options);
+        if (values.IsPropertyChanged(7)) resolver.GetFormatterWithVerify<AbilityAttributes?>().Serialize(ref writer, value.AbilityAttributes, options);
+        if (values.IsPropertyChanged(8)) resolver.GetFormatterWithVerify<ActorAttributes?>().Serialize(ref writer, value.ActorAttributes, options);
+        if (values.IsPropertyChanged(9)) resolver.GetFormatterWithVerify<ItemAttributes?>().Serialize(ref writer, value.ItemAttributes, options);
+        if (values.IsPropertyChanged(10)) writer.Write(value.StaticDescription);
+        if (values.IsPropertyChanged(11)) resolver.GetFormatterWithVerify<PostGameStatistics?>().Serialize(ref writer, value.PostGameStatistics, options);
+        if (values.IsPropertyChanged(12)) resolver.GetFormatterWithVerify<LevelMap?>().Serialize(ref writer, value.LevelMap, options);
     }
 
     public DialogData? Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
@@ -51,10 +46,10 @@ public sealed class DialogDataFormatter : IMessagePackFormatter<DialogData?>
         var resolver = options.Resolver;
         var length = reader.ReadArrayHeader();
         var value = new DialogData();
-        BitArray? values = null;
+        ushort? values = null;
         for (var field = 0; field < length; field++)
         {
-            if (values != null && !values[field])
+            if (values.HasValue && !values.IsPropertyChanged(field))
             {
                 continue;
             }
@@ -62,8 +57,8 @@ public sealed class DialogDataFormatter : IMessagePackFormatter<DialogData?>
             switch (field)
             {
                 case 0:
-                    values = resolver.GetFormatterWithVerify<BitArray?>().Deserialize(ref reader, options);
-                    if (values != null) length = values.Length;
+                    values = resolver.GetFormatterWithVerify<ushort?>().Deserialize(ref reader, options);
+                    if (values.HasValue) length = values.GetValueOrDefault() == 0 ? 1 : 13;
                     value.ChangedProperties = values;
                     break;
                 case 1: value.AbilitySlot = ReadNullableInt(ref reader); break;

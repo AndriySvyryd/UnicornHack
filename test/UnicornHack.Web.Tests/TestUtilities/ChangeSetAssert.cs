@@ -113,6 +113,7 @@ public static class ChangeSetAssert
             Assert.True(exp.Ep == act.Ep, $"Actor {kvp.Key}: Ep expected {exp.Ep}, actual {act.Ep}");
             Assert.True(exp.MaxEp == act.MaxEp, $"Actor {kvp.Key}: MaxEp expected {exp.MaxEp}, actual {act.MaxEp}");
             Assert.True(exp.NextActionTick == act.NextActionTick, $"Actor {kvp.Key}: NextActionTick expected {exp.NextActionTick}, actual {act.NextActionTick}");
+            AssertActorActionEqual(kvp.Key, exp.NextAction, act.NextAction);
         }
     }
 
@@ -183,19 +184,16 @@ public static class ChangeSetAssert
     /// <summary>
     ///     Validates a sequence of change sets and applies them to <paramref name="runningState" />.
     ///     For each change set the running state represents what the client has just before
-    ///     receiving it; any property bit set in the change set must differ from the running
-    ///     state value (otherwise the server is wasting bandwidth on a value the client
-    ///     already has). After validation, the change set is applied to the running state so
-    ///     the next iteration compares against the just-updated state.
+    ///     receiving it. Item, connection, and effect property bits must differ from the
+    ///     running state. Actor and ability projections intentionally trust event masks and
+    ///     may include rare same-turn round trips. After validation, the change set is applied
+    ///     so the next iteration compares against the just-updated state.
     /// </summary>
     public static void ApplyAndAssertNoRedundantChanges(PlayerChange runningState, List<TurnChangeSet> changeSets)
     {
-        // Bits 13–16 (attack summaries) are excluded from this check: they are derived
-        // from many inputs (positions, HP, equipment) that can oscillate legitimately
-        // across a multi-turn sequence, and the server can't know which value the
-        // client received via the initial GetState snapshot. Their non-redundancy is
-        // enforced by the production-code OnAfterEmit cache in ActorChangeBuilder
-        // (covered by ChangeBuilderTest's targeted assertions).
+        // Assessment deltas are derived from many inputs that can oscillate across a
+        // multi-turn sequence. Their non-redundancy is enforced by ActorChangeBuilder's
+        // persistent observer projection and covered by targeted ChangeBuilderTest assertions.
         foreach (var changeSet in changeSets)
         {
             var player = changeSet.PlayerState;
@@ -205,28 +203,43 @@ public static class ChangeSetAssert
             {
                 if (level.Actors != null)
                 {
-                    AssertNoRedundantEntityChanges(level.Actors, runningState.Room!.Actors!, AssertActorPropertiesChanged);
+                    AssertNoRedundantEntityChanges(
+                        level.Actors, runningState.Room!.Actors!,
+                        change => change.ChangedProperties is null or 0,
+                        AssertActorPropertiesChanged);
                 }
 
                 if (level.Items != null)
                 {
-                    AssertNoRedundantEntityChanges(level.Items, runningState.Room!.Items!, AssertItemPropertiesChanged);
+                    AssertNoRedundantEntityChanges(
+                        level.Items, runningState.Room!.Items!,
+                        change => change.ChangedProperties is null or 0,
+                        AssertItemPropertiesChanged);
                 }
 
                 if (level.Connections != null)
                 {
-                    AssertNoRedundantEntityChanges(level.Connections, runningState.Room!.Connections!, AssertConnectionPropertiesChanged);
+                    AssertNoRedundantEntityChanges(
+                        level.Connections, runningState.Room!.Connections!,
+                        change => change.ChangedProperties is null or 0,
+                        AssertConnectionPropertiesChanged);
                 }
             }
 
-            if (player.ChangedProperties![7] && player.Abilities != null)
+            if (player.ChangedProperties.IsPropertyChanged(7) && player.Abilities != null)
             {
-                AssertNoRedundantEntityChanges(player.Abilities, runningState.Abilities!, AssertAbilityPropertiesChanged);
+                AssertNoRedundantEntityChanges(
+                    player.Abilities, runningState.Abilities!,
+                    change => change.ChangedProperties is null or 0,
+                    AssertAbilityPropertiesChanged);
             }
 
-            if (player.ChangedProperties[8] && player.Effects != null)
+            if (player.ChangedProperties.IsPropertyChanged(8) && player.Effects != null)
             {
-                AssertNoRedundantEntityChanges(player.Effects, runningState.Effects!, AssertEffectPropertiesChanged);
+                AssertNoRedundantEntityChanges(
+                    player.Effects, runningState.Effects!,
+                    change => change.ChangedProperties is null or 0,
+                    AssertEffectPropertiesChanged);
             }
 
             ClientStateHelpers.ApplyDelta(runningState, player);
@@ -236,19 +249,12 @@ public static class ChangeSetAssert
     private static void AssertNoRedundantEntityChanges<TChange>(
         Dictionary<int, TChange> changes,
         Dictionary<int, TChange> baselineEntities,
+        Func<TChange, bool> shouldSkip,
         Action<int, TChange, TChange> assertPropertyChanged)
-        where TChange : IChangeWithState
     {
         foreach (var (id, change) in changes)
         {
-            var bits = change.ChangedProperties;
-
-            if (bits == null)
-            {
-                continue;
-            }
-
-            if (bits.Length == 1)
+            if (shouldSkip(change))
             {
                 continue;
             }
@@ -262,10 +268,10 @@ public static class ChangeSetAssert
 
     private static void AssertActorPropertiesChanged(int id, ActorChange change, ActorChange baseline)
     {
-        var bits = change.ChangedProperties!;
-        for (var i = 1; i < bits.Length; i++)
+        var bits = change.ChangedProperties;
+        for (var i = 1; i < ActorChange.PropertyCount; i++)
         {
-            if (!bits[i])
+            if (!bits.IsPropertyChanged(i))
             {
                 continue;
             }
@@ -283,23 +289,35 @@ public static class ChangeSetAssert
                 9 => change.Ep == baseline.Ep,
                 10 => change.MaxEp == baseline.MaxEp,
                 11 => change.NextActionTick == baseline.NextActionTick,
-                12 => NextActionEquals(change.NextAction, baseline.NextAction),
-                // Bits 13-16 (attack summaries) are derived from inputs that may oscillate
-                // legitimately within a multi-turn sequence and detecting their redundancy
-                // would add more perf impact than it's worth.
+                12 => ActorActionsEqual(change.NextAction, baseline.NextAction),
                 _ => false
             };
 
             Assert.False(same, $"Actor {id}: property index {i} flagged but value unchanged from baseline");
         }
     }
+    
+    private static void AssertActorActionEqual(int id, ActorActionChange? expected, ActorActionChange? actual)
+        => Assert.True(
+            ActorActionsEqual(expected, actual),
+            $"Actor {id}: NextAction differs");
+
+    private static bool ActorActionsEqual(ActorActionChange? expected, ActorActionChange? actual)
+        => expected == null
+            ? actual == null
+            : actual != null
+              && expected.Type == actual.Type
+              && expected.Name == actual.Name
+              && expected.Target == actual.Target
+              && expected.TargetingShape == actual.TargetingShape
+              && expected.TargetingShapeSize == actual.TargetingShapeSize;
 
     private static void AssertItemPropertiesChanged(int id, ItemChange change, ItemChange baseline)
     {
-        var bits = change.ChangedProperties!;
-        for (var i = 1; i < bits.Length; i++)
+        var bits = change.ChangedProperties;
+        for (var i = 1; i < ItemChange.PropertyCount; i++)
         {
-            if (!bits[i])
+            if (!bits.IsPropertyChanged(i))
             {
                 continue;
             }
@@ -321,10 +339,10 @@ public static class ChangeSetAssert
 
     private static void AssertConnectionPropertiesChanged(int id, ConnectionChange change, ConnectionChange baseline)
     {
-        var bits = change.ChangedProperties!;
-        for (var i = 1; i < bits.Length; i++)
+        var bits = change.ChangedProperties;
+        for (var i = 1; i < ConnectionChange.PropertyCount; i++)
         {
-            if (!bits[i])
+            if (!bits.IsPropertyChanged(i))
             {
                 continue;
             }
@@ -343,10 +361,10 @@ public static class ChangeSetAssert
 
     private static void AssertAbilityPropertiesChanged(int id, AbilityChange change, AbilityChange baseline)
     {
-        var bits = change.ChangedProperties!;
-        for (var i = 1; i < bits.Length; i++)
+        var bits = change.ChangedProperties;
+        for (var i = 1; i < AbilityChange.PropertyCount; i++)
         {
-            if (!bits[i])
+            if (!bits.IsPropertyChanged(i))
             {
                 continue;
             }
@@ -376,10 +394,10 @@ public static class ChangeSetAssert
 
     private static void AssertEffectPropertiesChanged(int id, EffectChange change, EffectChange baseline)
     {
-        var bits = change.ChangedProperties!;
-        for (var i = 1; i < bits.Length; i++)
+        var bits = change.ChangedProperties;
+        for (var i = 1; i < EffectChange.PropertyCount; i++)
         {
-            if (!bits[i])
+            if (!bits.IsPropertyChanged(i))
             {
                 continue;
             }
@@ -397,25 +415,4 @@ public static class ChangeSetAssert
         }
     }
 
-    private static bool NextActionEquals(ActorActionChange? a, ActorActionChange? b)
-    {
-        if (a is null && b is null)
-        {
-            return true;
-        }
-
-        if (a is null || b is null)
-        {
-            return false;
-        }
-
-        return a.Type == b.Type
-            && a.Name == b.Name
-            && a.Target == b.Target
-            && a.TargetingShape == b.TargetingShape
-            && a.TargetingShapeSize == b.TargetingShapeSize;
-    }
-
-    private static string FormatNextAction(ActorActionChange? a)
-        => a == null ? "null" : $"(Type={a.Type}, Name={a.Name}, Target={a.Target})";
 }

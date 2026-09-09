@@ -23,31 +23,15 @@ Key systems: `LivingSystem` (health/energy/attributes), `PlayerSystem` (turn pro
 
 ### Per-Turn Change Set Architecture
 
-When a player acts, the server processes all turns until the player can act again. Instead of one delta covering all accumulated changes, the server collects changes per turn (one entity's action + cascading effects) and sends them as a list of `TurnChangeSet` via the `ReceiveChangeSets` SignalR method. The client applies them sequentially with a configurable delay to animate what happened.
+One player action may advance several internal turns. The server records one change set per turn and sends the resulting batch together; clients apply the sets sequentially so intermediate actions can be animated.
 
-Server flow (`GameStateManager.Turn`):
-1. Per turn: clear terrain dicts -> capture visible terrain snapshot -> `TimeSystem.AdvanceSingleTurn()` -> compute visible terrain changes.
-2. Per registered `PlayerChangeListener`: if `HasObservableChanges` -> `BuildChangeSet()` -> append to that player's list (a forced emit also happens on a terminating `PlayerTurn` or `GameOver` tick to keep the final state aligned).
-3. `levelChangeBuilder.Clear()` -> repeat until `TurnResult.PlayerTurn` or `GameOver`.
-4. Returns `Dictionary<int, List<TurnChangeSet>>` keyed by player entity id; the hub sends each player their list in one `ReceiveChangeSets` call.
+ECS events mark compact change candidates, while persistent projections represent what each client currently knows. Before emission, final world values are compared with those projections so round trips and unchanged candidates produce no transport objects.
 
-Change detection - under [src/UnicornHack.Web/Hubs/ChangeTracking/](../src/UnicornHack.Web/Hubs/ChangeTracking):
-- `LevelChangeBuilder`: shared per-game aggregator. Owns the level-scope builders (`ActorChangeBuilder`, `ItemChangeBuilder`, `ConnectionChangeBuilder`) and a list of `PlayerChangeListener`s. Registered once on the ECS groups; `RegisterPlayerListener` is idempotent.
-- `PlayerChangeListener`: per-player. Owns `RaceChangeBuilder`, `AbilityChangeBuilder`, `LogChangeBuilder`. Implements `IEntityChangeListener` on `LevelActors` to capture the player entity's scalar property changes (HP/EP/XP/...) into an internal `_pendingChange: PlayerChange`. `BuildChangeSet` assembles the final `PlayerChange` from level, races, abilities, log, terrain, and scalar bits.
-- `ChangeBuilder<TChange>` (abstract): shared state machine for the five entity-scope builders (Actor/Item/Connection/Race/Ability). Handles Added/Modified/Removed tracking and serialization emission. Subclasses override only: which groups to subscribe to, how to filter relevant entities, how to translate property changes onto the DTO, and how to produce full snapshots. See [ChangeBuilder.cs](../src/UnicornHack.Web/Hubs/ChangeTracking/ChangeBuilder.cs) for the state-transition table.
-- `TerrainChangeBuilder`: static helper. Diffs the dictionaries `LevelComponent` maintains (`KnownTerrainChanges`, `TerrainChanges`, `WallNeighborsChanges`, `VisibleTerrainChanges`) into a full `LevelMap` or sparse `LevelMapChanges`.
-- `LogChangeBuilder`: high-water-mark on log-entry id. Not a `ChangeBuilder` subclass - ordered append-only event streams don't need the state machine.
+Room state, including actor intentions, is observer-independent and built once for players sharing a room. Player scalars, abilities, effects, logs, and events are composed per player.
 
-Invariants enforced by `ChangeBuilder<TChange>`:
-- `IChangeWithState.LastState` is assigned once when an entry is created, never mutated after.
-- Add-then-Remove within a turn cancels iff `LastState == EntityState.Added` (client never knew the entity).
-- `WriteTo` must be called at most once per `Clear` cycle - asserted in debug builds; a duplicate `PlayerChangeListener` registration would violate this, so `RegisterPlayerListener` is idempotent.
+Nullable integer masks encode payload shape: `null` is a full snapshot, `0` is a deletion where supported, and nonzero values select sparse properties. Per-turn reset clears candidates and prepared data but preserves client-known projections.
 
-Adding a property to a `*Change` DTO: (1) append `[Key(n)]` with the next integer, bump `PropertyCount`; (2) handle it in the builder's `TrackPropertyChanges` (`ItemChangeBuilder`, `ActorChangeBuilder`, `AbilityChangeBuilder`) - or nothing for re-serialize-from-scratch builders (`ConnectionChangeBuilder`, `RaceChangeBuilder`); (3) assign the value in the static `SerializeX` full-snapshot method; (4) add a case to the client-side `Client*.ExpandToCollection` property switch and `Deserialize`.
-
-Initial load (`GetState`): uses `PlayerChangeListener.SerializePlayer` - a full snapshot with `ChangedProperties = null` on every DTO.
-
-`TurnChangeSet`: `Tick` (game tick), `PlayerState` (same format as `GetState`), and `Events` (placeholder for future structured event DTOs).
+Collections and arrays attached to queued responses remain immutable until serialization completes. Mutable or pooled world buffers must be copied before becoming response-owned data.
 
 ## Code Style
 
