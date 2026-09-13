@@ -12,5 +12,6 @@ public enum ActorActionType
     UnequipItem,
     SetAbilitySlot,
     UseAbilitySlot,
-    TravelToRoom
+    TravelToRoom,
+    SelectChoice
 }

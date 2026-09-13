@@ -2,7 +2,9 @@ using System.Globalization;
 using UnicornHack.Data.Abilities;
 using UnicornHack.Data.Creatures;
 using UnicornHack.Data.Items;
+using UnicornHack.Data.Players;
 using UnicornHack.Generation.Effects;
+using UnicornHack.Services;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Levels;
@@ -321,6 +323,102 @@ public class EffectApplicationSystemTest
         Assert.Null(template.AddToEffect(
             carrierReference.Referenced, firstLevel: 2, lastLevel: 2));
         Assert.Null(carrierReference.Referenced.Ability);
+    }
+
+    [Theory]
+    [InlineData(AbilityType.MeleeSpell, "spell")]
+    [InlineData(AbilityType.RangedSpell, "spell")]
+    [InlineData(AbilityType.Miracle, "miracle")]
+    [InlineData(AbilityType.Buff, "buff")]
+    [InlineData(AbilityType.Boon, "boon")]
+    [InlineData(AbilityType.Curse, "curse")]
+    [InlineData(AbilityType.Trait, "trait")]
+    [InlineData(AbilityType.Flaw, "flaw")]
+    [InlineData(AbilityType.Feat, "feat")]
+    [InlineData(AbilityType.Fault, "fault")]
+    [InlineData(AbilityType.Skill, "skill")]
+    [InlineData(AbilityType.Faith, "faith")]
+    public void Player_ability_level_changes_are_logged(
+        AbilityType abilityType, string kind)
+    {
+        var room = TestHelper.BuildRoom(".");
+        var player = PlayerRace.InstantiatePlayer(
+            "Dudley", Sex.Male, room, new Point(0, 0));
+        var manager = player.Manager;
+        manager.Queue.ProcessQueue(manager);
+        player.Player!.LogEntries.Clear();
+        var abilityName = $"test {kind}";
+        var template = new Ability
+        {
+            Name = abilityName,
+            Type = abilityType
+        };
+        var abilityRef =
+            $"<tooltip id='{abilityName}' category='{(int)DescriptionCategory.Ability}'>{abilityName}</tooltip>";
+
+        manager.EffectApplicationSystem.AddAbilityEffect(player, template);
+        manager.EffectApplicationSystem.AddAbilityEffect(player, template);
+        manager.EffectApplicationSystem.RemoveAbility(
+            player, abilityName, manager);
+
+        var removalMessage = abilityType.IsStatusLike()
+            ? $"Your {abilityRef} {kind} ends."
+            : $"You lose the {abilityRef} {kind}.";
+        Assert.Equal(
+            [
+                $"You gain the {abilityRef} {kind}.",
+                $"Your {abilityRef} {kind} increases to level 2.",
+                removalMessage
+            ],
+            player.Player.LogEntries.Select(entry => entry.Message));
+    }
+
+    [Fact]
+    public void Direct_debuff_level_changes_do_not_use_generic_ability_messages()
+    {
+        var room = TestHelper.BuildRoom(".");
+        var player = PlayerRace.InstantiatePlayer(
+            "Dudley", Sex.Male, room, new Point(0, 0));
+        var manager = player.Manager;
+        manager.Queue.ProcessQueue(manager);
+        player.Player!.LogEntries.Clear();
+        var template = new Ability
+        {
+            Name = "test debuff",
+            Type = AbilityType.Debuff
+        };
+
+        manager.EffectApplicationSystem.AddAbilityEffect(player, template);
+        manager.EffectApplicationSystem.RemoveAbility(
+            player, template.Name, manager);
+
+        Assert.Empty(player.Player.LogEntries);
+    }
+
+    [Fact]
+    public void Player_race_changes_are_logged_outside_player_choices()
+    {
+        var room = TestHelper.BuildRoom(".");
+        var player = PlayerRace.InstantiatePlayer(
+            "Dudley", Sex.Male, room, new Point(0, 0));
+        var manager = player.Manager;
+        manager.Queue.ProcessQueue(manager);
+        player.Player!.LogEntries.Clear();
+        var race = PlayerRaceData.Dwarf;
+        var raceRef =
+            $"<tooltip id='{race.Name}' category='{(int)DescriptionCategory.Race}'>{race.Name}</tooltip>";
+
+        manager.EffectApplicationSystem.AddAbilityEffect(
+            player, race.GetRaceAbilityTemplate());
+        manager.EffectApplicationSystem.RemoveAbility(
+            player, race.GetRaceAbilityName(), manager);
+
+        Assert.Equal(
+            [
+                $"You gain the {raceRef} race.",
+                $"You lose the {raceRef} race."
+            ],
+            player.Player.LogEntries.Select(entry => entry.Message));
     }
 
     [Fact]

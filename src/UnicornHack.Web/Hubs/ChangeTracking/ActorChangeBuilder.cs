@@ -86,8 +86,9 @@ public class ActorChangeBuilder
         foreach (var (id, pending) in _pending)
         {
             if (ShouldDelete(id, pending, roomId)
-                || TryPrepareShared(
-                    id, pending, roomId, services, room.Entity.Game.Manager, canPerceiveIntentions, out _))
+                || TryPrepareSharedChange(
+                    id, pending, roomId, services, room.Entity.Game.Manager, canPerceiveIntentions,
+                    out _, out _, out _))
             {
                 return true;
             }
@@ -104,8 +105,9 @@ public class ActorChangeBuilder
         foreach (var (id, pending) in _pending)
         {
             if (ShouldDelete(id, pending, roomId)
-                || TryPrepareShared(
-                    id, pending, roomId, services, room.Entity.Game.Manager, canPerceiveIntentions, out _))
+                || TryPrepareSharedChange(
+                    id, pending, roomId, services, room.Entity.Game.Manager, canPerceiveIntentions,
+                    out _, out _, out _))
             {
                 outputCount++;
             }
@@ -125,13 +127,13 @@ public class ActorChangeBuilder
                 change = new ActorChange { ChangedProperties = 0 };
                 _sharedProjection.Remove(id);
             }
-            else if (TryPrepareShared(
-                         id, pending, roomId, services, room.Entity.Game.Manager, canPerceiveIntentions, out var current))
+            else if (TryPrepareSharedChange(
+                         id, pending, roomId, services, room.Entity.Game.Manager, canPerceiveIntentions,
+                         out var current, out var previous, out var isFull))
             {
-                change = _sharedProjection.TryGetValue(id, out var previous)
-                         && previous.RoomId == roomId
-                    ? SerializeSharedDelta(current, pending.DirtyMask)
-                    : SerializeSharedFull(current);
+                change = isFull
+                    ? SerializeSharedFull(current)
+                    : SerializeSharedDelta(current, previous, pending.DirtyMask);
                 _sharedProjection[id] = current;
             }
 
@@ -344,6 +346,30 @@ public class ActorChangeBuilder
         return true;
     }
 
+    private bool TryPrepareSharedChange(
+        int id,
+        PendingChange pending,
+        int roomId,
+        GameServices services,
+        GameManager manager,
+        bool canPerceiveIntentions,
+        out SharedProjection current,
+        out SharedProjection previous,
+        out bool isFull)
+    {
+        if (!TryPrepareShared(
+                id, pending, roomId, services, manager, canPerceiveIntentions, out current))
+        {
+            previous = default;
+            isFull = false;
+            return false;
+        }
+
+        isFull = !_sharedProjection.TryGetValue(id, out previous)
+                 || previous.RoomId != roomId;
+        return isFull || current != previous;
+    }
+
     private static bool TryGetShared(
         GameEntity actor,
         GameServices services,
@@ -439,21 +465,33 @@ public class ActorChangeBuilder
             NextAction = ToChange(current.NextAction)
         };
 
-    private static ActorChange SerializeSharedDelta(SharedProjection current, uint dirtyMask)
+    private static ActorChange SerializeSharedDelta(
+        SharedProjection current, SharedProjection previous, uint dirtyMask)
     {
         var change = new ActorChange();
-        if ((dirtyMask & LevelXDirty) != 0) change.LevelX = current.LevelX;
-        if ((dirtyMask & LevelYDirty) != 0) change.LevelY = current.LevelY;
-        if ((dirtyMask & HeadingDirty) != 0) change.Heading = current.Heading;
-        if ((dirtyMask & BaseNameDirty) != 0) change.BaseName = current.BaseName;
-        if ((dirtyMask & NameDirty) != 0) change.Name = current.Name;
-        if ((dirtyMask & IsCurrentlyPerceivedDirty) != 0) change.IsCurrentlyPerceived = current.IsCurrentlyPerceived;
-        if ((dirtyMask & HpDirty) != 0) change.Hp = current.Hp;
-        if ((dirtyMask & MaxHpDirty) != 0) change.MaxHp = current.MaxHp;
-        if ((dirtyMask & EpDirty) != 0) change.Ep = current.Ep;
-        if ((dirtyMask & MaxEpDirty) != 0) change.MaxEp = current.MaxEp;
-        if ((dirtyMask & NextActionTickDirty) != 0) change.NextActionTick = current.NextActionTick;
-        if ((dirtyMask & NextActionDirty) != 0) change.NextAction = ToChange(current.NextAction);
+        if ((dirtyMask & LevelXDirty) != 0 && current.LevelX != previous.LevelX) change.LevelX = current.LevelX;
+        if ((dirtyMask & LevelYDirty) != 0 && current.LevelY != previous.LevelY) change.LevelY = current.LevelY;
+        if ((dirtyMask & HeadingDirty) != 0 && current.Heading != previous.Heading) change.Heading = current.Heading;
+        if ((dirtyMask & BaseNameDirty) != 0 && current.BaseName != previous.BaseName) change.BaseName = current.BaseName;
+        if ((dirtyMask & NameDirty) != 0 && current.Name != previous.Name) change.Name = current.Name;
+        if ((dirtyMask & IsCurrentlyPerceivedDirty) != 0
+            && current.IsCurrentlyPerceived != previous.IsCurrentlyPerceived)
+        {
+            change.IsCurrentlyPerceived = current.IsCurrentlyPerceived;
+        }
+        if ((dirtyMask & HpDirty) != 0 && current.Hp != previous.Hp) change.Hp = current.Hp;
+        if ((dirtyMask & MaxHpDirty) != 0 && current.MaxHp != previous.MaxHp) change.MaxHp = current.MaxHp;
+        if ((dirtyMask & EpDirty) != 0 && current.Ep != previous.Ep) change.Ep = current.Ep;
+        if ((dirtyMask & MaxEpDirty) != 0 && current.MaxEp != previous.MaxEp) change.MaxEp = current.MaxEp;
+        if ((dirtyMask & NextActionTickDirty) != 0
+            && current.NextActionTick != previous.NextActionTick)
+        {
+            change.NextActionTick = current.NextActionTick;
+        }
+        if ((dirtyMask & NextActionDirty) != 0 && current.NextAction != previous.NextAction)
+        {
+            change.NextAction = ToChange(current.NextAction);
+        }
         return change;
     }
 

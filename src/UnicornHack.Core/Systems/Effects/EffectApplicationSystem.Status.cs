@@ -442,7 +442,8 @@ public partial class EffectApplicationSystem
         if (isPerSource
             && FindPerSourceBuildUpSource(targetEntity, effectType) == null)
         {
-            RemoveAbility(targetEntity, abilityName, manager);
+            RemoveAbility(
+                targetEntity, abilityName, manager, sourceAbilityEntityId: 0);
             return;
         }
 
@@ -663,7 +664,9 @@ public partial class EffectApplicationSystem
 
                 if (Effect.GetMetadata(status.Status).StatusAbilityName is { } clearedAbilityName)
                 {
-                    RemoveAbility(targetEntity, clearedAbilityName, manager);
+                    RemoveAbility(
+                        targetEntity, clearedAbilityName, manager,
+                        sourceAbilityEntityId: 0);
                 }
 
                 continue;

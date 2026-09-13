@@ -234,6 +234,15 @@ public sealed class PersistedGame : IDisposable
     {
         try
         {
+            _ = context.PlayerComponents
+                .Select(player => new
+                {
+                    player.PendingChoice!.ChoiceType,
+                    player.PendingChoice.PendingChoiceAction,
+                    player.PendingChoice.PendingChoiceOptions
+                })
+                .FirstOrDefault();
+
             while (context.Games.FirstOrDefault() is { } game)
             {
                 context.Clean(game);

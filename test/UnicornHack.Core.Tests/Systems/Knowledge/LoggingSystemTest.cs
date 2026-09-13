@@ -404,6 +404,49 @@ public class LoggingSystemTest
     }
 
     [Fact]
+    public void Lingering_attack_effect_is_not_logged_when_neither_participant_is_identified()
+    {
+        var level = TestHelper.BuildRoom("...");
+        var attacker = CreatureData.AcidBlob.Instantiate(level, new Point(0, 0));
+        var player = PlayerRace.InstantiatePlayer(
+            "Dudley", Sex.Male, level, new Point(1, 0));
+        var victim = CreatureData.AcidBlob.Instantiate(level, new Point(2, 0));
+        var manager = player.Manager;
+        manager.Queue.ProcessQueue(manager);
+        manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
+            -player.Being!.PrimaryVisionRange,
+            nameof(BeingComponent.PrimaryVisionRange),
+            "test blindness",
+            player);
+        manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
+            -player.Being.SecondaryVisionRange,
+            nameof(BeingComponent.SecondaryVisionRange),
+            "test blindness",
+            player);
+        manager.Queue.ProcessQueue(manager);
+        player.Player!.LogEntries.Clear();
+
+        var attackerSensed = manager.SensorySystem.CanSense(player, attacker) ?? SenseType.None;
+        var victimSensed = manager.SensorySystem.CanSense(player, victim) ?? SenseType.None;
+        Assert.NotEqual(SenseType.None, attackerSensed);
+        Assert.NotEqual(SenseType.None, victimSensed);
+        Assert.False(attackerSensed.CanIdentify());
+        Assert.False(victimSensed.CanIdentify());
+
+        var result = AttackResultMessage.Create(manager);
+        result.ActivatorEntity = attacker;
+        result.TargetEntity = victim;
+        result.AbilityAction = AbilityAction.Punch;
+        result.Hit = true;
+        result.LingeringEffects.Add(EffectType.FireDamage, 1);
+
+        manager.LoggingSystem.Process(result, manager);
+
+        Assert.Empty(player.Player.LogEntries);
+        manager.ReturnMessage(result);
+    }
+
+    [Fact]
     public void Instant_damage_does_not_log_a_resource_effect()
     {
         var level = TestHelper.BuildRoom(".");
@@ -595,6 +638,26 @@ public class LoggingSystemTest
         manager.Enqueue(unequipped);
         manager.Queue.ProcessQueue(manager);
         AssertLog(player, "You unequip the long sword.");
+    }
+
+    [Fact]
+    public void Equipping_through_an_item_ability_does_not_also_log_activation()
+    {
+        var level = TestHelper.BuildRoom(".");
+        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
+        var manager = level.Entity.Manager;
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.True(ItemData.FieryAegis.Instantiate(player));
+        manager.Queue.ProcessQueue(manager);
+        player.Player!.LogEntries.Clear();
+
+        TestHelper.ActivateAbility(ItemData.FieryAegis.Name + ": Equip", player, manager);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(
+            ["You equip the fiery aegis in the main hand for melee."],
+            player.Player.LogEntries.Select(entry => entry.Message));
     }
 
     [Fact]

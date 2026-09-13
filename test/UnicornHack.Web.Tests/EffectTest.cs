@@ -715,6 +715,27 @@ public class EffectTest
     }
 
     [Fact]
+    public void Player_death_ends_the_turn_without_a_next_action_tick()
+    {
+        var (manager, playerEntity, listener) = SetupGameWithListener();
+        var player = playerEntity.Player!;
+        playerEntity.Being!.HitPoints = 1;
+        playerEntity.ActiveEffects!.AddPropertyEffect(
+            EffectType.BleedDamage,
+            combinationFunction: ValueCombinationFunction.Subtract,
+            magnitudePrimary: 100,
+            expirationEvent: EffectDuration.UntilTimeout,
+            expirationTarget: manager.Game.CurrentTick + 1000);
+
+        var changeSets = WebTestHelper.PerformAction(
+            player, listener, manager.Game.Services, ActorActionType.Wait);
+
+        Assert.False(playerEntity.Being.IsAlive);
+        Assert.Null(player.NextActionTick);
+        Assert.True(changeSets.ContainsKey(playerEntity.Id));
+    }
+
+    [Fact]
     public void Add_then_remove_damage_over_time_does_not_emit_an_effect_change()
     {
         var (manager, playerEntity, listener) = SetupGameWithListener();

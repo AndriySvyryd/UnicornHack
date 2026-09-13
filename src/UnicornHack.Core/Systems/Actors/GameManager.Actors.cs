@@ -41,6 +41,12 @@ public partial class GameManager
         private set;
     } = null!;
 
+    public PlayerChoiceSystem PlayerChoiceSystem
+    {
+        get;
+        private set;
+    } = null!;
+
     public AISystem AISystem
     {
         get;
@@ -97,6 +103,7 @@ public partial class GameManager
                 nameof(AbilityComponent.IsUsable)),
             1);
 
+        PlayerChoiceSystem = new PlayerChoiceSystem();
         PlayerSystem = new PlayerSystem();
         queue.Register<PerformActionMessage>(PlayerSystem, PerformActionMessage.PlayerName, 0);
         queue.Register<DelayMessage>(PlayerSystem, DelayMessage.Name, 1);

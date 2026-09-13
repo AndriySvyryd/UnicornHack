@@ -31,6 +31,7 @@ public sealed class GameConnection : IAsyncDisposable
     private readonly SemaphoreSlim _readyLock = new(1, 1);
     /// <summary>Serializes hub method calls so a burst of MCP tool calls doesn't pile up on the per-player game.</summary>
     private readonly SemaphoreSlim _callLock = new(1, 1);
+    private PendingDialogResponse? _pendingDialogResponse;
     private HubConnection? _hub;
     private bool _stateReady;
     private bool _disposed;
@@ -156,9 +157,25 @@ public sealed class GameConnection : IAsyncDisposable
     public async Task<DialogData?> ShowDialogAsync(
         int queryType, int[] arguments, CancellationToken cancellationToken)
     {
-        // The hub's ShowDialog broadcasts via ReceiveUIRequest, but for diagnostic use
-        // we want the synchronous payload, so delegate to QueryGame.
-        return await QueryGameAsync(queryType, arguments, cancellationToken).ConfigureAwait(false);
+        await EnsureReadyAsync(cancellationToken).ConfigureAwait(false);
+        await _callLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        var response = new PendingDialogResponse(
+            queryType,
+            new TaskCompletionSource<DialogData>(
+                TaskCreationOptions.RunContinuationsAsynchronously));
+        Interlocked.Exchange(ref _pendingDialogResponse, response);
+        try
+        {
+            await _hub!.InvokeAsync<string?>(
+                "ShowDialog", _options.PlayerName, queryType, arguments, cancellationToken)
+                .ConfigureAwait(false);
+            return await response.Completion.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            Interlocked.CompareExchange(ref _pendingDialogResponse, null, response);
+            _callLock.Release();
+        }
     }
 
     public async Task<string> QueryStaticDescriptionAsync(
@@ -281,6 +298,11 @@ public sealed class GameConnection : IAsyncDisposable
         hub.On<DialogData>("ReceiveUIRequest", payload =>
         {
             LastUIRequest = payload;
+            if (Volatile.Read(ref _pendingDialogResponse) is { } pending
+                && IsExpectedDialogResponse(payload, pending.QueryType))
+            {
+                pending.Completion.TrySetResult(payload);
+            }
             _logger.LogInformation("Received UI request");
         });
 
@@ -315,6 +337,20 @@ public sealed class GameConnection : IAsyncDisposable
             return Task.CompletedTask;
         };
     }
+
+    private static bool IsExpectedDialogResponse(DialogData payload, int queryType)
+    {
+        if (queryType == (int)GameQueryType.Clear)
+        {
+            return payload.ChangedProperties == 0;
+        }
+
+        return payload.ChangedProperties == null
+               || (payload.ChangedProperties.GetValueOrDefault() & (1 << (queryType + 1))) != 0;
+    }
+
+    private sealed record PendingDialogResponse(
+        int QueryType, TaskCompletionSource<DialogData> Completion);
 
     public async ValueTask DisposeAsync()
     {

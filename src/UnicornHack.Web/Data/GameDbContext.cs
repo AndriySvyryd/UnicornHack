@@ -59,69 +59,76 @@ public class GameDbContext : DbContext, IRepository
     private static readonly Func<GameDbContext, int, IAsyncEnumerable<int>> GetRoomIdsAsync =
         EF.CompileAsyncQuery(RoomIdsQuery);
 
-    private static readonly Expression<Func<GameDbContext, int[], IQueryable<int>>> RoomResidentIdsQuery =
-        (GameDbContext context, int[] roomIds) =>
+    private static readonly Expression<Func<GameDbContext, int, int[], IQueryable<int>>> RoomResidentIdsQuery =
+        (GameDbContext context, int gameId, int[] roomIds) =>
             context.Entities
-                .Where(entity => roomIds.Contains(entity.Id))
+                .Where(entity => entity.GameId == gameId && roomIds.Contains(entity.Id))
                 .Select(entity => entity.Id)
                 .Concat(context.Entities
-                    .Where(entity => roomIds.Contains(entity.Position!.RoomId))
+                    .Where(entity => entity.GameId == gameId && roomIds.Contains(entity.Position!.RoomId))
                     .Select(entity => entity.Id))
                 .Distinct();
 
-    private static readonly Func<GameDbContext, int[], IEnumerable<int>> GetRoomResidentIds =
+    private static readonly Func<GameDbContext, int, int[], IEnumerable<int>> GetRoomResidentIds =
         EF.CompileQuery(RoomResidentIdsQuery);
 
-    private static readonly Func<GameDbContext, int[], IAsyncEnumerable<int>> GetRoomResidentIdsAsync =
+    private static readonly Func<GameDbContext, int, int[], IAsyncEnumerable<int>> GetRoomResidentIdsAsync =
         EF.CompileAsyncQuery(RoomResidentIdsQuery);
 
-    private static readonly Expression<Func<GameDbContext, int[], IQueryable<LoadedEntityId>>> TopEntityIdsQuery =
-        (GameDbContext context, int[] roomResidentIds) =>
+    private static readonly Expression<Func<GameDbContext, int, int[], IQueryable<LoadedEntityId>>> TopEntityIdsQuery =
+        (GameDbContext context, int gameId, int[] roomResidentIds) =>
             context.AbilityComponents
-                .Where(ability => ability.OwnerId.HasValue
+                .Where(ability => ability.GameId == gameId
+                                  && ability.OwnerId.HasValue
                                   && roomResidentIds.Contains(ability.OwnerId.Value))
                 .Select(ability => new LoadedEntityId { Id = ability.EntityId, IsEffect = false })
                 .Concat(context.EffectComponents
-                    .Where(effect => effect.ContainingAbilityId.HasValue
+                    .Where(effect => effect.GameId == gameId
+                                     && effect.ContainingAbilityId.HasValue
                                      && context.AbilityComponents.Any(ability =>
-                                         ability.EntityId == effect.ContainingAbilityId.Value
+                                         ability.GameId == gameId
+                                         && ability.EntityId == effect.ContainingAbilityId.Value
                                          && ability.OwnerId.HasValue
                                          && roomResidentIds.Contains(ability.OwnerId.Value)))
                     .Select(effect => new LoadedEntityId { Id = effect.EntityId, IsEffect = true }));
 
-    private static readonly Func<GameDbContext, int[], IEnumerable<LoadedEntityId>> GetTopEntityIds =
+    private static readonly Func<GameDbContext, int, int[], IEnumerable<LoadedEntityId>> GetTopEntityIds =
         EF.CompileQuery(TopEntityIdsQuery);
 
-    private static readonly Func<GameDbContext, int[], IAsyncEnumerable<LoadedEntityId>> GetTopEntityIdsAsync =
+    private static readonly Func<GameDbContext, int, int[], IAsyncEnumerable<LoadedEntityId>> GetTopEntityIdsAsync =
         EF.CompileAsyncQuery(TopEntityIdsQuery);
 
-    private static readonly Expression<Func<GameDbContext, int[], IQueryable<LoadedEntityId>>> NestedEntityIdsQuery =
-        (GameDbContext context, int[] topEffectIds) =>
+    private static readonly Expression<Func<GameDbContext, int, int[], IQueryable<LoadedEntityId>>> NestedEntityIdsQuery =
+        (GameDbContext context, int gameId, int[] topEffectIds) =>
             context.AbilityComponents
-                .Where(ability => ability.OwnerId.HasValue
+                .Where(ability => ability.GameId == gameId
+                                  && ability.OwnerId.HasValue
                                   && topEffectIds.Contains(ability.OwnerId.Value))
                 .Select(ability => new LoadedEntityId { Id = ability.EntityId, IsEffect = false })
                 .Concat(context.EffectComponents
-                    .Where(effect => effect.ContainingAbilityId.HasValue
+                    .Where(effect => effect.GameId == gameId
+                                     && effect.ContainingAbilityId.HasValue
                                      && topEffectIds.Contains(effect.ContainingAbilityId.Value))
                     .Select(effect => new LoadedEntityId { Id = effect.EntityId, IsEffect = true }))
                 .Concat(context.EffectComponents
-                    .Where(effect => effect.ContainingAbilityId.HasValue
+                    .Where(effect => effect.GameId == gameId
+                                     && effect.ContainingAbilityId.HasValue
                                      && context.AbilityComponents.Any(ability =>
-                                         ability.EntityId == effect.ContainingAbilityId.Value
+                                         ability.GameId == gameId
+                                         && ability.EntityId == effect.ContainingAbilityId.Value
                                          && ability.OwnerId.HasValue
                                          && topEffectIds.Contains(ability.OwnerId.Value)))
                     .Select(effect => new LoadedEntityId { Id = effect.EntityId, IsEffect = true }));
 
-    private static readonly Func<GameDbContext, int[], IEnumerable<LoadedEntityId>> GetNestedEntityIds =
+    private static readonly Func<GameDbContext, int, int[], IEnumerable<LoadedEntityId>> GetNestedEntityIds =
         EF.CompileQuery(NestedEntityIdsQuery);
 
-    private static readonly Func<GameDbContext, int[], IAsyncEnumerable<LoadedEntityId>> GetNestedEntityIdsAsync =
+    private static readonly Func<GameDbContext, int, int[], IAsyncEnumerable<LoadedEntityId>> GetNestedEntityIdsAsync =
         EF.CompileAsyncQuery(NestedEntityIdsQuery);
 
-    private static readonly Expression<Func<GameDbContext, int[], IQueryable<GameEntity>>> EntitiesQuery =
-        (GameDbContext context, int[] entityIds) =>
-            context.Entities.Where(entity => entityIds.Contains(entity.Id))
+    private static readonly Expression<Func<GameDbContext, int, int[], IQueryable<GameEntity>>> EntitiesQuery =
+        (GameDbContext context, int gameId, int[] entityIds) =>
+            context.Entities.Where(entity => entity.GameId == gameId && entityIds.Contains(entity.Id))
                 .Include(entity => entity.Room!).ThenInclude(room => room.Level).ThenInclude(level => level.Branch)
                 .Include(entity => entity.Position)
                 .Include(entity => entity.Connection)
@@ -135,10 +142,10 @@ public class GameDbContext : DbContext, IRepository
                 .Include(entity => entity.Effect)
                 .Include(entity => entity.ActiveEffects);
 
-    private static readonly Func<GameDbContext, int[], IEnumerable<GameEntity>> GetEntities =
+    private static readonly Func<GameDbContext, int, int[], IEnumerable<GameEntity>> GetEntities =
         EF.CompileQuery(EntitiesQuery);
 
-    private static readonly Func<GameDbContext, int[], IAsyncEnumerable<GameEntity>> GetEntitiesAsync =
+    private static readonly Func<GameDbContext, int, int[], IAsyncEnumerable<GameEntity>> GetEntitiesAsync =
         EF.CompileAsyncQuery(EntitiesQuery);
 
     private static readonly Expression<Func<GameDbContext, int, int[], int, IQueryable<LogEntry>>>
@@ -474,6 +481,12 @@ public class GameDbContext : DbContext, IRepository
             eb.Property(p => p.ProperName).IsRequired();
             eb.HasIndex(p => p.ProperName).IsUnique();
             eb.HasKey(p => new { p.GameId, p.EntityId });
+            eb.OwnsOne(p => p.PendingChoice, choice =>
+            {
+                choice.Property(value => value.ChoiceType).IsRequired();
+                choice.Property(value => value.PendingChoiceOptions).IsRequired();
+            });
+            eb.Navigation(p => p.PendingChoice).IsRequired(false);
         });
 
         modelBuilder.Entity<BeingComponent>(eb =>
@@ -734,15 +747,16 @@ public class GameDbContext : DbContext, IRepository
             }
 
             var roomIdArray = roomIds as int[] ?? roomIds.ToArray();
+            var gameId = Manager.Game.Id;
 
             // 1. Entities that ARE one of the requested rooms or are positioned in one.
             //    Split into two Concat branches so each becomes a single-predicate query
             //    against the roomIds parameter - see the nestedMix comment below for why.
             //    Distinct is required because a room entity also has itself in Position.
             var roomResidentIds = useAsync
-                ? await ToListAsync(GetRoomResidentIdsAsync(this, roomIdArray), cancellationToken)
+                ? await ToListAsync(GetRoomResidentIdsAsync(this, gameId, roomIdArray), cancellationToken)
                     .ConfigureAwait(false)
-                : await ToList(GetRoomResidentIds(this, roomIdArray));
+                : await ToList(GetRoomResidentIds(this, gameId, roomIdArray));
 
             // 2. Top-level abilities AND top-level effects in one round-trip.
             //    - Abilities owned by an affectable (Kind = 0)
@@ -754,9 +768,9 @@ public class GameDbContext : DbContext, IRepository
             var topMix = roomResidentIds.Count == 0
                 ? []
                 : useAsync
-                    ? await ToListAsync(GetTopEntityIdsAsync(this, roomResidentIdArray), cancellationToken)
+                    ? await ToListAsync(GetTopEntityIdsAsync(this, gameId, roomResidentIdArray), cancellationToken)
                         .ConfigureAwait(false)
-                    : await ToList(GetTopEntityIds(this, roomResidentIdArray));
+                    : await ToList(GetTopEntityIds(this, gameId, roomResidentIdArray));
 
             var topAbilityIds = topMix.Where(entry => !entry.IsEffect).Select(entry => entry.Id).ToList();
             var topEffectIds = topMix.Where(entry => entry.IsEffect).Select(entry => entry.Id).ToList();
@@ -779,9 +793,9 @@ public class GameDbContext : DbContext, IRepository
             var nestedMix = topEffectIds.Count == 0
                 ? []
                 : useAsync
-                    ? await ToListAsync(GetNestedEntityIdsAsync(this, topEffectIdArray), cancellationToken)
+                    ? await ToListAsync(GetNestedEntityIdsAsync(this, gameId, topEffectIdArray), cancellationToken)
                         .ConfigureAwait(false)
-                    : await ToList(GetNestedEntityIds(this, topEffectIdArray));
+                    : await ToList(GetNestedEntityIds(this, gameId, topEffectIdArray));
 
             var nestedAbilityIds = nestedMix.Where(entry => !entry.IsEffect).Select(entry => entry.Id).ToList();
             var nestedEffectIds = nestedMix.Where(entry => entry.IsEffect)
@@ -804,12 +818,12 @@ public class GameDbContext : DbContext, IRepository
             {
                 if (useAsync)
                 {
-                    await LoadAsync(GetEntitiesAsync(this, allEntityIds), cancellationToken)
+                    await LoadAsync(GetEntitiesAsync(this, gameId, allEntityIds), cancellationToken)
                         .ConfigureAwait(false);
                 }
                 else
                 {
-                    await Load(GetEntities(this, allEntityIds));
+                    await Load(GetEntities(this, gameId, allEntityIds));
                 }
             }
         }

@@ -24,6 +24,7 @@ public class AbilityChangeBuilder
     private const uint ExpirationEventDirty = 1u << 13;
     private const uint NoiseDirty = 1u << 14;
     private const uint ExpirationDirty = ExpirationTargetDirty | ExpirationEventDirty;
+    private const uint SlotTouchedDirty = 1u << 30;
     private const uint MembershipDirty = 1u << 31;
     private const uint AllValuesDirty = (1u << AbilityChange.PropertyCount) - 2;
 
@@ -402,7 +403,7 @@ public class AbilityChangeBuilder
             }
 
             var change = hasPrevious
-                ? SerializeDelta(current, pending.DirtyMask)
+                ? SerializeDelta(current, previous, pending.DirtyMask)
                 : SerializeFull(current);
 
             _projection[id] = current;
@@ -413,7 +414,7 @@ public class AbilityChangeBuilder
         }
 
         WriteAccumulatorPlaceholdersTo(output, ownerEntity);
-        return output;
+        return output.Count == 0 ? null : output;
     }
 
     private int CountAbilityChanges(GameServices services)
@@ -429,7 +430,7 @@ public class AbilityChangeBuilder
                     hasPrevious ? previous : null,
                     out var current))
             {
-                if (_projection.ContainsKey(id))
+                if (hasPrevious)
                 {
                     count++;
                 }
@@ -437,7 +438,12 @@ public class AbilityChangeBuilder
                 continue;
             }
 
-            count++;
+            if (!hasPrevious
+                || current != previous
+                || (pending.DirtyMask & SlotTouchedDirty) != 0)
+            {
+                count++;
+            }
         }
 
         return count;
@@ -623,7 +629,7 @@ public class AbilityChangeBuilder
                 nameof(AbilityComponent.Name) => NameDirty | AccumulatorDirty | LevelReductionDirty
                                                   | ExpirationDirty | MembershipDirty,
                 nameof(AbilityComponent.Activation) => ActivationDirty,
-                nameof(AbilityComponent.Slot) => SlotDirty | MembershipDirty,
+                nameof(AbilityComponent.Slot) => SlotDirty | SlotTouchedDirty | MembershipDirty,
                 nameof(AbilityComponent.CooldownTick) => CooldownTickDirty,
                 nameof(AbilityComponent.CooldownXpLeft) => CooldownXpLeftDirty,
                 nameof(AbilityComponent.TargetingShape) => TargetingShapeDirty,
@@ -641,24 +647,63 @@ public class AbilityChangeBuilder
         return dirtyMask;
     }
 
-    private static AbilityChange SerializeDelta(Projection current, uint dirtyMask)
+    private static AbilityChange? SerializeDelta(
+        Projection current, Projection previous, uint dirtyMask)
     {
         var change = new AbilityChange();
-        if ((dirtyMask & NameDirty) != 0) change.Name = current.Name;
-        if ((dirtyMask & ActivationDirty) != 0) change.Activation = current.Activation;
-        if ((dirtyMask & SlotDirty) != 0) change.Slot = current.Slot;
-        if ((dirtyMask & CooldownTickDirty) != 0) change.CooldownTick = current.CooldownTick;
-        if ((dirtyMask & CooldownXpLeftDirty) != 0) change.CooldownXpLeft = current.CooldownXpLeft;
-        if ((dirtyMask & TargetingShapeDirty) != 0) change.TargetingShape = current.TargetingShape;
-        if ((dirtyMask & TargetingShapeSizeDirty) != 0) change.TargetingShapeSize = current.TargetingShapeSize;
-        if ((dirtyMask & TypeDirty) != 0) change.Type = current.Type;
-        if ((dirtyMask & AccumulatorDirty) != 0) change.Accumulator = current.Accumulator;
-        if ((dirtyMask & LevelDirty) != 0) change.Level = current.Level;
-        if ((dirtyMask & LevelReductionDirty) != 0) change.LevelReduction = current.LevelReduction;
-        if ((dirtyMask & ExpirationTargetDirty) != 0) change.ExpirationTarget = current.ExpirationTarget;
-        if ((dirtyMask & ExpirationEventDirty) != 0) change.ExpirationEvent = current.ExpirationEvent;
-        if ((dirtyMask & NoiseDirty) != 0) change.Noise = current.Noise;
-        return change;
+        if ((dirtyMask & NameDirty) != 0 && current.Name != previous.Name) change.Name = current.Name;
+        if ((dirtyMask & ActivationDirty) != 0 && current.Activation != previous.Activation)
+        {
+            change.Activation = current.Activation;
+        }
+        if ((dirtyMask & SlotDirty) != 0
+            && (current.Slot != previous.Slot || (dirtyMask & SlotTouchedDirty) != 0))
+        {
+            change.Slot = current.Slot;
+        }
+        if ((dirtyMask & CooldownTickDirty) != 0 && current.CooldownTick != previous.CooldownTick)
+        {
+            change.CooldownTick = current.CooldownTick;
+        }
+        if ((dirtyMask & CooldownXpLeftDirty) != 0
+            && current.CooldownXpLeft != previous.CooldownXpLeft)
+        {
+            change.CooldownXpLeft = current.CooldownXpLeft;
+        }
+        if ((dirtyMask & TargetingShapeDirty) != 0
+            && current.TargetingShape != previous.TargetingShape)
+        {
+            change.TargetingShape = current.TargetingShape;
+        }
+        if ((dirtyMask & TargetingShapeSizeDirty) != 0
+            && current.TargetingShapeSize != previous.TargetingShapeSize)
+        {
+            change.TargetingShapeSize = current.TargetingShapeSize;
+        }
+        if ((dirtyMask & TypeDirty) != 0 && current.Type != previous.Type) change.Type = current.Type;
+        if ((dirtyMask & AccumulatorDirty) != 0 && current.Accumulator != previous.Accumulator)
+        {
+            change.Accumulator = current.Accumulator;
+        }
+        if ((dirtyMask & LevelDirty) != 0 && current.Level != previous.Level) change.Level = current.Level;
+        if ((dirtyMask & LevelReductionDirty) != 0
+            && current.LevelReduction != previous.LevelReduction)
+        {
+            change.LevelReduction = current.LevelReduction;
+        }
+        if ((dirtyMask & ExpirationTargetDirty) != 0
+            && current.ExpirationTarget != previous.ExpirationTarget)
+        {
+            change.ExpirationTarget = current.ExpirationTarget;
+        }
+        if ((dirtyMask & ExpirationEventDirty) != 0
+            && current.ExpirationEvent != previous.ExpirationEvent)
+        {
+            change.ExpirationEvent = current.ExpirationEvent;
+        }
+        if ((dirtyMask & NoiseDirty) != 0 && current.Noise != previous.Noise) change.Noise = current.Noise;
+
+        return change.ChangedProperties == 1 ? null : change;
     }
 
     private static AbilityChange SerializeFull(Projection projection)

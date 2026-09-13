@@ -5,7 +5,7 @@ namespace UnicornHack.Hubs.ChangeTracking;
 [MessagePackObject]
 public class PlayerChange
 {
-    public const int PropertyCount = 17;
+    public const int PropertyCount = 18;
     private uint? _changedProperties = 1;
 
     [Key(0)]
@@ -165,6 +165,16 @@ public class PlayerChange
         {
             field = value;
             MarkChanged(16);
+        }
+    }
+
+    [Key(17)]
+    public PlayerOptionsData? PendingOptions
+    {
+        get => field; set
+        {
+            field = value;
+            MarkChanged(17);
         }
     }
 

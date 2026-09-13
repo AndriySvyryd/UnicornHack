@@ -95,7 +95,7 @@ The server starts via `dotnet run --project test/UnicornHack.DiagnosticClient` w
 ### From the command line
 
 ```
-dotnet run --project UnicornHack/test/UnicornHack.DiagnosticClient -- --name <character> [--server <url>] [--insecure] [--log-file <path>] [--verbose] [--action-timeout-ms 10000]
+dotnet run --project UnicornHack/test/UnicornHack.DiagnosticClient -- --name <character> [--server <url>] [--insecure] [--log-file <path>] [--verbose] [--action-timeout-ms 30000]
 ```
 
 - `--name` (required): the in-game character name. A new character is auto-created on first connect.
@@ -103,7 +103,7 @@ dotnet run --project UnicornHack/test/UnicornHack.DiagnosticClient -- --name <ch
 - `--insecure`: trust any TLS cert. Local dev only — never against a remote server.
 - `--log-file`: append diagnostic logs here (stdio is reserved for MCP JSON-RPC; without this flag, logs go to stderr).
 - `--verbose`: enable Debug-level logging.
-- `--action-timeout-ms`: per-action wait for change sets, default 10 000 ms.
+- `--action-timeout-ms`: per-action wait for change sets, default 30 000 ms.
 
 The process speaks MCP over stdio. To register it with VS Code (or another MCP client), point that client at the `dotnet run` invocation above.
 
@@ -121,6 +121,7 @@ The process speaks MCP over stdio. To register it with VS Code (or another MCP c
 | `get_races` | Player races/species components. |
 | `get_connections` | Stairs/doors in the room. |
 | `get_log(since_tick=-1)` | Log entries with `Ticks > since_tick`. **Use `since_tick` to bound output** — pass the tick recorded before your action. |
+| `get_player_options` | Current choice/action and indexed option identifiers with enabled/disabled state. |
 | `get_dialog` | Last `ReceiveUIRequest` payload (list-of-objects). `null` if none. |
 | `get_chat` | Recent broadcast messages. |
 | `get_diagnostics` | Hub state, last applied tick, collection counts. |
@@ -140,6 +141,7 @@ The process speaks MCP over stdio. To register it with VS Code (or another MCP c
 | `set_ability_slot(slot, ability_id)` | `SetAbilitySlot`. Pass `ability_id=null` to clear. |
 | `use_ability_slot(slot, target_id?, target2?)` | `UseAbilitySlot`. Optional targeting depends on the ability's shape. |
 | `travel_to_room(room_id)` | `TravelToRoom`. |
+| `select_player_option(option_index)` | Select an indexed entry from the current stage shown by `get_player_options`. |
 | `perform_action(action_type, target?, target2?)` | Raw escape hatch for any `ActorActionType` int. |
 
 Each action tool returns a short status string like:
@@ -151,7 +153,7 @@ action=MoveOneCell target=0 target2= tick=124 can_act=True hp=18/20 ep=10/10
 
 | Tool | Mapping |
 |---|---|
-| `show_dialog(query_type, arguments=[])` | `ShowDialog`. Server replies via `ReceiveUIRequest`; inspect with `get_dialog`. `query_type` values: `0=Clear 1=SlottableAbilities 2=PlayerAttributes 3=PlayerInventory 4=PlayerAdaptations 5=PlayerSkills 6=AbilityAttributes 7=ActorAttributes 8=ItemAttributes 9=StaticDescription 10=PostGameStatistics 11=LevelMap`. |
+| `show_dialog(query_type, arguments=[])` | `ShowDialog`. Waits for its matching `ReceiveUIRequest` and returns the payload; `get_dialog` retains the last response. `query_type` values: `0=Clear 1=SlottableAbilities 2=PlayerAttributes 3=PlayerInventory 4=PlayerAdaptations 5=PlayerSkills 6=AbilityAttributes 7=ActorAttributes 8=ItemAttributes 9=StaticDescription 10=PostGameStatistics 11=LevelMap`. |
 | `describe(topic_id, category)` | `QueryStaticDescription`. `category` is `DescriptionCategory`. |
 | `send_message(text)` | `SendMessage`. **Currently fails server-side** because the server reads `Context.User.Identity.Name` and authentication is not wired up. |
 
@@ -184,7 +186,6 @@ action=MoveOneCell target=0 target2= tick=124 can_act=True hp=18/20 ep=10/10
 - **TLS / dev-cert errors**: pass `--insecure` (local only). Alternatively `dotnet dev-certs https --trust`.
 - **`Hub is not connected` / `Disconnected`**: the bootstrap connection failed; check the log file and confirm the server URL/port match the `UnicornHack.Web` launch profile. After the first failed connect the diagnostic client retries forever in the background — call any action tool again and it will lazily reconnect via `EnsureReadyAsync`.
 - **`You must install or update .NET to run this application`** when launching the Web server: the apphost is resolving the runtime from a side-by-side install (e.g. `D:\repos\EFCore\.dotnet`) whose preview build doesn't satisfy `Microsoft.NETCore.App 10.0.0`. Set `$env:DOTNET_ROOT = 'C:\Program Files\dotnet'` in a fresh shell before `dotnet run` — see *Running the Web server*.
-- **`get_dialog` returns null after `show_dialog`**: server pushes the result asynchronously via `ReceiveUIRequest` to all clients; poll `get_dialog` after a short wait.
 - **Action returns but state looks unchanged**: action may have been rejected (e.g. moving into a wall). Check `get_log(since_tick=...)` for the explanatory entry.
 - **`send_message` throws server-side NullReferenceException**: expected — the server requires authentication. Tracked as a known limitation.
 

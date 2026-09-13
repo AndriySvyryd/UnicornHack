@@ -24,6 +24,17 @@ public class PlayerSystem :
             return MessageProcessingResult.ContinueProcessing;
         }
 
+        if (player.PendingChoice != null
+            || player.NextAction == ActorActionType.SelectChoice)
+        {
+            if (!ProcessPlayerOptionSelection(message.Actor, player, manager))
+            {
+                manager.Game.ActingPlayer = message.Actor;
+            }
+
+            return MessageProcessingResult.ContinueProcessing;
+        }
+
         if (!CanAct(message.Actor, manager))
         {
             if (EffectApplicationSystem.GetAbilitiesAffectingProperty(
@@ -44,6 +55,76 @@ public class PlayerSystem :
         }
 
         return MessageProcessingResult.ContinueProcessing;
+    }
+
+    private static bool ProcessPlayerOptionSelection(
+        GameEntity playerEntity, PlayerComponent player, GameManager manager)
+    {
+        var action = player.NextAction;
+        var optionIndex = player.NextActionTarget;
+
+        if (action == null)
+        {
+            return false;
+        }
+
+        if (action != ActorActionType.SelectChoice)
+        {
+            if (!player.QueuedAction)
+            {
+                manager.LoggingSystem.WriteLog(
+                    manager.Game.Services.Language.PlayerChoiceRequired(),
+                    playerEntity,
+                    manager);
+            }
+
+            ResetNextAction(player);
+            return false;
+        }
+
+        if (optionIndex == null)
+        {
+            manager.LoggingSystem.WriteLog(
+                manager.Game.Services.Language.InvalidPlayerChoiceSelection(),
+                playerEntity,
+                manager);
+            ResetNextAction(player);
+            return false;
+        }
+
+        ResetNextAction(player);
+        var result = manager.PlayerChoiceSystem.Select(
+            playerEntity,
+            optionIndex.Value,
+            manager);
+        if (!result.IsAccepted)
+        {
+            manager.LoggingSystem.WriteLog(
+                result.ErrorMessage
+                ?? manager.Game.Services.Language.PlayerChoiceApplicationFailed(),
+                playerEntity,
+                manager);
+            return false;
+        }
+
+        player.CommandHistory.Add(new PlayerCommand
+        {
+            GameId = playerEntity.GameId,
+            Id = ++playerEntity.Game.NextCommandId,
+            PlayerId = playerEntity.Id,
+            Tick = manager.Game.CurrentTick,
+            Action = action.Value,
+            Target = optionIndex,
+            Target2 = null
+        });
+
+        if (result.Delay == 0)
+        {
+            return false;
+        }
+
+        DelayMessage.Enqueue(playerEntity, result.Delay, manager);
+        return true;
     }
 
     private bool ProcessTurn(PerformActionMessage message, GameManager manager)
@@ -402,16 +483,20 @@ public class PlayerSystem :
             && player != null)
         {
             var manager = message.Entity.Manager;
-            var language = manager.Game.Services.Language;
-            var statusAbility = !message.Entity.Being!.CanMove
-                ? EffectApplicationSystem.GetAbilitiesAffectingProperty(
-                        message.Entity, nameof(BeingComponent.CanMove), AbilityType.Debuff)
-                    .FirstOrDefault()
-                : null;
-            manager.LoggingSystem.WriteLog(statusAbility != null
-                    ? language.StatusPreventsMovement(statusAbility)
-                    : language.UnableToMove(message.TargetHeading),
-                message.Entity, manager);
+            if (player.PendingChoice == null)
+            {
+                var language = manager.Game.Services.Language;
+                var statusAbility = !message.Entity.Being!.CanMove
+                    ? EffectApplicationSystem.GetAbilitiesAffectingProperty(
+                            message.Entity, nameof(BeingComponent.CanMove), AbilityType.Debuff)
+                        .FirstOrDefault()
+                    : null;
+                manager.LoggingSystem.WriteLog(statusAbility != null
+                        ? language.StatusPreventsMovement(statusAbility)
+                        : language.UnableToMove(message.TargetHeading),
+                    message.Entity, manager);
+            }
+
             ResetNextAction(player);
 
             if (manager.Game.ActingPlayer == null)
@@ -439,6 +524,7 @@ public class PlayerSystem :
         var player = message.BeingEntity.Player;
         if (player != null)
         {
+            state.PlayerChoiceSystem.Clear(message.BeingEntity);
             player.NextActionTick = null;
         }
 

@@ -3,6 +3,7 @@ using MessagePack.Resolvers;
 using System.Reflection;
 using UnicornHack.Generation;
 using UnicornHack.Hubs.ChangeTracking;
+using UnicornHack.Systems.Actors;
 using Xunit;
 
 namespace UnicornHack;
@@ -87,6 +88,29 @@ public class MessagePackTest
         {
             ChangedProperties = null,
             Name = "Dudley",
+            PendingOptions = new PlayerOptionsData
+            {
+                Choice = PlayerChoiceSystem.RaceChoice,
+                Action = PlayerChoiceSystem.AddAction,
+                Title = "Choose a race",
+                Notice = "Permanent",
+                Options =
+                [
+                    new PlayerOptionData
+                    {
+                        Identifier = "elf",
+                        Title = "Elf",
+                        Description = "Gain elf"
+                    },
+                    new PlayerOptionData
+                    {
+                        Identifier = "dwarf",
+                        Title = "Dwarf",
+                        Description = "Gain dwarf",
+                        DisabledReason = "Locked"
+                    }
+                ]
+            },
             Abilities = new Dictionary<int, AbilityChange>
             {
                 [1] = new AbilityChange
@@ -105,6 +129,30 @@ public class MessagePackTest
             bytes, Options, cancellationToken);
         Assert.Equal((int)EffectDuration.UntilXPGained, result.Abilities![1].ExpirationEvent);
         Assert.Equal(7, result.Abilities[1].Noise);
+        Assert.Equal(PlayerChoiceSystem.RaceChoice, result.PendingOptions!.Choice);
+        Assert.Equal(PlayerChoiceSystem.AddAction, result.PendingOptions.Action);
+        Assert.Equal("Choose a race", result.PendingOptions.Title);
+        Assert.Equal("Permanent", result.PendingOptions.Notice);
+        Assert.Equal("elf", result.PendingOptions.Options[0].Identifier);
+        Assert.Equal("Locked", result.PendingOptions.Options[1].DisabledReason);
+    }
+
+    [Fact]
+    public void Sparse_player_options_clear_round_trips()
+    {
+        var state = new PlayerChange
+        {
+            ChangedProperties = 1u << 17,
+            PendingOptions = null
+        };
+
+        var bytes = MessagePackSerializer.Serialize(
+            state, Options, TestContext.Current.CancellationToken);
+        var result = MessagePackSerializer.Deserialize<PlayerChange>(
+            bytes, Options, TestContext.Current.CancellationToken);
+
+        Assert.Equal(1u << 17, result.ChangedProperties);
+        Assert.Null(result.PendingOptions);
     }
 
     [Fact]
@@ -416,7 +464,7 @@ public class MessagePackTest
 
         Assert.Equal(
             [
-                "Player.Full=DC0011C0A000000000C0C0C0C000000000000000",
+                "Player.Full=DC0012C0A000000000C0C0C0C000000000000000C0",
                 "Player.Sparse=92CE0001000107",
                 "Room.Full=9CC0C0C0C0C0C0A00000000000",
                 "Room.Sparse=92CD080107",

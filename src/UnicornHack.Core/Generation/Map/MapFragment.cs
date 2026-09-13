@@ -3028,9 +3028,26 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
 
     private static void AppendAllPlaceableFeatures(List<MapFeature> result)
     {
-        for (var f = (byte)(MapFeature.Default + 1); f < (byte)MapFeature.Unexplored; f++)
+        foreach (var feature in Enum.GetValues<MapFeature>())
         {
-            result.Add((MapFeature)f);
+            if (feature is not (MapFeature.Default
+                or MapFeature.InactiveDeityAltar
+                or MapFeature.InactiveMajorShrine
+                or MapFeature.InactiveMinorShrine
+                or MapFeature.InactiveRitualShrine
+                or MapFeature.InactiveSmallFountain
+                or MapFeature.InactiveBigFountain
+                or MapFeature.InactiveSkillPedestal
+                or MapFeature.InactiveRacePedestal
+                or MapFeature.InactiveTraitPedestal
+                or MapFeature.InactiveFeatPedestal
+                or MapFeature.InactiveArmorStand
+                or MapFeature.InactiveItemCase
+                or MapFeature.InactiveWeaponStand
+                or MapFeature.Unexplored))
+            {
+                result.Add(feature);
+            }
         }
     }
 

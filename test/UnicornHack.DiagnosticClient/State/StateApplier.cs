@@ -95,6 +95,7 @@ internal static class StateApplier
                 case 14: canonical.MaxEp = delta.MaxEp; break;
                 case 15: canonical.ReservedEp = delta.ReservedEp; break;
                 case 16: canonical.Fortune = delta.Fortune; break;
+                case 17: canonical.PendingOptions = delta.PendingOptions; break;
             }
         }
     }
@@ -117,6 +118,7 @@ internal static class StateApplier
         canonical.MaxEp = snapshot.MaxEp;
         canonical.ReservedEp = snapshot.ReservedEp;
         canonical.Fortune = snapshot.Fortune;
+        canonical.PendingOptions = snapshot.PendingOptions;
         if (canonical.Room is { } r)
         {
             NormalizeRoom(r);

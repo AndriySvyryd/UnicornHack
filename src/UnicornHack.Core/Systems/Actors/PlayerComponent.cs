@@ -8,6 +8,7 @@ public class PlayerComponent : ActorComponent, IKeepAliveComponent
 {
     /// <summary>The highest rank any weapon or armor skill can be trained to.</summary>
     private bool _queuedAction;
+    private PlayerOptions? _options;
 
     public PlayerComponent()
     {
@@ -30,9 +31,16 @@ public class PlayerComponent : ActorComponent, IKeepAliveComponent
         set => SetWithNotify(value, ref _queuedAction);
     }
 
+    public PlayerOptions? PendingChoice
+    {
+        get => _options;
+        set => SetWithNotify(value, ref _options);
+    }
+
     protected override void Clean()
     {
         _queuedAction = default;
+        _options = default;
 
         base.Clean();
     }

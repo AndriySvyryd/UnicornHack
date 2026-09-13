@@ -22,6 +22,7 @@ public static class ClientStateHelpers
             MaxEp = data.MaxEp,
             ReservedEp = data.ReservedEp,
             Fortune = data.Fortune,
+            PendingOptions = data.PendingOptions,
             Abilities = new Dictionary<int, AbilityChange>(),
             Effects = new Dictionary<int, EffectChange>(),
             Log = new Dictionary<int, LogEntryChange>()
@@ -153,6 +154,11 @@ public static class ClientStateHelpers
         if (setValues.IsPropertyChanged(16))
         {
             player.Fortune = data.Fortune;
+        }
+
+        if (setValues.IsPropertyChanged(17))
+        {
+            player.PendingOptions = data.PendingOptions;
         }
 
     }

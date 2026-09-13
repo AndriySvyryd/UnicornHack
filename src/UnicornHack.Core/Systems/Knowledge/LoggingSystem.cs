@@ -137,7 +137,9 @@ public class LoggingSystem :
                 message.WeaponEntity, message.Ranged, message.Hit));
             WriteLog(logMessage, playerEntity, manager);
 
-            if (message.LingeringEffects.Count != 0)
+            if (message.LingeringEffects.Count != 0
+                && (attackerSensed.CanIdentify()
+                    || victimSensed.CanIdentify()))
             {
                 var lingeringMessage = manager.Game.Services.Language.GetString(
                     new LingeringAttackEvent(

@@ -35,7 +35,8 @@ public sealed class ReadTools
                 return "(state not yet received)";
             }
             var room = p.Room;
-            var canAct = p.NextActionTick <= p.CurrentTick;
+            var canAct = p.PendingOptions == null
+                         && p.NextActionTick <= p.CurrentTick;
             var depth = room?.Depth ?? 0;
             var branch = room?.BranchName ?? "?";
             var pos = "-";
@@ -48,6 +49,41 @@ public sealed class ReadTools
             return $"name={p.Name} id={p.Id} pos={pos} head={head} tick={p.CurrentTick} can_act={canAct} next_at={p.NextActionTick} "
                  + $"hp={p.Hp}/{p.MaxHp} ep={p.Ep}/{p.MaxEp} reserved_ep={p.ReservedEp} xp={p.XP} fortune={p.Fortune} "
                  + $"branch={branch} depth={depth} room={room?.Width}x{room?.Height}@({room?.GridX},{room?.GridY})";
+        }
+    }
+
+    [McpServerTool, Description(
+        "Show the required player choice, current action, and indexed option identifiers.")]
+    public string get_player_options()
+    {
+        lock (_store.Sync)
+        {
+            if (_store.Player?.PendingOptions is not { } options)
+            {
+                return "(no pending player options)";
+            }
+
+            var result = new StringBuilder()
+                .Append("choice=").Append(options.Choice)
+                .Append(" action=").Append(options.Action ?? "menu")
+                .Append(" title=").Append(options.Title)
+                .AppendLine();
+            for (var i = 0; i < options.Options.Count; i++)
+            {
+                var option = options.Options[i];
+                result.Append(i)
+                    .Append('\t').Append(option.DisabledReason == null ? "enabled" : "disabled")
+                    .Append('\t').Append(option.Identifier)
+                    .Append('\t').Append(option.Title);
+                if (!string.IsNullOrEmpty(option.DisabledReason))
+                {
+                    result.Append('\t').Append(option.DisabledReason);
+                }
+
+                result.AppendLine();
+            }
+
+            return result.ToString();
         }
     }
 

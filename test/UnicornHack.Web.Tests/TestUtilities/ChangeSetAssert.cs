@@ -17,11 +17,36 @@ public static class ChangeSetAssert
         Assert.True(expected.MaxEp == actual.MaxEp, $"Player MaxEp expected {expected.MaxEp}, actual {actual.MaxEp}");
         Assert.True(expected.ReservedEp == actual.ReservedEp, $"Player ReservedEp expected {expected.ReservedEp}, actual {actual.ReservedEp}");
         Assert.True(expected.Fortune == actual.Fortune, $"Player Fortune expected {expected.Fortune}, actual {actual.Fortune}");
+        AssertPlayerOptionsEqual(expected.PendingOptions, actual.PendingOptions);
 
         AssertAbilitiesEqual(expected.Abilities!, actual.Abilities!);
         AssertEffectsEqual(expected.Effects!, actual.Effects!);
         AssertLogContainsAll(expected.Log!, actual.Log!);
         AssertLevelEqual(expected.Room!, actual.Room!);
+    }
+
+    private static void AssertPlayerOptionsEqual(PlayerOptionsData? expected, PlayerOptionsData? actual)
+    {
+        if (expected == null || actual == null)
+        {
+            Assert.True(expected == null && actual == null, "Player pending options differ");
+            return;
+        }
+
+        Assert.Equal(expected.Choice, actual.Choice);
+        Assert.Equal(expected.Action, actual.Action);
+        Assert.Equal(expected.Title, actual.Title);
+        Assert.Equal(expected.Notice, actual.Notice);
+        Assert.Equal(expected.Options.Count, actual.Options.Count);
+        for (var i = 0; i < expected.Options.Count; i++)
+        {
+            var expectedOption = expected.Options[i];
+            var actualOption = actual.Options[i];
+            Assert.Equal(expectedOption.Identifier, actualOption.Identifier);
+            Assert.Equal(expectedOption.Title, actualOption.Title);
+            Assert.Equal(expectedOption.Description, actualOption.Description);
+            Assert.Equal(expectedOption.DisabledReason, actualOption.DisabledReason);
+        }
     }
 
     private static void AssertAbilitiesEqual(Dictionary<int, AbilityChange> expected, Dictionary<int, AbilityChange> actual)

@@ -263,7 +263,10 @@ public class GameHub : Hub
         }
 
         // TODO: Log turn ended prematurely
-        Debug.Assert(session.Player.Game.CurrentTick == session.Player.NextActionTick, "Turn ended prematurely");
+        Debug.Assert(
+            !session.Player.Entity.Being!.IsAlive
+            || session.Player.Game.CurrentTick == session.Player.NextActionTick,
+            "Turn ended prematurely");
         var manager = session.Player.Game.Manager;
         var changeSetResponses = new List<List<TurnChangeSet>>(manager.Players.Count);
         List<DialogData>? uiResponses = null;

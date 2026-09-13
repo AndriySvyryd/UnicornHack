@@ -17,6 +17,7 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
     private const uint MaxEpDirty = 1u << 14;
     private const uint ReservedEpDirty = 1u << 15;
     private const uint FortuneDirty = 1u << 16;
+    private const uint PendingOptionsDirty = 1u << 17;
 
     private struct PendingScalarChanges
     {
@@ -212,6 +213,11 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
             change.Fortune = _pendingScalars.Fortune;
         }
 
+        if ((pendingMask & PendingOptionsDirty) != 0)
+        {
+            change.PendingOptions = SerializePlayerOptions(playerEntity);
+        }
+
         return change;
     }
 
@@ -319,8 +325,30 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
             Ep = being.EnergyPoints,
             MaxEp = being.EnergyPointMaximum,
             ReservedEp = being.ReservedEnergyPoints,
-            Fortune = being.EntropyState
+            Fortune = being.EntropyState,
+            PendingOptions = SerializePlayerOptions(playerEntity)
         };
+    }
+
+    public static PlayerOptionsData? SerializePlayerOptions(GameEntity playerEntity)
+    {
+        var presentation = playerEntity.Manager.PlayerChoiceSystem.GetPresentation(playerEntity);
+        return presentation == null
+            ? null
+            : new PlayerOptionsData
+            {
+                Choice = presentation.Choice,
+                Action = presentation.Action,
+                Title = presentation.Title,
+                Notice = presentation.Notice,
+                Options = presentation.Options.Select(option => new PlayerOptionData
+                {
+                    Identifier = option.Identifier,
+                    Title = option.Title,
+                    Description = option.Description,
+                    DisabledReason = option.DisabledReason
+                }).ToList()
+            };
     }
 
     public void RegisterOnGroups(GameManager manager)
@@ -371,6 +399,11 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
                 {
                     _pendingScalars.NextActionTick = entityChange.Entity.Player!.NextActionTick ?? 0;
                     _pendingScalars.DirtyMask |= NextActionTickDirty;
+                    handled = true;
+                }
+                else if (propertyName == nameof(PlayerComponent.PendingChoice))
+                {
+                    _pendingScalars.DirtyMask |= PendingOptionsDirty;
                     handled = true;
                 }
             }

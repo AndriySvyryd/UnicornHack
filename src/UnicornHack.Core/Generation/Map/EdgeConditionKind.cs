@@ -34,28 +34,13 @@ public enum EdgeConditionKind : byte
     RockWall = MapFeature.RockWall,
     StoneWall = MapFeature.StoneWall,
     StoneArchway = MapFeature.StoneArchway,
-    DeityAltar = MapFeature.DeityAltar,
-    MajorShrine = MapFeature.MajorShrine,
-    MinorShrine = MapFeature.MinorShrine,
-    RitualShrine = MapFeature.RitualShrine,
-    SmallFountain = MapFeature.SmallFountain,
-    BigFountain = MapFeature.BigFountain,
-    SkillPedestal = MapFeature.SkillPedestal,
-    RacePedestal = MapFeature.RacePedestal,
     Pool = MapFeature.Pool,
-    TraitPedestal = MapFeature.TraitPedestal,
-    FeatPedestal = MapFeature.FeatPedestal,
-    ArmorStand = MapFeature.ArmorStand,
-    ItemCase = MapFeature.ItemCase,
-    WeaponStand = MapFeature.WeaponStand,
 
-    // --- Non-feature conditions: values immediately above the highest tile-specific
-    //     (WeaponStand = 19) so the enum range stays compact while never colliding with a
-    //     MapFeature value used as a tile-specific condition.
+    // --- Non-feature conditions: values immediately above the highest concrete MapFeature.
 
     /// <summary>Neighbor must be any non-outside tile (anything already placed).
     /// Authored as <c>F</c>.</summary>
-    Filled = WeaponStand + 1,
+    Filled = MapFeature.InactiveWeaponStand + 1,
 
     /// <summary>Neighbor is either still-empty space inside the room or outside the room
     /// altogether (i.e. the room's own edge). Authored as <c>U</c>.</summary>

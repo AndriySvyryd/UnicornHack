@@ -90,6 +90,12 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
         var currentRoom = position.RoomEntity.Room!;
         if (!CanMoveTo(targetCell, currentRoom))
         {
+            if (!pretend)
+            {
+                TerrainSystem.TryInteract(
+                    message.ActorEntity, targetCell, currentRoom, manager);
+            }
+
             return traveledMessage;
         }
 

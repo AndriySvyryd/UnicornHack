@@ -104,6 +104,12 @@ public sealed class PlayerChangeFormatter : IMessagePackFormatter<PlayerChange?>
             writer.Write(value.Fortune);
         }
 
+        if (values.IsPropertyChanged(17))
+        {
+            resolver.GetFormatterWithVerify<PlayerOptionsData?>()
+                .Serialize(ref writer, value.PendingOptions, options);
+        }
+
     }
 
     public PlayerChange? Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
@@ -187,6 +193,10 @@ public sealed class PlayerChangeFormatter : IMessagePackFormatter<PlayerChange?>
                     break;
                 case 16:
                     result.Fortune = reader.ReadInt32();
+                    break;
+                case 17:
+                    result.PendingOptions = resolver.GetFormatterWithVerify<PlayerOptionsData?>()
+                        .Deserialize(ref reader, options);
                     break;
                 default:
                     reader.Skip();

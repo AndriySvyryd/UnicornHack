@@ -59,6 +59,21 @@ public interface ILanguageService
     string TooAfraidToApproach(GameEntity source);
     string CannotFleeSource(GameEntity source);
     string SoundFrom(Direction direction);
+    string PlayerChoiceRequired();
+    string InvalidPlayerChoiceSelection();
+    string PlayerChoiceApplicationFailed();
+
+    string PlayerAbilityLevelChanged(
+        string abilityName,
+        AbilityType abilityType,
+        int previousLevel,
+        int currentLevel);
+
+    string GetPlayerChoiceText(
+        string choice,
+        PlayerChoiceText text,
+        string? action = null,
+        string? option = null);
 
     /// <summary>
     ///     Composes the localized hover-tooltip for a single room cell on the map screen.

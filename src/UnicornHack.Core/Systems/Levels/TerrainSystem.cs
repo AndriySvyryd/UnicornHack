@@ -1,7 +1,77 @@
+using UnicornHack.Systems.Actors;
+
 namespace UnicornHack.Systems.Levels;
 
 public static class TerrainSystem
 {
+    public static bool TryInteract(
+        GameEntity actorEntity, Point point, RoomComponent room, GameManager manager)
+    {
+        if (actorEntity.Player == null
+            || actorEntity.Position?.Cell is not { } actorCell
+            || actorCell.DistanceTo(point) != 1
+            || !room.IsValid(point))
+        {
+            return false;
+        }
+
+        var feature = room.Terrain[room.PointToIndex![point.X, point.Y]];
+        return feature switch
+        {
+            MapFeature.RacePedestal => manager.PlayerChoiceSystem.TryPresent(
+                actorEntity, PlayerChoiceSystem.RaceChoice),
+            _ => false
+        };
+    }
+
+    public static bool TryFindAdjacentFeature(
+        GameEntity actorEntity,
+        MapFeature feature,
+        out RoomComponent room,
+        out Point featureCell)
+    {
+        if (actorEntity.Position is not
+            {
+                Cell: { } actorCell,
+                Heading: >= Direction.East and <= Direction.Southeast
+            } position)
+        {
+            room = null!;
+            featureCell = default;
+            return false;
+        }
+
+        room = position.RoomEntity.Room!;
+        featureCell = actorCell.Translate(position.Heading.Value.AsVector());
+        return room.IsValid(featureCell)
+               && room.Terrain[room.PointToIndex![featureCell.X, featureCell.Y]] == feature;
+    }
+
+    public static void DeactivateFeature(
+        MapFeature feature, Point point, RoomComponent room)
+    {
+        var inactiveFeature = feature switch
+        {
+            MapFeature.DeityAltar => MapFeature.InactiveDeityAltar,
+            MapFeature.MajorShrine => MapFeature.InactiveMajorShrine,
+            MapFeature.MinorShrine => MapFeature.InactiveMinorShrine,
+            MapFeature.RitualShrine => MapFeature.InactiveRitualShrine,
+            MapFeature.SmallFountain => MapFeature.InactiveSmallFountain,
+            MapFeature.BigFountain => MapFeature.InactiveBigFountain,
+            MapFeature.SkillPedestal => MapFeature.InactiveSkillPedestal,
+            MapFeature.RacePedestal => MapFeature.InactiveRacePedestal,
+            MapFeature.TraitPedestal => MapFeature.InactiveTraitPedestal,
+            MapFeature.FeatPedestal => MapFeature.InactiveFeatPedestal,
+            MapFeature.ArmorStand => MapFeature.InactiveArmorStand,
+            MapFeature.ItemCase => MapFeature.InactiveItemCase,
+            MapFeature.WeaponStand => MapFeature.InactiveWeaponStand,
+            _ => throw new InvalidOperationException(
+                $"{feature} does not have an inactive terrain type.")
+        };
+
+        SetTerrain(inactiveFeature, point, room);
+    }
+
     public static void SetTerrain(MapFeature feature, Point point, RoomComponent room)
     {
         var index = room.PointToIndex![point.X, point.Y];

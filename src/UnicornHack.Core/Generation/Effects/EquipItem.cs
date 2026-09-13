@@ -8,8 +8,7 @@ public class EquipItem : Effect
     private static readonly EffectMetadata _metadata = EffectMetadata.Default(
             EffectType.EquipItem, defaultDuration: EffectDuration.Instant,
             combinationFunction: ValueCombinationFunction.Sum,
-            applicationHandler: Apply,
-            resultMessageSelector: CreateResultMessage);
+            applicationHandler: Apply);
 
     [System.Runtime.CompilerServices.ModuleInitializer]
     internal static void RegisterMetadataProvider() => _ = _metadata;
@@ -43,14 +42,6 @@ public class EquipItem : Effect
                 }
             }
         }
-    }
-
-    private static EffectResultMessage CreateResultMessage(
-        EffectComponent effect, GameEntity _, GameManager manager)
-    {
-        var result = ItemActivationResultMessage.Create(manager);
-        result.ItemEntity = manager.FindEntity(effect.TargetEntityId)!;
-        return result;
     }
 
     private static readonly CSScriptSerializer Serializer =

@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Globalization;
 using UnicornHack.Services.LogEvents;
 using UnicornHack.Systems.Abilities;
+using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Levels;
@@ -51,6 +52,112 @@ public class EnglishLanguageService : ILanguageService
         return id;
     }
 
+    public string GetPlayerChoiceText(
+        string choice,
+        PlayerChoiceText text,
+        string? action = null,
+        string? option = null)
+    {
+        if (choice != PlayerChoiceSystem.RaceChoice)
+        {
+            return "Unknown choice.";
+        }
+
+        return text switch
+        {
+            PlayerChoiceText.NoPendingChoice => "There is no race choice to resolve.",
+            PlayerChoiceText.SourceUnavailable => "The race pedestal is no longer available.",
+            PlayerChoiceText.StaleSelection => "Those race options are no longer available.",
+            PlayerChoiceText.UnknownAction => "Unknown race pedestal action.",
+            PlayerChoiceText.NoAvailableOptions => "There are no new races available.",
+            PlayerChoiceText.NoOptionToReplace => "You have no race to replace.",
+            PlayerChoiceText.OptionUnavailable => "That race is no longer available.",
+            PlayerChoiceText.Title => action switch
+            {
+                null => "Race pedestal",
+                PlayerChoiceSystem.AddAction => "Choose a race to add",
+                PlayerChoiceSystem.RemoveAction => "Choose a race to replace",
+                _ => "Choose"
+            },
+            PlayerChoiceText.OptionTitle => option == null
+                ? action == PlayerChoiceSystem.AddAction
+                    ? "Obtain a race"
+                    : action == PlayerChoiceSystem.RemoveAction
+                        ? "Replace a race"
+                        : "Destroy the pedestal"
+                : Capitalize(new StringBuilder(option)).ToString(),
+            PlayerChoiceText.OptionDescription => option == null
+                ? action == PlayerChoiceSystem.AddAction
+                    ? "Choose a new race to add permanently."
+                    : action == PlayerChoiceSystem.RemoveAction
+                        ? "Choose one of your races to replace permanently."
+                        : "Destroy the pedestal to gain a random race not shown among the other options."
+                : $"{(action == PlayerChoiceSystem.AddAction ? "Gain" : "Replace")} "
+                  + $"the <tooltip id='{option}' category='{(int)DescriptionCategory.Race}'>{option}</tooltip> race.",
+            PlayerChoiceText.Notice => "Your selection is permanent.",
+            _ => throw new ArgumentOutOfRangeException(nameof(text), text, message: null)
+        };
+    }
+
+    public string PlayerChoiceRequired()
+        => "Choose one of the presented options before taking another action.";
+
+    public string InvalidPlayerChoiceSelection()
+        => "The selected option was invalid.";
+
+    public string PlayerChoiceApplicationFailed()
+        => "The selected option could not be applied.";
+
+    public string PlayerAbilityLevelChanged(
+        string abilityName,
+        AbilityType abilityType,
+        int previousLevel,
+        int currentLevel)
+    {
+        var ability = abilityType == AbilityType.Race
+            ? RaceRef(abilityName)
+            : AbilityRef(abilityName);
+        var kind = abilityType switch
+        {
+            AbilityType.MeleeSpell or AbilityType.RangedSpell => "spell",
+            AbilityType.Miracle => "miracle",
+            AbilityType.Race => "race",
+            AbilityType.Debuff => "debuff",
+            AbilityType.Buff => "buff",
+            AbilityType.Boon => "boon",
+            AbilityType.Curse => "curse",
+            AbilityType.Trait => "trait",
+            AbilityType.Flaw => "flaw",
+            AbilityType.Feat => "feat",
+            AbilityType.Fault => "fault",
+            AbilityType.Skill => "skill",
+            AbilityType.Faith => "faith",
+            _ => throw new ArgumentOutOfRangeException(nameof(abilityType), abilityType, message: null)
+        };
+
+        if (previousLevel == 0 && currentLevel > 0)
+        {
+            return $"You gain the {ability} {kind}.";
+        }
+
+        if (previousLevel > 0 && currentLevel <= 0)
+        {
+            return abilityType.IsStatusLike()
+                ? $"Your {ability} {kind} ends."
+                : $"You lose the {ability} {kind}.";
+        }
+
+        if (previousLevel != 0)
+        {
+            var verb = currentLevel > previousLevel
+                ? "increases"
+                : "decreases";
+            return $"Your {ability} {kind} {verb} to level {currentLevel}.";
+        }
+
+        return $"Your {ability} {kind} is now level {currentLevel}.";
+    }
+
     // Embeds a reference to a status ability so the client renders it as a nested tooltip (category 4 =
     // DescriptionCategory.Ability); hovering it shows that ability's own description.
     private static string AbilityRef(string abilityName, string? displayText = null)
@@ -58,6 +165,9 @@ public class EnglishLanguageService : ILanguageService
 
     private static string EffectRef(EffectType effectType, string? displayText = null)
         => $"<tooltip id='{effectType}' category='{(int)DescriptionCategory.Effect}'>{displayText ?? effectType.ToString()}</tooltip>";
+
+    private static string RaceRef(string raceName)
+        => $"<tooltip id='{raceName}' category='{(int)DescriptionCategory.Race}'>{raceName}</tooltip>";
 
     private string PropertyRef(string propertyName)
         => $"<tooltip id='{propertyName}' category='{(int)DescriptionCategory.Property}'>{GetPropertyName(propertyName, abbreviate: false)}</tooltip>";

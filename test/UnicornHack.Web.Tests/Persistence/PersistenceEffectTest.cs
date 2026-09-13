@@ -21,6 +21,51 @@ namespace UnicornHack.Persistence;
 public class PersistenceEffectTest
 {
     [Fact]
+    public async Task Loading_a_game_ignores_entities_with_the_same_ids_from_other_games()
+    {
+        Assert.SkipUnless(
+            PersistedGame.IsLocalDbAvailable, "SQL Server LocalDB is not available in this environment.");
+
+        using var persisted = PersistedGame.CreateAndSave();
+        var firstGameId = persisted.Game.Id;
+        var secondGame = new Game
+        {
+            Options = { InitialSeed = 2 },
+            Random = new SimpleRandom { Seed = 2 },
+            Services = persisted.Game.Services,
+            Repository = persisted.Context
+        };
+        persisted.Context.Games.Add(secondGame);
+        persisted.Context.SaveChanges();
+
+        var secondManager = new GameManager { Game = secondGame };
+        secondManager.Initialize(new SequentialMessageQueue<GameEntity>());
+        secondGame.Manager = secondManager;
+        var secondRoom = TestHelper.BuildRoom("...", secondGame);
+        PlayerRace.InstantiatePlayer(
+            "Other", Sex.Female, secondRoom, new Point(1, 0));
+        secondManager.Queue.ProcessQueue(secondManager);
+        persisted.Context.SaveChanges();
+
+        var firstGameEntityIds = persisted.Context.ChangeTracker.Entries<GameEntity>()
+            .Where(entry => entry.Entity.GameId == firstGameId)
+            .Select(entry => entry.Entity.Id)
+            .ToHashSet();
+        var secondGameEntityIds = persisted.Context.ChangeTracker.Entries<GameEntity>()
+            .Where(entry => entry.Entity.GameId == secondGame.Id)
+            .Select(entry => entry.Entity.Id)
+            .ToHashSet();
+        Assert.NotEmpty(firstGameEntityIds.Intersect(secondGameEntityIds));
+
+        await persisted.ReloadAsync();
+
+        Assert.Equal(firstGameId, persisted.Game.Id);
+        Assert.All(
+            persisted.Context.ChangeTracker.Entries<GameEntity>(),
+            entry => Assert.Equal(firstGameId, entry.Entity.GameId));
+    }
+
+    [Fact]
     public void Queried_poolable_objects_are_assigned_to_object_pools()
     {
         Assert.SkipUnless(

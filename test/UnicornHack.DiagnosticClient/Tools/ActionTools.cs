@@ -104,6 +104,12 @@ public sealed class ActionTools
     public Task<string> travel_to_room(int room_id, CancellationToken cancellationToken = default)
         => Invoke(ActorActionType.TravelToRoom, room_id, null, cancellationToken);
 
+    [McpServerTool, Description(
+        "Select the indexed option from the current choice stage.")]
+    public Task<string> select_player_option(
+        int option_index, CancellationToken cancellationToken = default)
+        => Invoke(ActorActionType.SelectChoice, option_index, null, cancellationToken);
+
     private async Task<string> Invoke(ActorActionType type, int? target, int? target2, CancellationToken cancellationToken)
     {
         // Two independent budgets:
@@ -152,7 +158,8 @@ public sealed class ActionTools
             {
                 return $"action={type} target={target} target2={target2} (no state)";
             }
-            var canAct = p.NextActionTick <= p.CurrentTick;
+            var canAct = p.PendingOptions == null
+                         && p.NextActionTick <= p.CurrentTick;
             return $"action={type} target={target} target2={target2} tick={p.CurrentTick} can_act={canAct} hp={p.Hp}/{p.MaxHp} ep={p.Ep}/{p.MaxEp} events={eventCount}";
         }
     }

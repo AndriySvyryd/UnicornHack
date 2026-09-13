@@ -106,7 +106,10 @@ namespace MessagePack.Resolvers
                 { typeof(List<SubAbilityAttributes>), 60 },
                 { typeof(List<AbilityAttributes>), 61 },
                 { typeof(ConditionalGrantAttributes), 62 },
-                { typeof(List<ConditionalGrantAttributes>), 63 }
+                { typeof(List<ConditionalGrantAttributes>), 63 },
+                { typeof(PlayerOptionsData), 64 },
+                { typeof(PlayerOptionData), 65 },
+                { typeof(List<PlayerOptionData>), 66 }
             };
         }
 
@@ -235,6 +238,12 @@ namespace MessagePack.Resolvers
                     return ConditionalGrantAttributesFormatter.Instance;
                 case 63:
                     return new ListFormatter<ConditionalGrantAttributes>();
+                case 64:
+                    return PlayerOptionsDataFormatter.Instance;
+                case 65:
+                    return PlayerOptionDataFormatter.Instance;
+                case 66:
+                    return new ListFormatter<PlayerOptionData>();
                 default:
                     return null;
             }

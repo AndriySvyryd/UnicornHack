@@ -108,6 +108,11 @@ public partial class EffectApplicationSystem
 
     public void RemoveAbility(
         GameEntity targetEntity, string abilityName, GameManager manager, int sourceAbilityEntityId = 0)
+        => RemoveAbility(
+            targetEntity, abilityName, manager, (int?)sourceAbilityEntityId);
+
+    public void RemoveAbility(
+        GameEntity targetEntity, string abilityName, GameManager manager, int? sourceAbilityEntityId)
     {
         var level = GetComponentEffectLevel(
             targetEntity, abilityName, EffectType.AddAbility, sourceAbilityEntityId,
@@ -119,8 +124,30 @@ public partial class EffectApplicationSystem
         }
     }
 
+    public static IReadOnlySet<string> GetPlayerRaceAbilityNames(GameEntity playerEntity)
+    {
+        var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var playerRaces = playerEntity.Game.Services.Data.PlayerRaces;
+        foreach (var record in playerEntity.ActiveEffects!.ComponentEffects)
+        {
+            if (record is
+                {
+                    EffectType: EffectType.AddAbility,
+                    ConditionValue: null,
+                    Level: > 0,
+                    TargetName: { } abilityName
+                }
+                && playerRaces.FindByIndex(abilityName) != null)
+            {
+                result.Add(abilityName);
+            }
+        }
+
+        return result;
+    }
+
     private static void RemoveAbilityLevels(
-        string abilityName, int levelsToRemove, int sourceAbilityEntityId,
+        string abilityName, int levelsToRemove, int? sourceAbilityEntityId,
         GameEntity targetEntity, GameManager manager)
     {
         var records = GetOrderedComponentEffectRecords(
@@ -175,11 +202,34 @@ public partial class EffectApplicationSystem
     // combined level has changed (a duplicate source was added or removed). Regenerating from the template
     // rebuilds the ability's per-level effects.
     public void RelevelAbility(
-        string addedName, GameEntity targetEntity, GameManager manager, Ability? template = null)
+        string addedName,
+        GameEntity targetEntity,
+        GameManager manager,
+        Ability? template = null)
+    {
+        var previousAbility = manager.AffectableAbilitiesIndex[
+            (targetEntity.Id, addedName)]?.Ability;
+        var previousLevel = previousAbility?.Level ?? 0;
+        template ??= previousAbility?.Template;
+
+        template = RelevelAbilityCore(
+            addedName, targetEntity, manager, template);
+        LogAbilityLevelChange(
+            addedName,
+            targetEntity,
+            manager,
+            template,
+            previousLevel);
+    }
+
+    private Ability? RelevelAbilityCore(
+        string addedName,
+        GameEntity targetEntity,
+        GameManager manager,
+        Ability? template)
     {
         var statusMetadata = Effect.FindMetadata(addedName);
         var abilityEntity = manager.AffectableAbilitiesIndex[(targetEntity.Id, addedName)];
-        template ??= abilityEntity?.Ability?.Template;
         if (template == null)
         {
             foreach (var record in targetEntity.ActiveEffects!.ComponentEffects.GetValues(addedName))
@@ -197,7 +247,7 @@ public partial class EffectApplicationSystem
         if (template is LeveledAbility leveledTemplate)
         {
             ReconcileAbilityCarriers(addedName, targetEntity, leveledTemplate, manager);
-            return;
+            return template;
         }
 
         if (statusMetadata == null
@@ -206,14 +256,14 @@ public partial class EffectApplicationSystem
             && abilityEntity?.Ability is { IsUsable: true } usableAbility)
         {
             usableAbility.Level = GetAbilityLevel(targetEntity, addedName);
-            return;
+            return template;
         }
 
         if (template != null)
         {
             if (ReconcileAbilityCarriers(addedName, targetEntity, template, manager))
             {
-                return;
+                return template;
             }
         }
 
@@ -223,6 +273,59 @@ public partial class EffectApplicationSystem
             ability.Level = effectiveLevel;
             ability.IsUsable = GetAbilityLevelReduction(targetEntity, addedName) == 0;
         }
+
+        return template;
+    }
+
+    private void LogAbilityLevelChange(
+        string addedName,
+        GameEntity targetEntity,
+        GameManager manager,
+        Ability? template,
+        int previousLevel)
+    {
+        if (template == null)
+        {
+            return;
+        }
+
+        var currentLevel = GetAbilityLevel(targetEntity, addedName);
+        if (previousLevel == currentLevel)
+        {
+            return;
+        }
+
+        if (targetEntity.Player == null
+            || !(template.Type.IsSpell()
+                 || template.Type is AbilityType.Miracle
+                     or AbilityType.Race
+                     or AbilityType.Buff
+                     or AbilityType.Boon
+                     or AbilityType.Curse
+                     or AbilityType.Trait
+                     or AbilityType.Flaw
+                     or AbilityType.Feat
+                     or AbilityType.Fault
+                     or AbilityType.Skill
+                     or AbilityType.Faith))
+        {
+            return;
+        }
+
+        var displayName = template.Type == AbilityType.Race
+            ? manager.Game.Services.Data.PlayerRaces.FindByIndex(addedName)?.Name
+              ?? (addedName.EndsWith(" race", StringComparison.OrdinalIgnoreCase)
+                  ? addedName[..^" race".Length]
+                  : addedName)
+            : addedName;
+        manager.LoggingSystem.WriteLog(
+            manager.Game.Services.Language.PlayerAbilityLevelChanged(
+                displayName,
+                template.Type,
+                previousLevel,
+                currentLevel),
+            targetEntity,
+            manager);
     }
 
     private static bool ReconcileAbilityCarriers(
@@ -500,8 +603,28 @@ public partial class EffectApplicationSystem
         var effectType = firstRecord.EffectType;
         var conditionValue = firstRecord.ConditionValue;
         var sourceAbilityEntityId = firstRecord.SourceAbilityEntityId;
+        Ability? abilityTemplate = null;
+        var previousAbilityLevel = 0;
         if (effectType == EffectType.AddAbility)
         {
+            var previousAbility = manager.AffectableAbilitiesIndex[
+                (targetEntity.Id, targetName!)]?.Ability;
+            previousAbilityLevel = previousAbility?.Level ?? 0;
+            abilityTemplate = previousAbility?.Template;
+            if (abilityTemplate == null)
+            {
+                for (var i = 0; i < detachedRecords.Count; i++)
+                {
+                    if (manager.FindEntity(detachedRecords[i].CarrierId)?.Ability?.Template is { } candidate)
+                    {
+                        abilityTemplate = candidate;
+                        break;
+                    }
+                }
+
+                abilityTemplate ??= FindAbilityTemplate(manager, targetName!);
+            }
+
             HashSet<int>? queuedCarrierIds = null;
             for (var i = 0; i < detachedRecords.Count; i++)
             {
@@ -531,7 +654,15 @@ public partial class EffectApplicationSystem
 
         if (effectType == EffectType.AddAbility)
         {
-            manager.EffectApplicationSystem.RelevelAbility(targetName!, targetEntity, manager);
+            abilityTemplate = manager.EffectApplicationSystem.RelevelAbilityCore(
+                targetName!, targetEntity, manager,
+                abilityTemplate);
+            manager.EffectApplicationSystem.LogAbilityLevelChange(
+                targetName!,
+                targetEntity,
+                manager,
+                abilityTemplate,
+                previousAbilityLevel);
         }
         else if (effectType == EffectType.DecreaseAbilityLevel)
         {
