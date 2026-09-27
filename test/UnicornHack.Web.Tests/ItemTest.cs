@@ -44,7 +44,8 @@ public class ItemTest
         var ability = playerEntity.Being!.SlottedAbilities.Values
             .Select(e => e.Ability!)
             .Single(a => a.Type == AbilityType.Item
-                         && a.Name == itemTemplateName + ": Equip");
+                         && a.Name == "Equip"
+                         && a.OwnerEntity!.Item!.TemplateName == itemTemplateName);
         return ability.Slot!.Value;
     }
 
@@ -55,7 +56,7 @@ public class ItemTest
         var slot = GetEquipAbilitySlot(player.Entity, "long sword");
 
         var fresh = WebTestHelper.PerformAndVerify(player, listener, services,
-            ActorActionType.UseAbilitySlot, slot);
+            ActorActionType.UseAbilitySlot, slot, new Vector(0, 0).ToInt32());
 
         // Default melee attack ability should appear in slot 0
         Assert.Contains(fresh.Abilities!.Values, a => a.Slot == 0);
@@ -68,7 +69,7 @@ public class ItemTest
         var slot = GetEquipAbilitySlot(player.Entity, "shortbow");
 
         var fresh = WebTestHelper.PerformAndVerify(player, listener, services,
-            ActorActionType.UseAbilitySlot, slot);
+            ActorActionType.UseAbilitySlot, slot, new Vector(0, 0).ToInt32());
 
         // Default ranged attack ability should appear in slot 1
         Assert.Contains(fresh.Abilities!.Values, a => a.Slot == 1);
@@ -81,7 +82,7 @@ public class ItemTest
         var slot = GetEquipAbilitySlot(player.Entity, "mail armor");
 
         var fresh = WebTestHelper.PerformAndVerify(player, listener, services,
-            ActorActionType.UseAbilitySlot, slot);
+            ActorActionType.UseAbilitySlot, slot, new Vector(0, 0).ToInt32());
 
         // Armor shouldn't add attack abilities
         Assert.DoesNotContain(fresh.Abilities!.Values, a => a.Name?.Contains("mail armor") == true);
@@ -95,7 +96,7 @@ public class ItemTest
 
         // First equip the armor
         WebTestHelper.PerformAndVerify(player, listener, services,
-            ActorActionType.UseAbilitySlot, slot);
+            ActorActionType.UseAbilitySlot, slot, new Vector(0, 0).ToInt32());
 
         var armorEntity = player.Entity.Being!.Items.Single(i => i.Item!.TemplateName == "mail armor");
         var fresh = WebTestHelper.PerformAndVerify(player, listener, services,
@@ -112,11 +113,11 @@ public class ItemTest
 
         // Equip sword first
         WebTestHelper.PerformAndVerify(player, listener, services,
-            ActorActionType.UseAbilitySlot, swordSlot);
+            ActorActionType.UseAbilitySlot, swordSlot, new Vector(0, 0).ToInt32());
 
         var daggerSlot = GetEquipAbilitySlot(player.Entity, "dagger");
         var fresh = WebTestHelper.PerformAndVerify(player, listener, services,
-            ActorActionType.UseAbilitySlot, daggerSlot);
+            ActorActionType.UseAbilitySlot, daggerSlot, new Vector(0, 0).ToInt32());
 
         // Slot 0 should now have the dagger attack ability
         Assert.Contains(fresh.Abilities!.Values, a => a.Slot == 0);
@@ -205,13 +206,15 @@ public class ItemTest
         Assert.True(damagedHp < beforeDamageHp, "Player should have taken damage from NPC");
 
         // Use flask of healing — find the drink ability
-        var flaskAbility = manager.AffectableAbilitiesIndex[
-            (playerEntity.Id, "flask of healing: Drink")]!;
+        var flaskAbility = playerEntity.Being.Items.Single(
+                item => item.Item!.TemplateName == ItemData.FlaskOfHealing.Name)
+            .ActiveEffects!.Abilities.Single(ability => ability.Ability!.Name == "Drink");
 
         WebTestHelper.PerformAndVerify(playerEntity.Player!, listener, game.Services,
             ActorActionType.SetAbilitySlot, flaskAbility.Id, 5);
         var afterHealing = WebTestHelper.PerformAndVerify(
-            playerEntity.Player!, listener, game.Services, ActorActionType.UseAbilitySlot, 5);
+            playerEntity.Player!, listener, game.Services, ActorActionType.UseAbilitySlot, 5,
+            new Vector(0, 0).ToInt32());
         var healedHp = afterHealing.Hp;
 
         Assert.True(healedHp > damagedHp, "Player HP should increase after using the flask of healing");
@@ -234,14 +237,15 @@ public class ItemTest
         listener.RegisterPlayerBuilder(playerEntity, manager);
 
         // Use flask at full HP
-        var flaskAbility = manager.AffectableAbilitiesIndex[
-            (playerEntity.Id, "flask of healing: Drink")]!;
+        var flaskAbility = playerEntity.Being!.Items.Single(
+                item => item.Item!.TemplateName == ItemData.FlaskOfHealing.Name)
+            .ActiveEffects!.Abilities.Single(ability => ability.Ability!.Name == "Drink");
 
         WebTestHelper.PerformAndVerify(playerEntity.Player!, listener, game.Services,
             ActorActionType.SetAbilitySlot, flaskAbility.Id, 5);
 
         WebTestHelper.PerformAndVerify(playerEntity.Player!, listener, game.Services,
-            ActorActionType.UseAbilitySlot, 5);
+            ActorActionType.UseAbilitySlot, 5, new Vector(0, 0).ToInt32());
     }
 
     /// <summary>
@@ -304,7 +308,7 @@ public class ItemTest
         // Step 1: Equip mail armor via its ability
         var armorSlot = GetEquipAbilitySlot(playerEntity, "mail armor");
         WebTestHelper.PerformAndVerify(player, listener, game.Services,
-            ActorActionType.UseAbilitySlot, armorSlot);
+            ActorActionType.UseAbilitySlot, armorSlot, new Vector(0, 0).ToInt32());
 
         // Step 2: Move north — creature should leave visibility
         for (var i = 0; i < 5; i++)
@@ -423,7 +427,7 @@ public class ItemTest
             if (i == 2)
             {
                 WebTestHelper.PerformAndVerify(player, listener, game.Services,
-                    ActorActionType.UseAbilitySlot, armorSlot);
+                    ActorActionType.UseAbilitySlot, armorSlot, new Vector(0, 0).ToInt32());
             }
 
             WebTestHelper.PerformAndVerify(player, listener, game.Services,
@@ -492,7 +496,7 @@ public class ItemTest
 
         var armorSlot = GetEquipAbilitySlot(playerEntity, "mail armor");
         WebTestHelper.PerformAndVerify(player, listener, game.Services,
-            ActorActionType.UseAbilitySlot, armorSlot);
+            ActorActionType.UseAbilitySlot, armorSlot, new Vector(0, 0).ToInt32());
 
         // Move south and east to lose perception of the creature
         WebTestHelper.PerformAndVerify(player, listener, game.Services,

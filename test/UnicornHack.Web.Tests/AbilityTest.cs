@@ -172,7 +172,7 @@ public class AbilityTest
             ActorActionType.EquipItem, swordEntity.Id, (int)EquipmentSlot.GraspPrimaryMelee);
 
         WebTestHelper.PerformAndVerify(player, listener, services,
-            ActorActionType.UseAbilitySlot, 0, (int)Direction.North);
+            ActorActionType.UseAbilitySlot, 0, Direction.North.AsVector().ToInt32());
     }
 
     [Fact]
@@ -199,7 +199,7 @@ public class AbilityTest
             ActorActionType.EquipItem, bowEntity.Id, (int)EquipmentSlot.GraspBothRanged);
 
         WebTestHelper.PerformAndVerify(playerEntity.Player!, listener, game.Services,
-            ActorActionType.UseAbilitySlot, 1, (int)Direction.North);
+            ActorActionType.UseAbilitySlot, 1, Direction.North.AsVector().ToInt32());
     }
 
     [Fact]
@@ -274,14 +274,40 @@ public class AbilityTest
         var (player, listener, services, manager) = SetupGame(withNpc: false, consumables: true);
 
         // Find a slottable ability (item drink ability)
-        var slottableAbility = manager.AffectableAbilitiesIndex[
-            (player.Entity.Id, "flask of healing: Drink")];
+        var slottableAbility = GetItemAbility(player.Entity, "flask of healing", "Drink");
         Assert.NotNull(slottableAbility);
 
         var fresh = WebTestHelper.PerformAndVerify(player, listener, services,
             ActorActionType.SetAbilitySlot, slottableAbility.Id, 3);
 
         Assert.Contains(fresh.Abilities!.Values, a => a.Slot == 3);
+    }
+
+    [Fact]
+    public void Slottable_ability_payload_distinguishes_identical_items_by_entity_id()
+    {
+        var game = TestHelper.CreateGame();
+        var level = TestHelper.BuildRoom(".", game);
+        var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
+        var manager = game.Manager;
+        ItemData.LongSword.Instantiate(playerEntity);
+        ItemData.LongSword.Instantiate(playerEntity);
+        manager.Queue.ProcessQueue(manager);
+        var context = new SerializationContext(null!, playerEntity, game.Services);
+
+        var payload = playerEntity.ActiveEffects!.AvailableAbilities
+            .Where(ability => ability.Ability is
+            {
+                OwnerEntity.Item.TemplateName: var templateName,
+                Name: "Equip"
+            } && templateName == ItemData.LongSword.Name)
+            .ToDictionary(
+                ability => ability.Id,
+                ability => GameQueryProcessor.SerializeSlottedAbility(ability, context));
+
+        Assert.Equal(2, payload.Count);
+        Assert.Equal(2, payload.Keys.Distinct().Count());
+        Assert.All(payload.Values, ability => Assert.Equal("Long sword: Equip", ability.Name));
     }
 
     [Fact]
@@ -299,7 +325,8 @@ public class AbilityTest
         WebTestHelper.PerformAndVerify(
             player, listener, services, ActorActionType.SetAbilitySlot, toggledAbility.Id, 2);
         var fresh = WebTestHelper.PerformAndVerify(
-            player, listener, services, ActorActionType.UseAbilitySlot, 2);
+            player, listener, services, ActorActionType.UseAbilitySlot, 2,
+            new Vector(0, 0).ToInt32());
 
         Assert.Equal(toggledAbility.Ability!.EnergyCost, fresh.ReservedEp);
         Assert.Equal(player.Entity.Being!.ReservedEnergyPoints, fresh.ReservedEp);
@@ -310,8 +337,7 @@ public class AbilityTest
     {
         var (player, listener, services, manager) = SetupGame(withNpc: false, consumables: true);
 
-        var slottableAbility = manager.AffectableAbilitiesIndex[
-            (player.Entity.Id, "flask of healing: Drink")];
+        var slottableAbility = GetItemAbility(player.Entity, "flask of healing", "Drink");
         Assert.NotNull(slottableAbility);
 
         // Assign to slot 3
@@ -329,10 +355,8 @@ public class AbilityTest
     {
         var (player, listener, services, manager) = SetupGame(withNpc: false, consumables: true);
 
-        var flaskAbility = manager.AffectableAbilitiesIndex[
-            (player.Entity.Id, "flask of healing: Drink")];
-        var potionAbility = manager.AffectableAbilitiesIndex[
-            (player.Entity.Id, "potion of experience: Drink")];
+        var flaskAbility = GetItemAbility(player.Entity, "flask of healing", "Drink");
+        var potionAbility = GetItemAbility(player.Entity, "potion of experience", "Drink");
         Assert.NotNull(flaskAbility);
         Assert.NotNull(potionAbility);
 
@@ -348,6 +372,11 @@ public class AbilityTest
         Assert.Contains(fresh.Room!.Items!.Values, i => i.BaseName == "potion of experience");
         Assert.DoesNotContain(player.Entity.Being!.Items, i => i.Item!.TemplateName == "potion of experience");
     }
+
+    private static GameEntity GetItemAbility(
+        GameEntity playerEntity, string itemTemplateName, string abilityName)
+        => playerEntity.Being!.Items.Single(item => item.Item!.TemplateName == itemTemplateName)
+            .ActiveEffects!.Abilities.Single(ability => ability.Ability!.Name == abilityName);
 
     [Fact]
     public void UseAbilitySlot()
@@ -365,6 +394,6 @@ public class AbilityTest
             ActorActionType.EquipItem, swordEntity.Id, (int)EquipmentSlot.GraspPrimaryMelee);
 
         WebTestHelper.PerformAndVerify(player, listener, services,
-            ActorActionType.UseAbilitySlot, 0, (int)Direction.South);
+            ActorActionType.UseAbilitySlot, 0, Direction.South.AsVector().ToInt32());
     }
 }

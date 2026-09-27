@@ -5,7 +5,8 @@ namespace UnicornHack.Systems.Levels;
 public static class TerrainSystem
 {
     public static bool TryInteract(
-        GameEntity actorEntity, Point point, RoomComponent room, GameManager manager)
+        GameEntity actorEntity, Point point, RoomComponent room, GameManager manager,
+        bool pretend = false)
     {
         if (actorEntity.Player == null
             || actorEntity.Position?.Cell is not { } actorCell
@@ -18,8 +19,8 @@ public static class TerrainSystem
         var feature = room.Terrain[room.PointToIndex![point.X, point.Y]];
         return feature switch
         {
-            MapFeature.RacePedestal => manager.PlayerChoiceSystem.TryPresent(
-                actorEntity, PlayerChoiceSystem.RaceChoice),
+            MapFeature.RacePedestal => pretend
+                || manager.PlayerChoiceSystem.TryPresent(actorEntity, PlayerChoiceSystem.RaceChoice),
             _ => false
         };
     }
@@ -63,8 +64,11 @@ public static class TerrainSystem
             MapFeature.TraitPedestal => MapFeature.InactiveTraitPedestal,
             MapFeature.FeatPedestal => MapFeature.InactiveFeatPedestal,
             MapFeature.ArmorStand => MapFeature.InactiveArmorStand,
+            MapFeature.GildedArmorStand => MapFeature.InactiveGildedArmorStand,
             MapFeature.ItemCase => MapFeature.InactiveItemCase,
+            MapFeature.GildedItemCase => MapFeature.InactiveGildedItemCase,
             MapFeature.WeaponStand => MapFeature.InactiveWeaponStand,
+            MapFeature.GildedWeaponStand => MapFeature.InactiveGildedWeaponStand,
             _ => throw new InvalidOperationException(
                 $"{feature} does not have an inactive terrain type.")
         };

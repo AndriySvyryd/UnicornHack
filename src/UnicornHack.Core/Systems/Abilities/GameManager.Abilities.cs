@@ -33,6 +33,12 @@ public partial class GameManager
         private set;
     } = null!;
 
+    public AvailableAbilityRelationship AvailableAbilitiesToRoomActorsRelationship
+    {
+        get;
+        private set;
+    } = null!;
+
     public ManyToManyEntityRelationship<GameEntity, ActiveComponentEffect> ComponentEffectsToCarrierRelationship
     {
         get;
@@ -180,6 +186,8 @@ public partial class GameManager
         AbilitySlottingSystem = new AbilitySlottingSystem();
         queue.Register<SetAbilitySlotMessage>(AbilitySlottingSystem,
             SetAbilitySlotMessage.Name, 0);
+        queue.Register<ItemMovedMessage>(AbilitySlottingSystem, ItemMovedMessage.Name, -1);
+        queue.Register<ItemEquippedMessage>(AbilitySlottingSystem, ItemEquippedMessage.Name, 2);
         queue.Register<PropertyValueChangedMessage<GameEntity, bool>>(AbilitySlottingSystem,
             AbilitiesToAffectableRelationship.Dependents.GetPropertyValueChangedMessageName(
                 nameof(AbilityComponent.IsUsable)),
@@ -187,7 +195,5 @@ public partial class GameManager
         queue.Register<PropertyValueChangedMessage<GameEntity, int>>(AbilitySlottingSystem,
             Beings.GetPropertyValueChangedMessageName(nameof(PhysicalComponent.Capacity)),
             0);
-        queue.Register<EntityAddedMessage<GameEntity>>(
-            AbilitySlottingSystem, AbilitiesToAffectableRelationship.Dependents.GetEntityAddedMessageName(), 2);
     }
 }

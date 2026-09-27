@@ -1,6 +1,7 @@
 using UnicornHack.Data.Abilities;
 using UnicornHack.Data.Creatures;
 using UnicornHack.Data.Items;
+using UnicornHack.Generation.Effects;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
@@ -19,6 +20,76 @@ public class LoggingSystemTest
 .....
 .....
 .....";
+
+    [Theory]
+    [InlineData(AbilityType.MeleeAttack, AbilityAction.Punch, "You punch the air.")]
+    [InlineData(AbilityType.RangedAttack, AbilityAction.Shoot, "You shoot at the air.")]
+    public void Player_attack_against_empty_space_is_logged(
+        AbilityType abilityType, AbilityAction action, string expectedMessage)
+    {
+        var level = TestHelper.BuildRoom("..");
+        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
+        var manager = player.Manager;
+        var ability = new Ability
+        {
+            Name = "test empty-space attack",
+            Type = abilityType,
+            Activation = ActivationType.Targeted,
+            Trigger = abilityType.IsMeleeAttack()
+                ? ActivationType.OnMeleeAttack
+                : ActivationType.OnRangedAttack,
+            Range = 5,
+            Action = action,
+            SuccessCondition = AbilitySuccessCondition.Always,
+            Effects = [new PhysicalDamage { Amount = "10" }]
+        }.AddToAffectable(player);
+        manager.Queue.ProcessQueue(manager);
+        player.Player!.LogEntries.Clear();
+
+        var setSlot = SetAbilitySlotMessage.Create(player, manager);
+        setSlot.AbilityEntity = ability.Entity;
+        setSlot.Slot = 2;
+        manager.Enqueue(setSlot);
+
+        var activation = ActivateAbilityMessage.Create(manager);
+        activation.AbilityEntity = ability.Entity;
+        activation.ActivatorEntity = player;
+        activation.TargetCell = new Point(1, 0);
+        manager.Enqueue(activation);
+        manager.Queue.ProcessQueue(manager);
+
+        AssertLog(player, expectedMessage);
+    }
+
+    [Fact]
+    public void Player_default_ranged_attack_against_empty_space_is_logged_once()
+    {
+        var level = TestHelper.BuildRoom("...");
+        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
+        var manager = player.Manager;
+        ItemData.Shortbow.Instantiate(player);
+        manager.Queue.ProcessQueue(manager);
+
+        var weapon = player.Being!.Items.Single(
+            item => item.Item!.TemplateName == ItemData.Shortbow.Name);
+        var equipMessage = EquipItemMessage.Create(manager);
+        equipMessage.ActorEntity = player;
+        equipMessage.ItemEntity = weapon;
+        equipMessage.Slot = EquipmentSlot.GraspBothRanged;
+        manager.Enqueue(equipMessage);
+        manager.Queue.ProcessQueue(manager);
+        player.Player!.LogEntries.Clear();
+
+        var attack = manager.AffectableAbilitiesIndex[(player.Id, AbilityData.TwoHandedRangedAttack.Name)]!;
+        var activation = ActivateAbilityMessage.Create(manager);
+        activation.AbilityEntity = attack;
+        activation.ActivatorEntity = player;
+        activation.TargetCell = new Point(2, 0);
+        manager.Enqueue(activation);
+        manager.Queue.ProcessQueue(manager);
+
+        AssertLog(player, "You shoot at the air.");
+    }
 
     [Fact]
     public void AttackEvent()
@@ -231,6 +302,40 @@ public class LoggingSystemTest
         AssertLog(player, "You take <damage 4='11'>11</damage> damage.");
     }
 
+    [Theory]
+    [InlineData(0, false)]
+    [InlineData(100, true)]
+    public void Status_only_attack_logs_unaffected_only_when_fully_resisted(
+        int physicalStatusResistance, bool expectedUnaffected)
+    {
+        var level = TestHelper.BuildRoom("..");
+        var spider = CreatureData.GiantSpider.Instantiate(level, new Point(0, 0));
+        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(1, 0));
+        var manager = player.Manager;
+        manager.Queue.ProcessQueue(manager);
+        manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
+            physicalStatusResistance - player.Being!.PhysicalStatusResistance,
+            nameof(BeingComponent.PhysicalStatusResistance), "test resistance", player);
+        manager.Queue.ProcessQueue(manager);
+        player.Player!.LogEntries.Clear();
+
+        var ability = spider.ActiveEffects!.Abilities.Single(
+            candidate => candidate.Ability!.Name == "weakening bite");
+        ability.Ability!.Slot ??= 9;
+        var activation = ActivateAbilityMessage.Create(manager);
+        activation.AbilityEntity = ability;
+        activation.ActivatorEntity = spider;
+        activation.TargetEntity = player;
+        manager.Enqueue(activation);
+        ((TestRandom)manager.Game.Random).EnqueueNextBool(false);
+        manager.Queue.ProcessQueue(manager);
+
+        var attackLog = Assert.Single(
+            player.Player.LogEntries,
+            entry => entry.Message.Contains("bites you", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(expectedUnaffected, attackLog.Message.Contains("unaffected", StringComparison.OrdinalIgnoreCase));
+    }
+
     private static void VerifyRangedWeaponAttack(
         Item weaponTemplate, EquipmentSlot slot, string expectedMessage)
     {
@@ -393,14 +498,18 @@ public class LoggingSystemTest
 
         Assert.True(EffectApplicationSystem.GetAbilityLevel(playerEntity, "stunned") > 0);
         var message = Assert.Single(playerEntity.Player.LogEntries).Message;
-        Assert.StartsWith("You are stunned!", message);
+        Assert.Equal(
+            "You are <tooltip id='stunned#1' category='4'>stunned</tooltip>!",
+            message);
 
         playerEntity.Player.LogEntries.Clear();
         manager.EffectApplicationSystem.ApplyStatus(EffectApplicationContext.CreateStatus(
             EffectType.Stun, blob, amount: 200));
         manager.Queue.ProcessQueue(manager);
 
-        AssertLog(playerEntity, "The acid blob is stunned.");
+        AssertLog(
+            playerEntity,
+            "The acid blob is <tooltip id='stunned#1' category='4'>stunned</tooltip>.");
     }
 
     [Fact]
@@ -651,8 +760,10 @@ public class LoggingSystemTest
         Assert.True(ItemData.FieryAegis.Instantiate(player));
         manager.Queue.ProcessQueue(manager);
         player.Player!.LogEntries.Clear();
+        var aegis = player.Being!.Items.Single(
+            item => item.Item!.TemplateName == ItemData.FieryAegis.Name);
 
-        TestHelper.ActivateAbility(ItemData.FieryAegis.Name + ": Equip", player, manager);
+        TestHelper.ActivateItemAbility(aegis, "Equip", player, manager);
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(
@@ -670,8 +781,10 @@ public class LoggingSystemTest
         Assert.True(ItemData.FlaskOfHealing.Instantiate(blob));
         manager.Queue.ProcessQueue(manager);
         player.Player!.LogEntries.Clear();
+        var flask = blob.Being!.Items.Single(
+            item => item.Item!.TemplateName == ItemData.FlaskOfHealing.Name);
 
-        TestHelper.ActivateAbility(ItemData.FlaskOfHealing.Name + ": Drink", blob, manager);
+        TestHelper.ActivateItemAbility(flask, "Drink", blob, manager);
         manager.Queue.ProcessQueue(manager);
 
         AssertLog(player, "The acid blob drinks from a flask of healing.");
@@ -689,11 +802,14 @@ public class LoggingSystemTest
         manager.Queue.ProcessQueue(manager);
         Assert.Contains(player.Being!.Items,
             item => item.Item!.TemplateName == ItemData.PotionOfExperience.Name);
-        Assert.Contains(player.ActiveEffects!.Abilities,
-            ability => ability.Ability!.Name == ItemData.PotionOfExperience.Name + ": Drink");
+        var potion = Assert.Single(
+            player.Being.Items,
+            item => item.Item!.TemplateName == ItemData.PotionOfExperience.Name);
+        Assert.Contains(potion.ActiveEffects!.Abilities,
+            ability => ability.Ability!.Name == "Drink");
         player.Player!.LogEntries.Clear();
 
-        TestHelper.ActivateAbility(ItemData.PotionOfExperience.Name + ": Drink", player, manager);
+        TestHelper.ActivateItemAbility(potion, "Drink", player, manager);
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(
@@ -718,7 +834,7 @@ public class LoggingSystemTest
         player.Being.HitPoints = player.Being.HitPointMaximum;
         player.Player!.LogEntries.Clear();
 
-        TestHelper.ActivateAbility(ItemData.FlaskOfHealing.Name + ": Drink", player, manager);
+        TestHelper.ActivateItemAbility(flask, "Drink", player, manager);
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(

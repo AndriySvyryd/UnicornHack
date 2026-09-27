@@ -1,5 +1,6 @@
 using UnicornHack.Data.Abilities;
 using UnicornHack.Data.Items;
+using UnicornHack.Data.Players;
 using UnicornHack.Generation.Effects;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Items;
@@ -631,10 +632,9 @@ public class SkillAbilitiesSystemTest
 
         Assert.Null(manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.IceShard.Name)]);
 
-        var firstWaterBookAbility =
-            manager.AffectableAbilitiesIndex[
-                (playerEntity.Id, ItemData.SkillbookOfWaterSourcery.Name + ": Consult")]!;
         var firstWaterBook = playerEntity.Being!.Items.Single();
+        var firstWaterBookAbility = firstWaterBook.ActiveEffects!.Abilities.Single(
+            ability => ability.Ability!.Name == "Consult");
         ItemData.SkillbookOfWaterSourcery.Instantiate(playerEntity);
         ItemData.SkillbookOfConjuration.Instantiate(playerEntity);
         TestHelper.ActivateAbility(firstWaterBookAbility, playerEntity, manager, 2);
@@ -644,9 +644,18 @@ public class SkillAbilitiesSystemTest
         Assert.True(manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.IceShard.Name)]!.Ability!
             .IsUsable);
 
-        var conjurationBookAbility = playerEntity.ActiveEffects!.Abilities
-            .First(a => a.Ability!.Name == ItemData.SkillbookOfConjuration.Name + ": Consult");
-        TestHelper.ActivateAbility(conjurationBookAbility, playerEntity, manager, 3);
+        var secondWaterBook = Assert.Single(
+            playerEntity.Being.Items,
+            item => item != firstWaterBook
+                    && item.Item!.TemplateName == ItemData.SkillbookOfWaterSourcery.Name);
+        var secondWaterBookAbility = secondWaterBook.ActiveEffects!.Abilities.Single(
+            ability => ability.Ability!.Name == "Consult");
+        var conjurationBook = Assert.Single(
+            playerEntity.Being.Items,
+            item => item.Item!.TemplateName == ItemData.SkillbookOfConjuration.Name);
+        var conjurationBookAbility = conjurationBook.ActiveEffects!.Abilities.Single(
+            ability => ability.Ability!.Name == "Consult");
+        TestHelper.ActivateAbility(conjurationBookAbility, playerEntity, manager, 5);
 
         manager.Queue.ProcessQueue(manager);
 
@@ -694,10 +703,8 @@ public class SkillAbilitiesSystemTest
         manager.Enqueue(moveItemMessage);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Same(
-            firstWaterBookAbility,
-            manager.AffectableAbilitiesIndex[
-                (playerEntity.Id, ItemData.SkillbookOfWaterSourcery.Name + ": Consult")]);
+        Assert.Contains(secondWaterBook, playerEntity.Being.Items);
+        Assert.Contains(secondWaterBookAbility, playerEntity.Being.SlottedAbilities.Values);
         Assert.Equal(3,
             manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.WaterSourcery.Name)]!.Ability!.Level);
         Assert.DoesNotContain(
@@ -735,7 +742,7 @@ public class SkillAbilitiesSystemTest
             playerEntity.Being!.SlottedAbilities[AbilitySlottingSystem.DefaultMeleeAttackSlot].Ability!.Name);
         Assert.False(
             playerEntity.Being.SlottedAbilities.ContainsKey(AbilitySlottingSystem.DefaultRangedAttackSlot));
-        Assert.Equal(3, playerEntity.ActiveEffects!.Abilities.Select(a => a.Ability!)
+        Assert.Equal(3, playerEntity.Being!.SlottedAbilities.Values.Select(a => a.Ability!)
             .Count(a => a.IsUsable && (a.Activation & ActivationType.Slottable) != 0));
 
         var swordEntity = playerEntity.Being.Items
@@ -764,6 +771,45 @@ public class SkillAbilitiesSystemTest
             playerEntity.Being.SlottedAbilities[AbilitySlottingSystem.DefaultRangedAttackSlot]!.Ability!.Name);
         Assert.Equal(2, playerEntity.ActiveEffects!.Abilities.Select(a => a.Ability!)
             .Count(a => a.IsUsable && (a.Activation & ActivationType.Slottable) != 0));
+    }
+
+    [Fact]
+    public void Equipping_through_an_item_ability_updates_the_default_attack()
+    {
+        var level = TestHelper.BuildRoom(".");
+        var playerEntity = PlayerRace.InstantiatePlayer(
+            "Dudley", Sex.Male, level, new Point(0, 0));
+        var manager = playerEntity.Manager;
+        manager.Queue.ProcessQueue(manager);
+        ItemData.LongSword.Instantiate(playerEntity);
+        manager.Queue.ProcessQueue(manager);
+        manager.EffectApplicationSystem.AddAbilityEffect(
+            playerEntity, PlayerRaceData.Elf.GetRaceAbilityTemplate());
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(
+            ExtremityType.GraspingFingers,
+            playerEntity.Being!.UpperExtremities);
+        Assert.Equal(
+            ExtremityType.Fingers,
+            playerEntity.Being.LowerExtremities);
+        Assert.Equal(
+            ExtremityType.None,
+            playerEntity.Being.BackExtremities);
+        Assert.True(playerEntity.Position!.MovementDelay > 0);
+
+        var sword = playerEntity.Being.Items.Single(
+            item => item.Item!.TemplateName == ItemData.LongSword.Name);
+        TestHelper.ActivateItemAbility(
+            sword, "Equip", playerEntity, manager);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(
+            EquipmentSlot.GraspPrimaryMelee,
+            sword.Item!.EquippedSlot);
+        Assert.Same(
+            AbilityData.DoubleMeleeAttack.Name,
+            playerEntity.Being.SlottedAbilities[
+                AbilitySlottingSystem.DefaultMeleeAttackSlot].Ability!.Name);
     }
 
     [Fact]

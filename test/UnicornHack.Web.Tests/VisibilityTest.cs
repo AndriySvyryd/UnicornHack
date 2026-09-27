@@ -486,10 +486,12 @@ public class VisibilityTest
         // Step 1: Equip mail armor via its ability.
         var armorSlot = playerEntity.Being!.SlottedAbilities.Values
             .Select(e => e.Ability!)
-            .Single(a => a.Type == AbilityType.Item && a.Name == "mail armor: Equip")
+            .Single(a => a.Type == AbilityType.Item
+                         && a.Name == "Equip"
+                         && a.OwnerEntity!.Item!.TemplateName == ItemData.MailArmor.Name)
             .Slot!.Value;
         WebTestHelper.PerformAndVerify(player, listener, game.Services,
-            ActorActionType.UseAbilitySlot, armorSlot);
+            ActorActionType.UseAbilitySlot, armorSlot, new Vector(0, 0).ToInt32());
 
         // Step 2: Move north — heading changes to north, creatures/items to the south
         // fall out of the 180° perception cone. The NPC also acts (changing NextActionTick),

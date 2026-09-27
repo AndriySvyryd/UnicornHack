@@ -21,13 +21,13 @@ public interface ILanguageService
     string GetString(in ItemEquipmentEvent @event);
     string GetString(in ItemActivationEvent @event);
     string? GetString(in AttackEvent @event);
+    string? GetString(in ActorActionFailedEvent @event);
     string GetString(in DeathEvent @event);
     string GetString(in StatusActivatedEvent @event);
     string GetString(in LingeringAttackEvent @event);
     string GetString(in ResourceEffectEvent @event);
     string NoDefaultAttack(bool melee);
     string NoAbilityInSlot(int slot);
-    string AbilityCannotBeActivated(AbilityComponent ability);
     string AbilityNotSlotted(AbilityComponent ability);
     string AbilityAlreadyActive(AbilityComponent ability);
     string AbilityOnCooldown(AbilityComponent ability);
@@ -53,8 +53,8 @@ public interface ILanguageService
     string ItemNotInInventory();
     string InventoryFull();
     string NothingToPickUp();
+    string CannotMove(Direction direction);
     string Welcome(GameEntity playerEntity);
-    string UnableToMove(Direction direction);
     string NoPath();
     string TooAfraidToApproach(GameEntity source);
     string CannotFleeSource(GameEntity source);

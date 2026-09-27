@@ -1,4 +1,5 @@
-﻿using UnicornHack.Systems.Beings;
+﻿using UnicornHack.Systems.Abilities;
+using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Utils.MessagingECS;
@@ -73,6 +74,29 @@ public partial class GameManager
             keepPrincipalAlive: false,
             keepDependentAlive: true);
 
+        AvailableAbilitiesToRoomActorsRelationship = new(
+            Abilities, RoomActors, EntityItemsToContainerRelationship);
+
+        SlottedAbilitiesToRoomActorsRelationship = new(
+            nameof(SlottedAbilitiesToRoomActorsRelationship),
+            AvailableAbilitiesToRoomActorsRelationship,
+            RoomActors,
+            new SimpleKeyValueGetter<GameEntity, int>(
+                component => ((AbilityComponent)component).Slot,
+                (int)EntityComponent.Ability),
+            (abilityEntity, _) =>
+            {
+                if (abilityEntity.Ability?.OwnerEntity?.Item != null)
+                {
+                    abilityEntity.Ability.Slot = null;
+                }
+                else
+                {
+                    abilityEntity.RemoveComponent(EntityComponent.Ability);
+                }
+            },
+            actorEntity => (SortedDictionary<int, GameEntity>)actorEntity.Being!.SlottedAbilities);
+
         ItemMovingSystem = new ItemMovingSystem();
         queue.Register<MoveItemMessage>(ItemMovingSystem, MoveItemMessage.Name, 0);
         queue.Register<TraveledMessage>(ItemMovingSystem, TraveledMessage.Name, 0);
@@ -83,6 +107,8 @@ public partial class GameManager
 
         queue.Register<EntityAddedMessage<GameEntity>>(
             AbilityActivationSystem, EntityItemsToContainerRelationship.Dependents.GetEntityAddedMessageName(), 0);
+        queue.Register<EntityAddedMessage<GameEntity>>(
+            AbilitySlottingSystem, EntityItemsToContainerRelationship.Dependents.GetEntityAddedMessageName(), 1);
         queue.Register<EntityRemovedMessage<GameEntity>>(
             AbilityActivationSystem, EntityItemsToContainerRelationship.Dependents.GetEntityRemovedMessageName(),
             0);

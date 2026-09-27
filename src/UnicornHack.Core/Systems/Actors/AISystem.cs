@@ -15,7 +15,8 @@ public class AISystem :
     IGameSystem<DiedMessage>,
     IGameSystem<EntityAddedMessage<GameEntity>>,
     IGameSystem<PropertyValueChangedMessage<GameEntity, bool>>,
-    IGameSystem<DelayMessage>
+    IGameSystem<DelayMessage>,
+    IGameSystem<ItemEquippedMessage>
 {
     public MessageProcessingResult Process(PerformActionMessage message, GameManager manager)
     {
@@ -69,7 +70,8 @@ public class AISystem :
             case ActorActionType.MoveOneCell:
                 var moveDirection = (Direction)target!.Value;
                 Move(moveDirection, actorEntity, manager,
-                    onlyChangeHeading: performedAction == ActorActionType.ChangeHeading);
+                    onlyChangeHeading: performedAction == ActorActionType.ChangeHeading,
+                    allowBumpAttack: false);
 
                 break;
             case ActorActionType.DropItem:
@@ -101,7 +103,16 @@ public class AISystem :
                 manager.Enqueue(unequipMessage);
                 break;
             case ActorActionType.UseAbilitySlot:
-                ActivateAbility(actorEntity, target, target2, manager);
+                var ability = target is { } abilitySlot
+                    ? manager.AbilitySlottingSystem.GetAbility(actorEntity, abilitySlot)?.Ability
+                    : null;
+                if (!ActivateAbility(actorEntity, target, target2, manager))
+                {
+                    ai.NextActionTick += TimeSystem.DefaultActionDelay;
+                    manager.LoggingSystem.WriteFailedAction(
+                        actorEntity, performedAction, manager, ability: ability);
+                }
+
                 break;
             case ActorActionType.MoveToCell:
             case ActorActionType.SetAbilitySlot:
@@ -132,7 +143,8 @@ public class AISystem :
             {
                 actorEntity.AI!.NextAction = ActorActionType.UseAbilitySlot;
                 actorEntity.AI.NextActionTarget = AbilitySlottingSystem.DefaultMeleeAttackSlot;
-                actorEntity.AI.NextActionTarget2 = -engulfer.Id;
+                actorEntity.AI.NextActionTarget2 = actorEntity.Position!.Cell!.Value
+                    .DifferenceTo(engulfer.Position!.Cell!.Value).ToInt32();
             }
             else
             {
@@ -266,7 +278,8 @@ public class AISystem :
         var ai = aiEntity.AI!;
         ai.NextAction = ActorActionType.UseAbilitySlot;
         ai.NextActionTarget = abilityEntity.Ability!.Slot;
-        ai.NextActionTarget2 = targetEntity.Position!.Cell!.Value.ToInt32();
+        ai.NextActionTarget2 = aiEntity.Position!.Cell!.Value
+            .DifferenceTo(targetEntity.Position!.Cell!.Value).ToInt32();
 
         return true;
     }
@@ -401,6 +414,23 @@ public class AISystem :
         return MessageProcessingResult.ContinueProcessing;
     }
 
+    public MessageProcessingResult Process(ItemEquippedMessage message, GameManager manager)
+    {
+        if (!message.Successful
+            && message.ActorEntity.AI != null)
+        {
+            DelayMessage.Enqueue(message.ActorEntity, TimeSystem.DefaultActionDelay, manager);
+            manager.LoggingSystem.WriteFailedAction(
+                message.ActorEntity,
+                message.Slot == EquipmentSlot.None
+                    ? ActorActionType.UnequipItem
+                    : ActorActionType.EquipItem,
+                manager);
+        }
+
+        return MessageProcessingResult.ContinueProcessing;
+    }
+
     public MessageProcessingResult Process(DiedMessage message, GameManager manager)
     {
         var ai = message.BeingEntity.AI;
@@ -452,7 +482,7 @@ public class AISystem :
             return;
         }
 
-        var setSlotMessage = SetAbilitySlotMessage.Create(manager);
+        var setSlotMessage = SetAbilitySlotMessage.Create(owner, manager);
         setSlotMessage.Slot = i;
         setSlotMessage.AbilityEntity = ability.Entity;
 

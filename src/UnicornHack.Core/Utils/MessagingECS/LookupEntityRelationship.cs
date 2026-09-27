@@ -8,7 +8,8 @@ namespace UnicornHack.Utils.MessagingECS;
 ///     a dependent is only added to the relationship when both the primary principal
 ///     and the secondary principal exist in their respective groups.
 /// </summary>
-public class LookupEntityRelationship<TEntity, TKey, TDictionary> : EntityRelationshipBase<TEntity>
+public class LookupEntityRelationship<TEntity, TKey, TDictionary> :
+    EntityRelationshipBase<TEntity>, IRelationship<TEntity>
     where TEntity : Entity, new()
     where TKey : notnull
     where TDictionary : class, IDictionary<TKey, TEntity>, new()
@@ -223,7 +224,7 @@ public class LookupEntityRelationship<TEntity, TKey, TDictionary> : EntityRelati
         return false;
     }
 
-    private void OnEntityAdded(in EntityChange<TEntity> entityChange, TEntity principal)
+    protected void OnEntityAdded(in EntityChange<TEntity> entityChange, TEntity principal)
     {
         _accessor.SetPrincipal(entityChange.Entity, principal);
 
@@ -297,7 +298,7 @@ public class LookupEntityRelationship<TEntity, TKey, TDictionary> : EntityRelati
         return false;
     }
 
-    private void OnEntityRemoved(in EntityChange<TEntity> entityChange, TEntity principal)
+    protected void OnEntityRemoved(in EntityChange<TEntity> entityChange, TEntity principal)
     {
         _accessor.SetPrincipal(entityChange.Entity, null);
 

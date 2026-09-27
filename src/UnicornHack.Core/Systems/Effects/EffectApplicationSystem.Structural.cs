@@ -1004,7 +1004,7 @@ public partial class EffectApplicationSystem
            ?? FindAbilityTemplate(targetEntity.Manager, abilityName)?.Type;
 
     private static Ability? FindAbilityTemplate(GameManager manager, string abilityName)
-        => Ability.FindTemplate(manager, abilityName);
+        => Ability.FindTemplate(manager, abilityName, item: false);
 
     private static bool IsSourceAbility(ActiveComponentEffect record, string abilityName, GameManager manager)
         => IsSourceAbility(record.SourceAbilityEntityId, abilityName, manager);

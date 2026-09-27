@@ -124,6 +124,11 @@ public sealed class GameConnection : IAsyncDisposable
         await _callLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+            if (LastUIRequest != null)
+            {
+                await ShowDialogCoreAsync((int)GameQueryType.Clear, [], cancellationToken).ConfigureAwait(false);
+            }
+
             _turnTracker.ArmForNextChangeSets();
             await _hub!.InvokeAsync<string?>(
                 "PerformAction", _options.PlayerName, (int)action, target, target2, cancellationToken)
@@ -159,6 +164,19 @@ public sealed class GameConnection : IAsyncDisposable
     {
         await EnsureReadyAsync(cancellationToken).ConfigureAwait(false);
         await _callLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            return await ShowDialogCoreAsync(queryType, arguments, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            _callLock.Release();
+        }
+    }
+
+    private async Task<DialogData?> ShowDialogCoreAsync(
+        int queryType, int[] arguments, CancellationToken cancellationToken)
+    {
         var response = new PendingDialogResponse(
             queryType,
             new TaskCompletionSource<DialogData>(
@@ -169,12 +187,17 @@ public sealed class GameConnection : IAsyncDisposable
             await _hub!.InvokeAsync<string?>(
                 "ShowDialog", _options.PlayerName, queryType, arguments, cancellationToken)
                 .ConfigureAwait(false);
-            return await response.Completion.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+            var payload = await response.Completion.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+            if (queryType == (int)GameQueryType.Clear)
+            {
+                LastUIRequest = null;
+            }
+
+            return payload;
         }
         finally
         {
             Interlocked.CompareExchange(ref _pendingDialogResponse, null, response);
-            _callLock.Release();
         }
     }
 

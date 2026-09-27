@@ -188,6 +188,7 @@ public partial class GameManager
         queue.Register<ItemEquippedMessage>(LoggingSystem, ItemEquippedMessage.Name, 1);
         queue.Register<AttackResultMessage>(LoggingSystem, AttackResultMessage.Name, 2);
         queue.Register<ItemActivationResultMessage>(LoggingSystem, ItemActivationResultMessage.Name, 2);
+        queue.Register<TraveledMessage>(LoggingSystem, TraveledMessage.Name, 5);
         queue.Register<DiedMessage>(LoggingSystem, DiedMessage.Name, 1);
     }
 }

@@ -72,13 +72,21 @@ public class Ability : ILoadable, ICSScriptSerializable
         return false;
     }
 
-    internal static Ability? FindTemplate(GameManager manager, string abilityName)
+    internal static Ability? FindTemplate(GameManager manager, string abilityName, bool item)
     {
+        var data = manager.Game.Services.Data;
+        if (item)
+        {
+            return data.Items.GetAll()
+                .SelectMany(itemTemplate => itemTemplate.Abilities)
+                .FirstOrDefault(ability => ability.Name == abilityName);
+        }
+
         TryGetLeveledTemplateName(abilityName, out var templateName, out _);
-        return manager.Game.Services.Data.Abilities.Find(templateName)
-               ?? manager.Game.Services.Data.PlayerRaces
+        return data.Abilities.Find(templateName)
+               ?? data.PlayerRaces
                    .FindByIndex(templateName)?.GetRaceAbilityTemplate()
-               ?? manager.Game.Services.Data.Creatures
+               ?? data.Creatures
                    .FindByIndex(templateName)?.GetRaceAbilityTemplate();
     }
 
@@ -107,12 +115,6 @@ public class Ability : ILoadable, ICSScriptSerializable
                 : ActivationType.Default;
 
     public int? ActivationCondition
-    {
-        get;
-        set;
-    }
-
-    public ActivationType ItemCondition
     {
         get;
         set;
@@ -337,7 +339,6 @@ public class Ability : ILoadable, ICSScriptSerializable
         { nameof(Cost), (_, v) => (int)v! != default },
         { nameof(Activation), (o, v) => (ActivationType)v! != GetDefaultActivation(o.Type) },
         { nameof(ActivationCondition), (_, v) => v != default },
-        { nameof(ItemCondition), (_, v) => (ActivationType)v! != default },
         { nameof(Trigger), (_, v) => (ActivationType)v! != default },
         { nameof(MinHeadingDeviation), (_, v) => (int)v! != default },
         { nameof(MaxHeadingDeviation), (_, v) => (int)v! != default },

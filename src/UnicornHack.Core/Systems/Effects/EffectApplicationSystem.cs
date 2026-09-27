@@ -84,17 +84,33 @@ public partial class EffectApplicationSystem :
 
     private void ApplyEffects(AbilityActivatedMessage message, bool pretend)
     {
-        if (message.TargetEntity == null
-            || message.AbilityEntity.Ability is not { } ability)
+        // Self effects are emitted separately with the activator as their target. A targetless target-side
+        // activation therefore has nothing to apply unless it is an attack, which still needs an "air" result.
+        if (message.AbilityEntity.Ability is not { } ability
+            || message.TargetEntity == null
+            && !AbilityActivationSystem.IsAttack(ability))
         {
             return;
         }
 
         var manager = message.ActivatorEntity.Manager;
         var successfulApplication = message.Outcome == ApplicationOutcome.Success;
-        EffectResultMessage? result = ability.Action is not (AbilityAction.Default or AbilityAction.Modifier)
-            ? AttackResultMessage.Create(manager)
-            : null;
+        EffectResultMessage? result;
+        if (ability.OwnerEntity?.Item != null
+            && (ability.Activation & ActivationType.Slottable) != 0
+            && !AbilityActivationSystem.IsAttack(ability)
+            && !ability.Effects.All(effect => effect.Effect?.EffectType is EffectType.EquipItem or EffectType.Move))
+        {
+            result = ItemActivationResultMessage.Create(manager);
+            ((ItemActivationResultMessage)result).ItemEntity = ability.OwnerEntity;
+        }
+        else
+        {
+            result = ability.Action is not (AbilityAction.Default or AbilityAction.Modifier)
+                ? AttackResultMessage.Create(manager)
+                : null;
+        }
+
         try
         {
             foreach (var effectEntity in message.EffectsToApply)
@@ -123,7 +139,10 @@ public partial class EffectApplicationSystem :
                 }
             }
 
-            ApplyEffectsCore(message, result, successfulApplication, pretend);
+            if (message.TargetEntity != null)
+            {
+                ApplyEffectsCore(message, result, successfulApplication, pretend);
+            }
             EnqueueResult(result, message, ability, successfulApplication, manager);
             result = null;
         }

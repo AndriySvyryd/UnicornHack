@@ -184,6 +184,16 @@ public class ActiveEffectsComponent : GameComponent
         private set;
     } = new List<GameEntity>();
 
+    /// <summary>
+    ///     Abilities currently available to this actor, including available abilities owned by possessed items.
+    ///     Transient: rebuilt by the availability relationship on load, never persisted.
+    /// </summary>
+    public IReadOnlyCollection<GameEntity> AvailableAbilities
+    {
+        get;
+        private set;
+    } = new HashSet<GameEntity>(EntityEqualityComparer<GameEntity>.Instance);
+
     // Transient dynamic-property state (rebuilt on load, never persisted).
     private Dictionary<string, int>? _resolvedCache;
     private List<ActivePropertyEffect>? _contributionScratch;
@@ -589,6 +599,7 @@ public class ActiveEffectsComponent : GameComponent
             Accumulators.RemoveAt(i);
         }
         ((List<GameEntity>)Abilities).Clear();
+        ((HashSet<GameEntity>)AvailableAbilities).Clear();
         _resolvedCache?.Clear();
         _contributionScratch?.Clear();
         _dynamicMagnitudes?.Clear();

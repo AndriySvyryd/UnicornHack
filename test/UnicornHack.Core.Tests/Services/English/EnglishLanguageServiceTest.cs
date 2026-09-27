@@ -147,6 +147,26 @@ public class EnglishLanguageServiceTest
     }
 
     [Fact]
+    public void Status_activation_links_the_level_qualified_description()
+    {
+        var level = TestHelper.BuildRoom(".");
+        var player = PlayerRace.InstantiatePlayer(
+            "Dudley", Sex.Male, level, new Point(0, 0));
+        player.Manager.Queue.ProcessQueue(player.Manager);
+
+        var message = new EnglishLanguageService().GetString(
+            new StatusActivatedEvent(
+                player, player, EffectType.Cripple,
+                AbilityData.Crippled.Name, abilityLevel: 2,
+                SenseType.Sight));
+
+        Assert.Equal(
+            "You are <tooltip id='crippled#2' category='4'>crippled</tooltip>!",
+            message);
+        Assert.DoesNotContain("Movement is hindered", message);
+    }
+
+    [Fact]
     public void Warded_description_annotates_status_level_suppression()
     {
         var description = new EnglishLanguageService().GetDescription(

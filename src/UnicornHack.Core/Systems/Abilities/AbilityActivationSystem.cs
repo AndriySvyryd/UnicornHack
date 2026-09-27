@@ -52,14 +52,17 @@ public class AbilityActivationSystem :
         return error;
     }
 
-    public static int GetEnergyCost(AbilityComponent ability)
+    public static int GetEnergyCost(AbilityComponent ability, GameEntity? activatorEntity = null)
     {
-        if (ability.OwnerEntity is not { } owner)
+        var actor = activatorEntity?.Being != null
+            ? activatorEntity
+            : ability.OwnerEntity;
+        if (actor?.Being == null)
         {
             return ability.EnergyCost;
         }
 
-        var mutedLevel = EffectApplicationSystem.GetAbilityLevel(owner, AbilityData.Muted.Name);
+        var mutedLevel = EffectApplicationSystem.GetAbilityLevel(actor, AbilityData.Muted.Name);
         return mutedLevel >= 1 && ability.Type.IsSpell()
                || mutedLevel >= 2 && IsVerbalAbility(ability)
              || mutedLevel >= 2 && ability.Type == AbilityType.Miracle
@@ -194,9 +197,16 @@ public class AbilityActivationSystem :
                 return Fail(language.AbilityNotUsable(ability));
             }
 
+            if ((ability.Activation & ActivationType.Slottable) != 0
+                && !activateMessage.ActivatorEntity.ActiveEffects!.AvailableAbilities.Contains(
+                    activateMessage.AbilityEntity))
+            {
+                return Fail(language.AbilityNotUsable(ability));
+            }
+
             if (ability.Slot == null
                 && (ability.Activation & ActivationType.Slottable) != 0
-                && ability.OwnerEntity!.Physical?.Capacity != 0)
+                && activateMessage.ActivatorEntity.Physical?.Capacity != 0)
             {
                 return Fail(language.AbilityNotSlotted(ability));
             }
@@ -212,7 +222,6 @@ public class AbilityActivationSystem :
                 return Fail(language.AbilityOnCooldown(ability));
             }
 
-            var owner = ability.OwnerEntity!;
             var activator = activateMessage.ActivatorEntity;
             if (GetBlockedCapabilityProperty(ability, activator.Being) is { } blockedCapability)
             {
@@ -236,18 +245,18 @@ public class AbilityActivationSystem :
             }
 
             if (IsAttack(ability)
-                && EffectApplicationSystem.GetAbilityLevel(ability.OwnerEntity!, AbilityData.Engulfed.Name) >= 2
-                && manager.EngulferToVictimRelationship.GetEngulfer(ability.OwnerEntity!) is { } engulfer)
+                && EffectApplicationSystem.GetAbilityLevel(activator, AbilityData.Engulfed.Name) >= 2
+                && manager.EngulferToVictimRelationship.GetEngulfer(activator) is { } engulfer)
             {
                 // Engulfed: any attack strikes the engulfer, whatever it was aimed at.
                 targetEffectsMessage.TargetEntity = engulfer;
                 targetEffectsMessage.TargetCell = null;
             }
 
-            var tauntedLevel = EffectApplicationSystem.GetAbilityLevel(owner, AbilityData.Taunted.Name);
+            var tauntedLevel = EffectApplicationSystem.GetAbilityLevel(activator, AbilityData.Taunted.Name);
             if (IsAttack(ability)
                 && tauntedLevel >= 2
-                && FindStatusSource(ability.OwnerEntity!, EffectType.Taunt, manager)
+                && FindStatusSource(activator, EffectType.Taunt, manager)
                     is { Being.IsAlive: true, Position.Cell: { } sourceCell } tauntSource)
             {
                 targetEffectsMessage.TargetEntity = tauntSource;
@@ -258,7 +267,7 @@ public class AbilityActivationSystem :
         if (ability.Action == AbilityAction.Digestion
             && (targetEffectsMessage.TargetEntity is not { } digestionTarget
                 || !ReferenceEquals(
-                    manager.EngulferToVictimRelationship.GetVictim(ability.OwnerEntity!),
+                    manager.EngulferToVictimRelationship.GetVictim(activateMessage.ActivatorEntity),
                     digestionTarget)))
         {
             return Fail(language.InvalidDigestionTarget(ability));
@@ -269,8 +278,8 @@ public class AbilityActivationSystem :
             return Fail(language.AbilityHasNoEffects(ability));
         }
 
-        var being = ability.OwnerEntity!.Being ?? targetEffectsMessage.ActivatorEntity.Being;
-        var energyCost = GetEnergyCost(ability);
+        var being = targetEffectsMessage.ActivatorEntity.Being;
+        var energyCost = GetEnergyCost(ability, targetEffectsMessage.ActivatorEntity);
         if (energyCost > 0
             && being != null)
         {
@@ -395,13 +404,15 @@ public class AbilityActivationSystem :
 
         foreach (var activation in activations)
         {
+            var targets = GetTargets(activation.ActivationMessage);
+            var targetCount = targets.Count;
             if (!pretend
-                && activation.ActivationMessage.TargetEntity == null)
+                && activation.ActivationMessage.TargetEntity == null
+                && targetCount == 0)
             {
                 manager.Enqueue(activation.ActivationMessage);
             }
 
-            var targets = GetTargets(activation.ActivationMessage);
             foreach (var (target, exposure) in targets)
             {
                 var targetMessage = (activation.TargetMessage ?? activation.ActivationMessage).Clone(manager);
@@ -449,7 +460,8 @@ public class AbilityActivationSystem :
             ((List<(GameEntity, byte)>)targets).Clear();
             manager.GameEntityByteListArrayPool.Return((List<(GameEntity, byte)>)targets);
 
-            if (activation.ActivationMessage.TargetEntity != null)
+            if (activation.ActivationMessage.TargetEntity != null
+                || !pretend && targetCount != 0)
             {
                 manager.ReturnMessage(activation.ActivationMessage);
             }
@@ -508,7 +520,7 @@ public class AbilityActivationSystem :
                 {
                     newDirection += 8;
                 }
-                else if (newDirection > 8)
+                else if (newDirection >= 8)
                 {
                     newDirection -= 8;
                 }
@@ -1024,9 +1036,9 @@ public class AbilityActivationSystem :
 
         switch (targetingShape)
         {
-            case TargetingShape.Line:
             case TargetingShape.Beam:
             {
+                // TODO: Implement length equal to targetShapeSize
                 if (targetShapeSize != 1)
                 {
                     throw new NotSupportedException(
@@ -1034,6 +1046,68 @@ public class AbilityActivationSystem :
                 }
 
                 return manager.SensorySystem.GetLOS(originCell, targetVector, range, room);
+            }
+            case TargetingShape.Line:
+            {
+                // TODO: Implement width equal to targetShapeSize
+                if (targetShapeSize != 1)
+                {
+                    throw new NotSupportedException(
+                        $"TargetingShape {targetingShape} with size {targetShapeSize} not supported");
+                }
+
+                var targets = (List<(Point, byte)>)manager.SensorySystem.GetLOS(
+                    originCell, targetVector, range, room);
+                var line = manager.PointByteListArrayPool.Rent();
+                var previousCell = originCell;
+                var previousGroupStart = -1;
+                var previousGroupEnd = -1;
+                var expectedDistance = 1;
+                for (var groupStart = 0; groupStart < targets.Count;)
+                {
+                    var distance = originCell.DistanceTo(targets[groupStart].Item1);
+                    if (distance != expectedDistance)
+                    {
+                        break;
+                    }
+
+                    var groupEnd = groupStart + 1;
+                    while (groupEnd < targets.Count
+                           && originCell.DistanceTo(targets[groupEnd].Item1) == distance)
+                    {
+                        groupEnd++;
+                    }
+
+                    var selected = GetNextAdjacent(targets, groupStart, groupEnd);
+                    if (previousCell.DistanceTo(selected.Item1) != 1)
+                    {
+                        var bridge = GetNextAdjacent(
+                            targets, previousGroupStart, previousGroupEnd, previousCell, selected.Item1);
+                        if (bridge.Item2 == 0)
+                        {
+                            selected = GetNextAdjacent(targets, groupStart, groupEnd, previousCell);
+                            if (selected.Item2 == 0)
+                            {
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            line.Add(bridge);
+                        }
+                    }
+
+                    line.Add(selected);
+                    previousCell = selected.Item1;
+                    previousGroupStart = groupStart;
+                    previousGroupEnd = groupEnd;
+                    groupStart = groupEnd;
+                    expectedDistance++;
+                }
+
+                targets.Clear();
+                manager.PointByteListArrayPool.Return(targets);
+                return line;
             }
             case TargetingShape.Cone:
             {
@@ -1095,6 +1169,27 @@ public class AbilityActivationSystem :
             default:
                 // TODO: Handle other shapes
                 throw new NotSupportedException("TargetingShape " + targetingShape + " not supported");
+        }
+
+        static (Point, byte) GetNextAdjacent(
+            List<(Point, byte)> cells, int start, int end,
+            Point? adjacentTo = null, Point? alsoAdjacentTo = null)
+        {
+            var selected = default((Point, byte));
+            for (var i = start; i < end; i++)
+            {
+                var candidate = cells[i];
+                if (candidate.Item2 <= selected.Item2
+                    || adjacentTo != null && adjacentTo.Value.DistanceTo(candidate.Item1) != 1
+                    || alsoAdjacentTo != null && alsoAdjacentTo.Value.DistanceTo(candidate.Item1) != 1)
+                {
+                    continue;
+                }
+
+                selected = candidate;
+            }
+
+            return selected;
         }
     }
 

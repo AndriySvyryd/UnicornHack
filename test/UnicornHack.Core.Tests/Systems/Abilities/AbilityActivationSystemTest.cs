@@ -779,7 +779,7 @@ public class AbilityActivationSystemTest
             manager.AbilityActivationSystem.GetEvasionProbability(iceShardAbility, playerEntity, sylph, null,
                 accuracy));
 
-        var setSlotMessage = SetAbilitySlotMessage.Create(manager);
+        var setSlotMessage = SetAbilitySlotMessage.Create(playerEntity, manager);
         setSlotMessage.AbilityEntity = iceShardAbility;
         setSlotMessage.Slot = 2;
         manager.Enqueue(setSlotMessage);
@@ -824,7 +824,7 @@ public class AbilityActivationSystemTest
         Assert.Equal(0, playerEntity.Being!.ReservedEnergyPoints);
         var toggledAbility = playerEntity.ActiveEffects!.Abilities
             .Single(ability => ability.Ability!.Name == "Surge of Luck");
-        var setSlotMessage = SetAbilitySlotMessage.Create(manager);
+        var setSlotMessage = SetAbilitySlotMessage.Create(playerEntity, manager);
         setSlotMessage.AbilityEntity = toggledAbility;
         setSlotMessage.Slot = 2;
 
@@ -842,7 +842,7 @@ public class AbilityActivationSystemTest
 
         EffectTestHelper.ApplyStatus(playerEntity, EffectType.Slow, duration: 100, manager);
 
-        setSlotMessage = SetAbilitySlotMessage.Create(manager);
+        setSlotMessage = SetAbilitySlotMessage.Create(playerEntity, manager);
         setSlotMessage.AbilityEntity = toggledAbility;
 
         manager.Enqueue(setSlotMessage);
@@ -876,7 +876,7 @@ public class AbilityActivationSystemTest
         Assert.Null(toggledAbility.Ability.CooldownTick);
         Assert.Equal(200, manager.Game.CurrentTick);
 
-        setSlotMessage = SetAbilitySlotMessage.Create(manager);
+        setSlotMessage = SetAbilitySlotMessage.Create(playerEntity, manager);
         setSlotMessage.AbilityEntity = toggledAbility;
         manager.Enqueue(setSlotMessage);
         manager.Queue.ProcessQueue(manager);
@@ -893,6 +893,30 @@ public class AbilityActivationSystemTest
     }
 
     [Fact]
+    public void Targeting_beam_pattern1_diagonal() => TestTargeting(@"
+<#.......#
+#.#......#
+.#.#.....#
+....#....#
+.........#
+....#....#
+.....#2..#",
+        new byte[]
+        {
+            0, 254,   0,   0,   0,   0,   0,   0,   0,   0,
+          254,  76, 254,   0,   0,   0,   0,   0,   0,   0,
+            0, 254, 140, 254,   0,   0,   0,   0,   0,   0,
+            0,   0,  22, 190, 254,   0,   0,   0,   0,   0,
+            0,   0,   0,  43, 183,  45,   0,   0,   0,   0,
+            0,   0,   0,   0, 254, 181,  68,   0,   0,   0,
+            0,   0,   0,   0,   0, 254, 189,   0,   0,   0
+        },
+        6,
+        TargetingShape.Beam,
+        1,
+        Direction.West);
+
+    [Fact]
     public void Targeting_line_pattern1_diagonal() => TestTargeting(@"
 <#.......#
 #.#......#
@@ -903,9 +927,13 @@ public class AbilityActivationSystemTest
 .....#2..#",
         new byte[]
         {
-            0, 254, 0, 0, 0, 0, 0, 0, 0, 0, 254, 76, 254, 0, 0, 0, 0, 0, 0, 0, 0, 254, 140, 254, 0, 0, 0, 0, 0, 0,
-            0, 0, 22, 190, 254, 0, 0, 0, 0, 0, 0, 0, 0, 43, 183, 45, 0, 0, 0, 0, 0, 0, 0, 0, 254, 181, 68, 0, 0, 0,
-            0, 0, 0, 0, 0, 254, 189, 0, 0, 0,
+            0, 254,   0,   0,   0,   0,   0,   0,   0,   0,
+            0,   0, 254,   0,   0,   0,   0,   0,   0,   0,
+            0,   0,   0, 254,   0,   0,   0,   0,   0,   0,
+            0,   0,   0,   0, 254,   0,   0,   0,   0,   0,
+            0,   0,   0,   0, 183,   0,   0,   0,   0,   0,
+            0,   0,   0,   0, 254,   0,   0,   0,   0,   0,
+            0,   0,   0,   0,   0, 254,   0,   0,   0,   0
         },
         6,
         TargetingShape.Line,
@@ -913,7 +941,7 @@ public class AbilityActivationSystemTest
         Direction.West);
 
     [Fact]
-    public void Targeting_line_pattern1_diagonal_near() => TestTargeting(@"
+    public void Targeting_beam_pattern1_diagonal_near() => TestTargeting(@"
 <#.......#
 #2#......#
 .#.#.....#
@@ -923,17 +951,21 @@ public class AbilityActivationSystemTest
 .....#...#",
         new byte[]
         {
-            0, 254, 0, 0, 0, 0, 0, 0, 0, 0, 254, 190, 254, 0, 0, 0, 0, 0, 0, 0, 0, 254, 158, 254, 0, 0, 0, 0, 0, 0,
-            0, 0, 66, 198, 254, 0, 0, 0, 0, 0, 0, 0, 0, 127, 198, 45, 0, 0, 0, 0, 0, 0, 0, 2, 254, 181, 68, 0, 0, 0,
-            0, 0, 0, 0, 0, 254, 189, 0, 0, 0,
+            0, 254,   0,   0,   0,   0,   0,   0,   0,   0,
+          254, 190, 254,   0,   0,   0,   0,   0,   0,   0,
+            0, 254, 158, 254,   0,   0,   0,   0,   0,   0,
+            0,   0,  66, 198, 254,   0,   0,   0,   0,   0,
+            0,   0,   0, 127, 198,  45,   0,   0,   0,   0,
+            0,   0,   0,   2, 254, 181,  68,   0,   0,   0,
+            0,   0,   0,   0,   0, 254, 189,   0,   0,   0
         },
         6,
-        TargetingShape.Line,
+        TargetingShape.Beam,
         1,
         Direction.West);
 
     [Fact]
-    public void Targeting_line_pattern1_diagonal_self() => TestTargeting(@"
+    public void Targeting_beam_pattern1_diagonal_self() => TestTargeting(@"
 <#.......#
 #.#......#
 .#.#.....#
@@ -943,15 +975,43 @@ public class AbilityActivationSystemTest
 .....#...#",
         new byte[]
         {
-            0, 254, 0, 0, 0, 0, 0, 0, 0, 0, 254, 190, 254, 0, 0, 0, 0, 0, 0, 0, 0, 254, 158, 254, 0, 0, 0, 0, 0, 0,
-            0, 0, 66, 198, 254, 0, 0, 0, 0, 0, 0, 0, 0, 127, 198, 45, 0, 0, 0, 0, 0, 0, 0, 2, 254, 181, 68, 0, 0, 0,
-            0, 0, 0, 0, 0, 254, 189, 0, 0, 0,
+            0, 254,   0,   0,   0,   0,   0,   0,   0,   0,
+          254, 190, 254,   0,   0,   0,   0,   0,   0,   0,
+            0, 254, 158, 254,   0,   0,   0,   0,   0,   0,
+            0,   0,  66, 198, 254,   0,   0,   0,   0,   0,
+            0,   0,   0, 127, 198,  45,   0,   0,   0,   0,
+            0,   0,   0,   2, 254, 181,  68,   0,   0,   0,
+            0,   0,   0,   0,   0, 254, 189,   0,   0,   0
         },
         6,
-        TargetingShape.Line,
+        TargetingShape.Beam,
         1,
         Direction.Southeast,
         targetGlyph: '<');
+
+    [Fact]
+    public void Targeting_beam_pattern2_diagonal_near() => TestTargeting(@"
+<........#
+.2.......#
+..#......#
+....#....#
+.........#
+....#....#
+.....#...#",
+        new byte[]
+        {
+            0,  42,   0,   0,   0,   0,   0,   0,   0,   0,
+           42, 254, 211, 127,  42,   0,   0,   0,   0,   0,
+            0, 211, 254, 187, 254, 211, 126,   0,   0,   0,
+            0, 127, 187,   4, 254, 158, 253,   0,   0,   0,
+            0,  42, 254, 127,   0,   0,  64,   0,   0,   0,
+            0,   0, 211, 251, 254,   0,   0,   0,   0,   0,
+            0,   0, 126, 254, 177, 254,   0,   0,   0,   0
+        },
+        6,
+        TargetingShape.Beam,
+        1,
+        Direction.West);
 
     [Fact]
     public void Targeting_line_pattern2_diagonal_near() => TestTargeting(@"
@@ -964,9 +1024,13 @@ public class AbilityActivationSystemTest
 .....#...#",
         new byte[]
         {
-            0, 42, 0, 0, 0, 0, 0, 0, 0, 0, 42, 254, 211, 127, 42, 0, 0, 0, 0, 0, 0, 211, 254, 187, 254, 211, 126, 0,
-            0, 0, 0, 127, 187, 4, 254, 158, 253, 0, 0, 0, 0, 42, 254, 127, 0, 0, 64, 0, 0, 0, 0, 0, 211, 251, 254,
-            0, 0, 0, 0, 0, 0, 0, 126, 254, 177, 254, 0, 0, 0, 0,
+            0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+            0, 254,   0,   0,   0,   0,   0,   0,   0,   0,
+            0,   0, 254, 187, 254, 211,   0,   0,   0,   0,
+            0,   0,   0,   0,   0,   0, 253,   0,   0,   0,
+            0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+            0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+            0,   0,   0,   0,   0,   0,   0,   0,   0,   0
         },
         6,
         TargetingShape.Line,
@@ -975,7 +1039,7 @@ public class AbilityActivationSystemTest
 
 
     [Fact]
-    public void Targeting_line_pattern2_vertical_self() => TestTargeting(@"
+    public void Targeting_beam_pattern2_vertical_self() => TestTargeting(@"
 ...<.....#
 .........#
 ..#......#
@@ -985,18 +1049,22 @@ public class AbilityActivationSystemTest
 .....#...#",
         new byte[]
         {
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 127, 254, 127, 0, 0, 0, 0, 0, 0, 79, 254, 254, 254, 127, 0, 0, 0, 0,
-            124, 66, 63, 254, 254, 222, 127, 0, 0, 0, 127, 0, 127, 254, 42, 127, 254, 127, 0, 0, 2, 0, 190, 254,
-            254, 15, 238, 254, 127, 0, 0, 7, 246, 254, 25, 0, 127, 254, 254, 254,
+            0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+            0,   0, 127, 254, 127,   0,   0,   0,   0,   0,
+            0,  79, 254, 254, 254, 127,   0,   0,   0,   0,
+          124,  66,  63, 254, 254, 222, 127,   0,   0,   0,
+          127,   0, 127, 254,  42, 127, 254, 127,   0,   0,
+            2,   0, 190, 254, 254,  15, 238, 254, 127,   0,
+            0,   7, 246, 254,  25,   0, 127, 254, 254, 254
         },
         6,
-        TargetingShape.Line,
+        TargetingShape.Beam,
         1,
         Direction.South,
         targetGlyph: '<');
 
     [Fact]
-    public void Targeting_line_pattern2_vertical_near() => TestTargeting(@"
+    public void Targeting_beam_pattern2_vertical_near() => TestTargeting(@"
 ..<......#
 ..2......#
 ..#......#
@@ -1006,12 +1074,16 @@ public class AbilityActivationSystemTest
 .....#...#",
         new byte[]
         {
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 127, 254, 127, 0, 0, 0, 0, 0, 0, 127, 238, 254, 238, 127, 0, 0, 0, 0,
-            0, 254, 190, 0, 190, 254, 74, 0, 0, 0, 0, 254, 127, 0, 127, 127, 51, 117, 0, 0, 0, 254, 63, 0, 63, 254,
-            0, 85, 125, 0, 0, 246, 7, 0, 7, 68, 0, 0, 127, 127, 0,
+            0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+            0, 127, 254, 127,   0,   0,   0,   0,   0,   0,
+          127, 238, 254, 238, 127,   0,   0,   0,   0,   0,
+          254, 190,   0, 190, 254,  74,   0,   0,   0,   0,
+          254, 127,   0, 127, 127,  51, 117,   0,   0,   0,
+          254,  63,   0,  63, 254,   0,  85, 125,   0,   0,
+          246,   7,   0,   7,  68,   0,   0, 127, 127,   0
         },
         6,
-        TargetingShape.Line,
+        TargetingShape.Beam,
         1,
         Direction.North);
 
@@ -1035,11 +1107,17 @@ public class AbilityActivationSystemTest
 
         var visibleTerrain = new byte[level.TileCount];
         var originDistance = 0;
+        var previousTarget = origin;
         foreach (var (point, exposure) in targetedCells)
         {
             visibleTerrain[level.PointToIndex![point.X, point.Y]] += exposure;
             var distance = origin.DistanceTo(point);
             Assert.False(distance < originDistance, $"Point {point} is out of sequence");
+            if (targetingShape == TargetingShape.Line)
+            {
+                Assert.Equal(1, previousTarget.DistanceTo(point));
+                previousTarget = point;
+            }
 
             originDistance = distance;
         }

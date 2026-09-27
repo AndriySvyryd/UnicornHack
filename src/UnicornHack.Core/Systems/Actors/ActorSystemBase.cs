@@ -144,7 +144,16 @@ public abstract class ActorSystemBase
                 {
                     foreach (var item in being.Items)
                     {
-                        AddCandidate(item.Id, null);
+                        var moveMessage = MoveItemMessage.Create(manager);
+                        moveMessage.ItemEntity = item;
+                        moveMessage.TargetRoomEntity = position.RoomEntity;
+                        moveMessage.TargetCell = position.Cell;
+                        var canMove = manager.ItemMovingSystem.CanMoveItem(moveMessage, manager);
+                        manager.ReturnMessage(moveMessage);
+                        if (canMove)
+                        {
+                            AddCandidate(item.Id, null);
+                        }
                     }
                 }
 
@@ -160,7 +169,6 @@ public abstract class ActorSystemBase
                             equipMessage.ActorEntity = actorEntity;
                             equipMessage.ItemEntity = item;
                             equipMessage.Slot = slot;
-                            equipMessage.Force = actorEntity.Player != null;
                             var canEquip = manager.ItemUsageSystem.CanEquipItem(equipMessage, manager);
                             manager.ReturnMessage(equipMessage);
                             if (canEquip)
@@ -179,7 +187,16 @@ public abstract class ActorSystemBase
                     {
                         if (item.Item!.EquippedSlot != EquipmentSlot.None)
                         {
-                            AddCandidate(item.Id, null);
+                            var equipMessage = EquipItemMessage.Create(manager);
+                            equipMessage.ActorEntity = actorEntity;
+                            equipMessage.ItemEntity = item;
+                            equipMessage.Slot = EquipmentSlot.None;
+                            var canUnequip = manager.ItemUsageSystem.CanEquipItem(equipMessage, manager);
+                            manager.ReturnMessage(equipMessage);
+                            if (canUnequip)
+                            {
+                                AddCandidate(item.Id, null);
+                            }
                         }
                     }
                 }
@@ -235,7 +252,10 @@ public abstract class ActorSystemBase
         {
             if (!excludeOriginal
                 || candidateTarget != originalTarget
-                || candidateTarget2 != originalTarget2)
+                || candidateTarget2 != originalTarget2
+                && (action != ActorActionType.UseAbilitySlot
+                    || ResolveAbilityTargetCell(actorEntity, candidateTarget2, manager)
+                    != ResolveAbilityTargetCell(actorEntity, originalTarget2, manager)))
             {
                 candidates.Add((candidateTarget, candidateTarget2));
             }
@@ -273,9 +293,7 @@ public abstract class ActorSystemBase
             manager.ReturnMessage(message);
             if (error == null)
             {
-                legalTargets.Add(targetActor?.Being is { IsAlive: true }
-                    ? -targetActor.Id
-                    : cell.ToInt32());
+                legalTargets.Add(actorEntity.Position.Cell!.Value.DifferenceTo(cell).ToInt32());
             }
         }
 
@@ -370,43 +388,30 @@ public abstract class ActorSystemBase
 
     protected bool ActivateAbility(GameEntity actorEntity, int? slot, int? targetId, GameManager manager)
     {
-        Point targetCell;
-        GameEntity? targetActor;
-        if (targetId == null)
+        var position = actorEntity.Position!;
+        var targetActor = targetId is < 0
+            ? manager.FindEntity(-targetId.Value)
+            : null;
+        if (targetId is < 0
+            && targetActor?.Being is not { IsAlive: true })
         {
-            targetCell = actorEntity.Position!.Cell!.Value;
-            targetActor = actorEntity;
+            return false;
         }
-        else if (targetId.Value < 0)
+
+        var targetCell = ResolveAbilityTargetCell(actorEntity, targetId, manager);
+        if (targetCell == null
+            || !position.RoomEntity.Room!.IsValid(targetCell.Value))
         {
-            targetActor = manager.FindEntity(-targetId.Value);
-            if (targetActor?.Being is not { IsAlive: true }
-                || targetActor.Position is not { Cell: { } targetActorCell })
+            if (actorEntity.Player != null)
             {
-                return false;
+                manager.LoggingSystem.WriteLog(
+                    manager.Game.Services.Language.NoPath(), actorEntity, manager);
             }
 
-            targetCell = targetActorCell;
+            return false;
         }
-        else
-        {
-            targetCell = Point.Unpack(targetId)!.Value;
-            var room = actorEntity.Position!.RoomEntity.Room!;
-            if (!room.IsValid(targetCell))
-            {
-                if (actorEntity.HasComponent(EntityComponent.Player))
-                {
-                    manager.LoggingSystem.WriteLog(
-                        manager.Game.Services.Language.NoPath(), actorEntity, manager);
-                    return false;
-                }
 
-                throw new InvalidOperationException(
-                    "Actor " + actorEntity.Id + ". Target cell " + targetCell + " is outside the room.");
-            }
-
-            targetActor = room.Actors.GetValueOrDefault(targetCell);
-        }
+        targetActor ??= position.RoomEntity.Room.Actors.GetValueOrDefault(targetCell.Value);
 
         GameEntity? abilityEntity;
         if (slot.HasValue)
@@ -430,7 +435,7 @@ public abstract class ActorSystemBase
         }
         else
         {
-            var vectorToTarget = actorEntity.Position!.Cell!.Value.DifferenceTo(targetCell);
+            var vectorToTarget = position.Cell!.Value.DifferenceTo(targetCell.Value);
             var isMelee = vectorToTarget.Length() <= 1;
             abilityEntity = GetDefaultAttack(actorEntity, isMelee, manager);
             if (abilityEntity == null)
@@ -449,8 +454,14 @@ public abstract class ActorSystemBase
             }
         }
 
-        return ActivateAbility(abilityEntity, actorEntity, targetCell, targetActor, manager);
+        return ActivateAbility(abilityEntity, actorEntity, targetCell.Value, targetActor, manager);
     }
+
+    private static Point? ResolveAbilityTargetCell(
+        GameEntity actorEntity, int? targetId, GameManager manager)
+        => targetId is < 0
+            ? manager.FindEntity(-targetId.Value)?.Position?.Cell
+            : actorEntity.Position!.Cell!.Value.Translate(Vector.Unpack(targetId));
 
     public virtual GameEntity? GetDefaultAttack(GameEntity actorEntity, bool melee, GameManager manager)
         => manager.AbilitySlottingSystem.GetAbility(
@@ -468,8 +479,8 @@ public abstract class ActorSystemBase
         {
             if (actorEntity.HasComponent(EntityComponent.Player))
             {
-                manager.LoggingSystem.WriteLog(
-                    manager.Game.Services.Language.AbilityCannotBeActivated(ability), actorEntity, manager);
+                manager.LoggingSystem.WriteFailedAction(
+                    actorEntity, ActorActionType.UseAbilitySlot, manager, ability: ability);
                 return false;
             }
 
@@ -505,18 +516,21 @@ public abstract class ActorSystemBase
 
     protected bool Move(
         Direction direction, GameEntity actorEntity, GameManager manager,
-        bool onlyChangeHeading = false, bool suppressDelay = false)
+        bool onlyChangeHeading = false, bool suppressDelay = false, bool allowBumpAttack = true)
     {
         // TODO: only attack on move if hostile
         var position = actorEntity.Position!;
-        var targetCell = onlyChangeHeading
+        var nonPlanarDirection = direction is Direction.Up or Direction.Down;
+        var targetCell = onlyChangeHeading || nonPlanarDirection
             ? position.Cell!.Value
             : position.Cell!.Value.Translate(direction.AsVector());
         if (!onlyChangeHeading
+            && !nonPlanarDirection
             && targetCell != position.Cell)
         {
             var conflictingActor = position.RoomEntity.Room!.Actors.GetValueOrDefault(targetCell);
-            if (conflictingActor != null)
+            if (conflictingActor != null
+                && allowBumpAttack)
             {
                 if (position.Heading != direction)
                 {

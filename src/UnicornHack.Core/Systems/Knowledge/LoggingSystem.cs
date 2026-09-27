@@ -1,7 +1,10 @@
 ﻿using UnicornHack.Services.LogEvents;
+using UnicornHack.Systems.Abilities;
+using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
+using UnicornHack.Systems.Levels;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Knowledge;
@@ -14,9 +17,77 @@ public class LoggingSystem :
     IGameSystem<ItemEquippedMessage>,
     IGameSystem<AttackResultMessage>,
     IGameSystem<ItemActivationResultMessage>,
+    IGameSystem<TraveledMessage>,
     IGameSystem<DiedMessage>
 {
     // TODO: Write to log for first encounter with a creature or item
+
+    public void WriteFailedAction(
+        GameEntity actorEntity, ActorActionType action, GameManager manager,
+        Direction? direction = null, AbilityComponent? ability = null)
+    {
+        foreach (var playerEntity in manager.Players)
+        {
+            var actorSensed = manager.SensorySystem.CanSense(playerEntity, actorEntity) ?? SenseType.None;
+            if (!actorSensed.CanIdentify())
+            {
+                continue;
+            }
+
+            var logMessage = manager.Game.Services.Language.GetString(
+                new ActorActionFailedEvent(
+                    playerEntity, actorEntity, actorSensed, action, direction, ability));
+            WriteLog(logMessage, playerEntity, manager);
+        }
+    }
+
+    public MessageProcessingResult Process(TraveledMessage message, GameManager manager)
+    {
+        if (message.Successful)
+        {
+            return MessageProcessingResult.ContinueProcessing;
+        }
+
+        var actorEntity = message.Entity;
+        if (actorEntity.Player is { } player)
+        {
+            if (player.PendingChoice != null)
+            {
+                return MessageProcessingResult.ContinueProcessing;
+            }
+
+            var language = manager.Game.Services.Language;
+            var statusAbility = !actorEntity.Being!.CanMove
+                ? EffectApplicationSystem.GetAbilitiesAffectingProperty(
+                        actorEntity, nameof(BeingComponent.CanMove), AbilityType.Debuff)
+                    .FirstOrDefault()
+                : null;
+            if (statusAbility != null)
+            {
+                WriteLog(language.StatusPreventsMovement(statusAbility), actorEntity, manager);
+                return MessageProcessingResult.ContinueProcessing;
+            }
+
+            if (message.Delay == 0)
+            {
+                WriteLog(language.CannotMove(message.TargetHeading), actorEntity, manager);
+                return MessageProcessingResult.ContinueProcessing;
+            }
+        }
+        else if (actorEntity.AI == null)
+        {
+            return MessageProcessingResult.ContinueProcessing;
+        }
+
+        WriteFailedAction(
+            actorEntity,
+            message.TargetCell == message.InitialLevelCell
+                ? ActorActionType.ChangeHeading
+                : ActorActionType.MoveOneCell,
+            manager,
+            message.TargetHeading);
+        return MessageProcessingResult.ContinueProcessing;
+    }
 
     public MessageProcessingResult Process(ItemMovedMessage message, GameManager manager)
     {
@@ -121,10 +192,12 @@ public class LoggingSystem :
     {
         foreach (var playerEntity in manager.Players)
         {
+            var targetEntity = message.TargetEntity;
             var attackerSensed = manager.SensorySystem.CanSense(playerEntity, message.ActivatorEntity) ??
                                  SenseType.None;
-            var victimSensed = manager.SensorySystem.CanSense(playerEntity, message.TargetEntity) ??
-                               SenseType.None;
+            var victimSensed = targetEntity == null
+                ? SenseType.None
+                : manager.SensorySystem.CanSense(playerEntity, targetEntity) ?? SenseType.None;
             if (attackerSensed == SenseType.None
                 && victimSensed == SenseType.None)
             {
@@ -132,18 +205,19 @@ public class LoggingSystem :
             }
 
             var logMessage = manager.Game.Services.Language.GetString(new AttackEvent(
-                playerEntity, message.ActivatorEntity, message.TargetEntity,
+                playerEntity, message.ActivatorEntity, targetEntity,
                 attackerSensed, victimSensed, message.ResourceChanges, message.AbilityAction,
-                message.WeaponEntity, message.Ranged, message.Hit));
+                message.WeaponEntity, message.Ranged, message.Hit, message.AnyEffectApplied));
             WriteLog(logMessage, playerEntity, manager);
 
-            if (message.LingeringEffects.Count != 0
+            if (targetEntity != null
+                && message.LingeringEffects.Count != 0
                 && (attackerSensed.CanIdentify()
                     || victimSensed.CanIdentify()))
             {
                 var lingeringMessage = manager.Game.Services.Language.GetString(
                     new LingeringAttackEvent(
-                        playerEntity, message.ActivatorEntity, message.TargetEntity,
+                        playerEntity, message.ActivatorEntity, targetEntity,
                         attackerSensed, victimSensed, message.LingeringEffects));
                 WriteLog(lingeringMessage, playerEntity, manager);
             }

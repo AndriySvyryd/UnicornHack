@@ -2,8 +2,8 @@ using UnicornHack.Data.Abilities;
 using UnicornHack.Data.Creatures;
 using UnicornHack.Data.Items;
 using UnicornHack.Systems.Abilities;
-using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
+using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Systems.Time;
 using UnicornHack.Utils.MessagingECS;
@@ -48,7 +48,8 @@ public class AISystemTest
         engulfer.Position!.Heading = Direction.East;
         engulfer.AI.NextAction = ActorActionType.UseAbilitySlot;
         engulfer.AI.NextActionTarget = digestionAbility.Slot;
-        engulfer.AI.NextActionTarget2 = -victim.Id;
+        engulfer.AI.NextActionTarget2 = engulfer.Position.Cell!.Value
+            .DifferenceTo(victim.Position!.Cell!.Value).ToInt32();
 
         TestHelper.PerformTurn(engulfer, manager);
 
@@ -193,34 +194,277 @@ public class AISystemTest
     }
 
     [Fact]
-    public void Creatures_do_not_lose_health_while_the_player_waits()
+    public void Creature_attacks_whoever_moves_into_the_aimed_cell()
     {
         var game = TestHelper.CreateGame(seed: 1u);
-        var room = TestHelper.BuildRoom(".....", game);
-        var firefly = CreatureData.Firefly.Instantiate(room, new Point(1, 0));
-        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(2, 0));
-        var spider = CreatureData.GiantSpider.Instantiate(room, new Point(3, 0));
+        var room = TestHelper.BuildRoom(@"
+..
+..", game);
+        var firefly = CreatureData.Firefly.Instantiate(room, new Point(0, 0));
+        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(1, 0));
+        var spider = CreatureData.GiantSpider.Instantiate(room, new Point(1, 1));
         var manager = game.Manager;
         manager.Queue.ProcessQueue(manager);
 
-        manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
-            100000, nameof(BeingComponent.HitPointMaximum), "test health", player);
+        DecideNextActionMessage.Enqueue(firefly, manager);
         manager.Queue.ProcessQueue(manager);
-        player.Being!.HitPoints = player.Being.HitPointMaximum;
-        var fireflyHitPoints = firefly.Being!.HitPoints;
+
+        Assert.Equal(ActorActionType.UseAbilitySlot, firefly.AI!.NextAction);
+        var targetVector = Vector.Unpack(firefly.AI.NextActionTarget2!.Value);
+        Assert.Equal(new Vector(1, 0), targetVector);
+
+        var playerMove = TravelMessage.Create(manager);
+        playerMove.ActorEntity = player;
+        playerMove.TargetCell = new Point(0, 1);
+        playerMove.TargetHeading = Direction.Southwest;
+        manager.Enqueue(playerMove);
+        manager.Queue.ProcessQueue(manager);
+
+        var spiderMove = TravelMessage.Create(manager);
+        spiderMove.ActorEntity = spider;
+        spiderMove.TargetCell = new Point(1, 0);
+        spiderMove.TargetHeading = Direction.North;
+        manager.Enqueue(spiderMove);
+        manager.Queue.ProcessQueue(manager);
+
+        var playerHitPoints = player.Being!.HitPoints;
         var spiderHitPoints = spider.Being!.HitPoints;
 
-        for (var i = 0; i < 30; i++)
+        TestHelper.PerformTurn(firefly, manager);
+
+        Assert.Equal(playerHitPoints, player.Being.HitPoints);
+        Assert.True(spider.Being.HitPoints < spiderHitPoints);
+    }
+
+    [Fact]
+    public void Creature_does_not_bump_attack_an_actor_blocking_its_planned_move()
+    {
+        var game = TestHelper.CreateGame(seed: 1u);
+        var room = TestHelper.BuildRoom("...", game);
+        var firefly = CreatureData.Firefly.Instantiate(room, new Point(0, 0));
+        var spider = CreatureData.GiantSpider.Instantiate(room, new Point(1, 0));
+        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(2, 0));
+        var manager = game.Manager;
+        manager.Queue.ProcessQueue(manager);
+
+        var fireSting = firefly.ActiveEffects!.Abilities.Single(
+            ability => ability.Ability!.Name == "fire sting").Ability!;
+        fireSting.Slot = AbilitySlottingSystem.DefaultMeleeAttackSlot;
+        manager.Queue.ProcessQueue(manager);
+        firefly.Position!.Heading = Direction.East;
+        firefly.AI!.NextAction = ActorActionType.MoveOneCell;
+        firefly.AI.NextActionTarget = (int)Direction.East;
+        var actionTick = firefly.AI.NextActionTick;
+        var spiderHitPoints = spider.Being!.HitPoints;
+        player.Player!.LogEntries.Clear();
+
+        TestHelper.PerformTurn(firefly, manager);
+
+        Assert.Equal(new Point(0, 0), firefly.Position.Cell);
+        Assert.Equal(spiderHitPoints, spider.Being.HitPoints);
+        Assert.Null(fireSting.CooldownTick);
+        Assert.True(firefly.AI.NextActionTick > actionTick);
+        Assert.Contains(
+            player.Player.LogEntries,
+            entry => entry.Message == "The firefly tries to move east, but fails.");
+    }
+
+    [Fact]
+    public void Creature_spends_its_turn_when_its_attack_target_becomes_invalid()
+    {
+        var game = TestHelper.CreateGame(seed: 1u);
+        var room = TestHelper.BuildRoom("..", game);
+        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(0, 0));
+        var firefly = CreatureData.Firefly.Instantiate(room, new Point(1, 0));
+        var manager = game.Manager;
+        manager.Queue.ProcessQueue(manager);
+
+        DecideNextActionMessage.Enqueue(firefly, manager);
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(ActorActionType.UseAbilitySlot, firefly.AI!.NextAction);
+
+        var actionTick = firefly.AI.NextActionTick;
+        firefly.AI.NextActionTarget2 = new Vector(1, 0).ToInt32();
+        player.Player!.LogEntries.Clear();
+
+        TestHelper.PerformTurn(firefly, manager);
+
+        Assert.True(firefly.AI.NextActionTick > actionTick);
+        Assert.Equal(player.Being!.HitPointMaximum, player.Being.HitPoints);
+        Assert.Contains(
+            player.Player.LogEntries,
+            entry => entry.Message == "The firefly tries to use Fire sting, but fails.");
+    }
+
+    [Theory]
+    [InlineData(ActorActionType.DropItem)]
+    [InlineData(ActorActionType.EquipItem)]
+    [InlineData(ActorActionType.UnequipItem)]
+    public void Creature_spends_its_turn_when_an_item_action_fails(ActorActionType action)
+    {
+        var game = TestHelper.CreateGame(seed: 1u);
+        var room = TestHelper.BuildRoom("..", game);
+        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(0, 0));
+        var creature = CreatureData.HumanWarrior.Instantiate(room, new Point(1, 0));
+        var manager = game.Manager;
+        ItemData.LongSword.Instantiate(creature);
+        manager.Queue.ProcessQueue(manager);
+
+        var sword = creature.Being!.Items.Single(item => item.Item!.TemplateName == ItemData.LongSword.Name);
+        if (action != ActorActionType.EquipItem)
         {
-            player.Player!.NextAction = ActorActionType.Wait;
-            TestHelper.PerformTurn(player, manager);
-            TestHelper.AdvanceToNextPlayerTurn(manager);
+            var equipMessage = EquipItemMessage.Create(manager);
+            equipMessage.ActorEntity = creature;
+            equipMessage.ItemEntity = sword;
+            equipMessage.Slot = EquipmentSlot.GraspBothMelee;
+            manager.Enqueue(equipMessage);
+            manager.Queue.ProcessQueue(manager);
         }
 
-        Assert.Equal(fireflyHitPoints, firefly.Being.HitPoints);
-        Assert.Equal(spiderHitPoints, spider.Being.HitPoints);
-        Assert.True(firefly.Being.IsAlive);
-        Assert.True(spider.Being.IsAlive);
+        ApplyStatus(creature, EffectType.Stick, duration: 100, manager, amount: 1000);
+        manager.Queue.ProcessQueue(manager);
+        Assert.False(creature.Being.CanMoveItems);
+
+        var ai = creature.AI!;
+        ai.NextAction = action;
+        ai.NextActionTarget = sword.Id;
+        ai.NextActionTarget2 = action == ActorActionType.EquipItem
+            ? (int)EquipmentSlot.GraspBothMelee
+            : null;
+        var actionTick = ai.NextActionTick;
+        player.Player!.LogEntries.Clear();
+
+        TestHelper.PerformTurn(creature, manager);
+
+        Assert.Equal(actionTick + TimeSystem.DefaultActionDelay, ai.NextActionTick);
+        Assert.Equal(creature.Id, sword.Item!.ContainerId);
+        Assert.Equal(player.Being!.HitPointMaximum, player.Being.HitPoints);
+        var actionText = action switch
+        {
+            ActorActionType.DropItem => "drop an item",
+            ActorActionType.EquipItem => "equip an item",
+            ActorActionType.UnequipItem => "unequip an item",
+            _ => throw new InvalidOperationException()
+        };
+        Assert.Contains(
+            player.Player.LogEntries,
+            entry => entry.Message == $"The human warrior tries to {actionText}, but fails.");
+    }
+
+    [Fact]
+    public void Failed_item_equipment_messages_always_add_the_default_delay()
+    {
+        var room = TestHelper.BuildRoom(".");
+        var creature = CreatureData.HumanWarrior.Instantiate(room, new Point(0, 0));
+        var manager = creature.Manager;
+        ItemData.LongSword.Instantiate(creature);
+        manager.Queue.ProcessQueue(manager);
+
+        var sword = creature.Being!.Items.Single(item => item.Item!.TemplateName == ItemData.LongSword.Name);
+        var ai = creature.AI!;
+        ai.NextActionTick = manager.Game.CurrentTick + 5;
+
+        var message = ItemEquippedMessage.Create(manager);
+        message.ActorEntity = creature;
+        message.ItemEntity = sword;
+        manager.Enqueue(message);
+
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(manager.Game.CurrentTick + 5 + TimeSystem.DefaultActionDelay, ai.NextActionTick);
+    }
+
+    [Theory]
+    [InlineData(3)]
+    [InlineData(5)]
+    public void Confused_creature_avoids_item_actions_that_would_fail(int itemActionIndex)
+    {
+        var game = TestHelper.CreateGame(seed: 1u);
+        var room = TestHelper.BuildRoom("...", game);
+        var creature = CreatureData.Bugbear.Instantiate(room, new Point(0, 0));
+        PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(2, 0));
+        var manager = game.Manager;
+        ItemData.FieryAegis.Instantiate(creature);
+        manager.Queue.ProcessQueue(manager);
+
+        var shield = creature.Being!.Items.Single();
+        var equipMessage = EquipItemMessage.Create(manager);
+        equipMessage.ActorEntity = creature;
+        equipMessage.ItemEntity = shield;
+        equipMessage.Slot = EquipmentSlot.GraspBothMelee;
+        equipMessage.Force = true;
+        manager.Enqueue(equipMessage);
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(EquipmentSlot.GraspBothMelee, shield.Item!.EquippedSlot);
+
+        ApplyStatus(creature, EffectType.Stick, duration: 100, manager, amount: 1000);
+        manager.Queue.ProcessQueue(manager);
+        Assert.False(creature.Being!.CanMoveItems);
+
+        var dropMessage = MoveItemMessage.Create(manager);
+        dropMessage.ItemEntity = shield;
+        dropMessage.TargetRoomEntity = room.Entity;
+        dropMessage.TargetCell = creature.Position!.Cell;
+        Assert.False(manager.ItemMovingSystem.CanMoveItem(dropMessage, manager));
+        manager.ReturnMessage(dropMessage);
+
+        var unequipMessage = EquipItemMessage.Create(manager);
+        unequipMessage.ActorEntity = creature;
+        unequipMessage.ItemEntity = shield;
+        unequipMessage.Slot = EquipmentSlot.None;
+        Assert.False(manager.ItemUsageSystem.CanEquipItem(unequipMessage, manager));
+        manager.ReturnMessage(unequipMessage);
+
+        ApplyStatus(creature, EffectType.Confuse, duration: 100, manager, amount: 1000);
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(100, creature.Being.RandomActionPercent);
+
+        var random = (TestRandom)manager.Game.Random;
+        random.EnqueueNext(itemActionIndex);
+        random.EnqueueNext(0);
+        random.EnqueueNext(0);
+
+        var randomizedAction = TestActorSystem.RandomizeAction(
+            creature, ActorActionType.PickupItem, manager);
+
+        Assert.Equal(ActorActionType.ChangeHeading, randomizedAction);
+        Assert.Equal(EquipmentSlot.GraspBothMelee, shield.Item!.EquippedSlot);
+    }
+
+    [Fact]
+    public void Creature_attack_target_remains_relative_after_displacement()
+    {
+        var game = TestHelper.CreateGame(seed: 1u);
+        var room = TestHelper.BuildRoom(@"
+...
+...
+...", game);
+        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(1, 1));
+        var firefly = CreatureData.Firefly.Instantiate(room, new Point(2, 1));
+        var spider = CreatureData.GiantSpider.Instantiate(room, new Point(1, 2));
+        var manager = game.Manager;
+        manager.Queue.ProcessQueue(manager);
+
+        DecideNextActionMessage.Enqueue(firefly, manager);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(ActorActionType.UseAbilitySlot, firefly.AI!.NextAction);
+
+        var displacement = TravelMessage.Create(manager);
+        displacement.ActorEntity = firefly;
+        displacement.TargetCell = new Point(2, 2);
+        displacement.TargetHeading = Direction.South;
+        displacement.SuppressDelay = true;
+        manager.Enqueue(displacement);
+        manager.Queue.ProcessQueue(manager);
+
+        var playerHitPoints = player.Being!.HitPoints;
+        var spiderHitPoints = spider.Being!.HitPoints;
+
+        TestHelper.PerformTurn(firefly, manager);
+
+        Assert.Equal(playerHitPoints, player.Being.HitPoints);
+        Assert.True(spider.Being.HitPoints < spiderHitPoints);
     }
 
     /// <summary>
@@ -1031,6 +1275,18 @@ public class AISystemTest
     private static void ApplyDamage(GameEntity target, int amount, GameManager manager)
     {
         ApplyInstantDamageEffect(target, EffectType.PhysicalDamage, amount, manager);
+    }
+
+    private sealed class TestActorSystem : ActorSystemBase
+    {
+        public static ActorActionType RandomizeAction(
+            GameEntity actorEntity, ActorActionType action, GameManager manager)
+        {
+            int? target = null;
+            int? target2 = null;
+            RandomizeActionTargetIfConfused(actorEntity, ref action, ref target, ref target2, manager);
+            return action;
+        }
     }
 
     private sealed class AttackListener : IGameSystem<AbilityActivatedMessage>

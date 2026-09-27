@@ -51,7 +51,8 @@ this skill points you at the right sections and patterns.
 
 `_` altar · `\` major shrine · `/` minor shrine · `&` ritual shrine · `{` small fountain
 · `}` big fountain · `?` skill pedestal · `!` race pedestal · `"` trait pedestal ·
-`=` feat pedestal · `[` armor stand · `(` item case · `)` weapon stand.
+`=` feat pedestal · `[` armor stand · `]` gilded armor stand · `(` item case ·
+`:` gilded item case · `)` weapon stand · `;` gilded weapon stand.
 
 ### Edge symbols (§3.1 of Map.md)
 

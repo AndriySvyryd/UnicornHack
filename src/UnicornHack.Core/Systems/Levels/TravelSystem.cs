@@ -18,8 +18,18 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
     public MessageProcessingResult Process(TravelMessage message, GameManager manager)
     {
         var traveled = TryTravel(message, manager);
-        manager.Enqueue(traveled);
+        EnqueueTraveled(traveled, manager);
         return MessageProcessingResult.ContinueProcessing;
+    }
+
+    private static void EnqueueTraveled(TraveledMessage message, GameManager manager)
+    {
+        if (message.Delay != 0)
+        {
+            DelayMessage.Enqueue(message.Entity, message.Delay, manager);
+        }
+
+        manager.Enqueue(message);
     }
 
     private TraveledMessage TryTravel(TravelMessage message, GameManager manager, bool pretend = false)
@@ -27,8 +37,14 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
         var position = message.ActorEntity.Position!;
         var heading = position.Heading!.Value;
         Debug.Assert(message.Distance is null or >= 0);
+        var nonPlanarDirection = message.Distance != null
+                                 && message.TargetHeading is Direction.Up or Direction.Down;
         Point? requestedTargetCell;
-        if (message.Distance is not { } distance)
+        if (nonPlanarDirection)
+        {
+            requestedTargetCell = position.Cell;
+        }
+        else if (message.Distance is not { } distance)
         {
             requestedTargetCell = message.TargetCell;
         }
@@ -46,6 +62,27 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
         Debug.Assert(requestedTargetCell != null);
         var traveledMessage = CreateTraveledMessage(
             message.ActorEntity, position, message.TargetHeading, requestedTargetCell.Value, manager);
+
+        var currentRoom = position.RoomEntity.Room!;
+        var targetCell = requestedTargetCell.Value;
+        var terrainBlocked = !CanMoveTo(targetCell, currentRoom);
+        var canInteract = false;
+        if (message.ActorEntity.Player != null)
+        {
+            canInteract = terrainBlocked
+                          && TerrainSystem.TryInteract(
+                              message.ActorEntity, targetCell, currentRoom, manager, pretend: true);
+            var knownObstacle = terrainBlocked
+                                && !canInteract
+                                && (!currentRoom.IsValid(targetCell)
+                                    || currentRoom.KnownTerrain[
+                                            currentRoom.PointToIndex![targetCell.X, targetCell.Y]]
+                                        != MapFeature.Unexplored);
+            if (nonPlanarDirection || knownObstacle)
+            {
+                return traveledMessage;
+            }
+        }
 
         if (position.MovementDelay == 0)
         {
@@ -70,11 +107,7 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
         if (position.Cell == requestedTargetCell.Value)
         {
             traveledMessage.Successful = true;
-            if (delay != 0)
-            {
-                DelayMessage.Enqueue(message.ActorEntity, delay, manager);
-            }
-
+            traveledMessage.Delay = delay;
             return traveledMessage;
         }
 
@@ -84,16 +117,25 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
             return traveledMessage;
         }
 
+        if (!message.SuppressDelay)
+        {
+            // TODO: Calculate movement delay based on terrain
+            delay += position.MovementDelay;
+        }
+        traveledMessage.Delay = delay;
+
         var engulfedVictim = manager.EngulferToVictimRelationship.GetVictim(message.ActorEntity);
 
-        var targetCell = requestedTargetCell.Value;
-        var currentRoom = position.RoomEntity.Room!;
-        if (!CanMoveTo(targetCell, currentRoom))
+        if (terrainBlocked)
         {
-            if (!pretend)
+            if (canInteract)
             {
-                TerrainSystem.TryInteract(
-                    message.ActorEntity, targetCell, currentRoom, manager);
+                traveledMessage.Delay = 0;
+                if (!pretend)
+                {
+                    TerrainSystem.TryInteract(
+                        message.ActorEntity, targetCell, currentRoom, manager);
+                }
             }
 
             return traveledMessage;
@@ -194,11 +236,6 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
             return traveledMessage;
         }
 
-        // TODO: Calculate delay based on terrain
-        if (!message.SuppressDelay)
-        {
-            delay += position.MovementDelay;
-        }
         if (engulfedVictim != null
             && victimInitialCell.HasValue
             && victimTargetCell.HasValue)
@@ -240,6 +277,7 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
         var position = actorEntity.Position!;
         traveledMessage ??= CreateTraveledMessage(
             actorEntity, position, position.Heading!.Value, targetCell, manager);
+        traveledMessage.Delay = delay;
         var currentRoom = position.RoomEntity.Room!;
         if (position.RoomId != targetRoomEntity.Id)
         {
@@ -263,11 +301,6 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
             stepMessage.ActorEntity = actorEntity;
             stepMessage.ConnectionEntity = landedConnection;
             manager.Enqueue(stepMessage);
-        }
-
-        if (delay != 0)
-        {
-            DelayMessage.Enqueue(actorEntity, delay, manager);
         }
 
         return traveledMessage;
@@ -361,9 +394,8 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
         traveledMessage.TargetHeading = position.Heading!.Value;
         traveledMessage.TargetCell = targetDoorCell;
         traveledMessage.Successful = true;
-        manager.Enqueue(traveledMessage);
-
-        DelayMessage.Enqueue(actorEntity, position.MovementDelay, manager);
+        traveledMessage.Delay = position.MovementDelay;
+        EnqueueTraveled(traveledMessage, manager);
         return true;
     }
 
@@ -565,7 +597,7 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
         var successful = traveledMessage.Successful;
         if (!pretend)
         {
-            manager.Enqueue(traveledMessage);
+            EnqueueTraveled(traveledMessage, manager);
         }
         else
         {

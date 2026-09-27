@@ -6,7 +6,7 @@ public readonly struct AttackEvent
         GameEntity sensorEntity, GameEntity attackerEntity, GameEntity? victimEntity,
         SenseType attackerSensed, SenseType victimSensed,
         IReadOnlyDictionary<EffectType, int> resourceChanges,
-        AbilityAction abilityAction, GameEntity? weaponEntity, bool ranged, bool hit)
+        AbilityAction abilityAction, GameEntity? weaponEntity, bool ranged, bool hit, bool anyEffectApplied)
     {
         SensorEntity = sensorEntity;
         AttackerEntity = attackerEntity;
@@ -18,6 +18,7 @@ public readonly struct AttackEvent
         WeaponEntity = weaponEntity;
         Ranged = ranged;
         Hit = hit;
+        AnyEffectApplied = anyEffectApplied;
     }
 
     public GameEntity SensorEntity
@@ -66,6 +67,11 @@ public readonly struct AttackEvent
     }
 
     public bool Hit
+    {
+        get;
+    }
+
+    public bool AnyEffectApplied
     {
         get;
     }

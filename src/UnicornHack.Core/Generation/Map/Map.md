@@ -69,8 +69,11 @@ records the binding so room finalization can wire up entity behavior later.
 | `"` | `TraitPedestal` | `pedestal` | `trait-pedestal` |
 | `=` | `FeatPedestal` | `pedestal` | `feat-pedestal` |
 | `[` | `ArmorStand` | `stand` | `armor-stand` |
+| `]` | `GildedArmorStand` | `stand` | `gilded-armor-stand` |
 | `(` | `ItemCase` | `stand` | `item-case` |
+| `:` | `GildedItemCase` | `stand` | `gilded-item-case` |
 | `)` | `WeaponStand` | `stand` | `weapon-stand` |
+| `;` | `GildedWeaponStand` | `stand` | `gilded-weapon-stand` |
 | `^` | `Trapped` | `trap` | `trapped` (see §5.1) |
 
 The non-placeable bits (`Secret`, `Cursed`, `Challenge`, `Boss`) **have no glyph**. A

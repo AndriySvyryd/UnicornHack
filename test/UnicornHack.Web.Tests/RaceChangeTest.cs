@@ -42,8 +42,7 @@ public class RaceChangeTest
     {
         var (player, listener, services, manager) = SetupGame();
 
-        var potionAbility = manager.AffectableAbilitiesIndex[
-            (player.Entity.Id, "potion of ogreness: Drink")]!;
+        var potionAbility = GetPotionAbility(player.Entity, ItemData.PotionOfOgreness.Name);
 
         // Slot the potion drink ability
         WebTestHelper.PerformAndVerify(player, listener, services,
@@ -51,7 +50,7 @@ public class RaceChangeTest
 
         // Use the slotted ability
         var fresh = WebTestHelper.PerformAndVerify(player, listener, services,
-            ActorActionType.UseAbilitySlot, 5);
+            ActorActionType.UseAbilitySlot, 5, new Vector(0, 0).ToInt32());
 
         // Verify the new race is delivered through generic ability transport.
         Assert.Contains(
@@ -66,22 +65,22 @@ public class RaceChangeTest
     {
         var (player, listener, services, manager) = SetupGame();
 
-        var firstPotionAbility = manager.AffectableAbilitiesIndex[
-            (player.Entity.Id, "potion of ogreness: Drink")]!;
+        var firstPotionAbility = GetPotionAbility(player.Entity, ItemData.PotionOfOgreness.Name);
         WebTestHelper.PerformAndVerify(
             player, listener, services, ActorActionType.SetAbilitySlot, firstPotionAbility.Id, 5);
         WebTestHelper.PerformAndVerify(
-            player, listener, services, ActorActionType.UseAbilitySlot, 5);
+            player, listener, services, ActorActionType.UseAbilitySlot, 5,
+            new Vector(0, 0).ToInt32());
 
         ItemData.PotionOfOgreness.Instantiate(player.Entity);
         manager.Queue.ProcessQueue(manager);
         listener.RegisterPlayerBuilder(player.Entity, manager);
-        var secondPotionAbility = manager.AffectableAbilitiesIndex[
-            (player.Entity.Id, "potion of ogreness: Drink")]!;
+        var secondPotionAbility = GetPotionAbility(player.Entity, ItemData.PotionOfOgreness.Name);
         WebTestHelper.PerformAndVerify(
             player, listener, services, ActorActionType.SetAbilitySlot, secondPotionAbility.Id, 5);
         var fresh = WebTestHelper.PerformAndVerify(
-            player, listener, services, ActorActionType.UseAbilitySlot, 5);
+            player, listener, services, ActorActionType.UseAbilitySlot, 5,
+            new Vector(0, 0).ToInt32());
 
         var ogreAbilities = fresh.Abilities!.Values.Where(
             ability => ability.Type == (int)AbilityType.Race
@@ -97,14 +96,13 @@ public class RaceChangeTest
     {
         var (player, listener, services, manager) = SetupGame();
 
-        var potionAbility = manager.AffectableAbilitiesIndex[
-            (player.Entity.Id, "potion of elfness: Drink")]!;
+        var potionAbility = GetPotionAbility(player.Entity, ItemData.PotionOfElfness.Name);
 
         WebTestHelper.PerformAndVerify(player, listener, services,
             ActorActionType.SetAbilitySlot, potionAbility.Id, 5);
 
         var fresh2 = WebTestHelper.PerformAndVerify(player, listener, services,
-            ActorActionType.UseAbilitySlot, 5);
+            ActorActionType.UseAbilitySlot, 5, new Vector(0, 0).ToInt32());
 
         Assert.Contains(
             fresh2.Abilities!.Values,
@@ -116,13 +114,12 @@ public class RaceChangeTest
     public void DrinkPotionOfInhumanity_removes_the_human_race_ability()
     {
         var (player, listener, services, manager) = SetupGame();
-        var potionAbility = manager.AffectableAbilitiesIndex[
-            (player.Entity.Id, "potion of inhumanity: Drink")]!;
+        var potionAbility = GetPotionAbility(player.Entity, ItemData.PotionOfInhumanity.Name);
 
         WebTestHelper.PerformAndVerify(player, listener, services,
             ActorActionType.SetAbilitySlot, potionAbility.Id, 5);
         var fresh = WebTestHelper.PerformAndVerify(player, listener, services,
-            ActorActionType.UseAbilitySlot, 5);
+            ActorActionType.UseAbilitySlot, 5, new Vector(0, 0).ToInt32());
 
         Assert.DoesNotContain(
             fresh.Abilities!.Values,
@@ -136,13 +133,12 @@ public class RaceChangeTest
         var (player, listener, services, manager) = SetupGame();
 
         // Drink ogre potion
-        var ogrePotionAbility = manager.AffectableAbilitiesIndex[
-            (player.Entity.Id, "potion of ogreness: Drink")]!;
+        var ogrePotionAbility = GetPotionAbility(player.Entity, ItemData.PotionOfOgreness.Name);
 
         WebTestHelper.PerformAndVerify(player, listener, services,
             ActorActionType.SetAbilitySlot, ogrePotionAbility.Id, 5);
         var afterOgre = WebTestHelper.PerformAndVerify(player, listener, services,
-            ActorActionType.UseAbilitySlot, 5);
+            ActorActionType.UseAbilitySlot, 5, new Vector(0, 0).ToInt32());
 
         Assert.Contains(
             afterOgre.Abilities!.Values,
@@ -150,18 +146,21 @@ public class RaceChangeTest
                        && ability.Name == "ogre");
 
         // Drink elf potion
-        var elfPotionAbility = manager.AffectableAbilitiesIndex[
-            (player.Entity.Id, "potion of elfness: Drink")]!;
+        var elfPotionAbility = GetPotionAbility(player.Entity, ItemData.PotionOfElfness.Name);
 
         WebTestHelper.PerformAndVerify(player, listener, services,
             ActorActionType.SetAbilitySlot, elfPotionAbility.Id, 5);
 
         var fresh = WebTestHelper.PerformAndVerify(player, listener, services,
-            ActorActionType.UseAbilitySlot, 5);
+            ActorActionType.UseAbilitySlot, 5, new Vector(0, 0).ToInt32());
 
         Assert.Contains(
             fresh.Abilities!.Values,
             ability => ability.Type == (int)AbilityType.Race
                        && ability.Name == "elf");
     }
+
+    private static GameEntity GetPotionAbility(GameEntity playerEntity, string itemTemplateName)
+        => playerEntity.Being!.Items.Single(item => item.Item!.TemplateName == itemTemplateName)
+            .ActiveEffects!.Abilities.Single(ability => ability.Ability!.Name == "Drink");
 }

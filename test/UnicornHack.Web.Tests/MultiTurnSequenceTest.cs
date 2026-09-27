@@ -57,7 +57,7 @@ public class MultiTurnSequenceTest
 
         // Step 4: Attack NPC
         WebTestHelper.PerformAndVerify(player, listener, game.Services,
-            ActorActionType.UseAbilitySlot, 0, (int)Direction.North);
+            ActorActionType.UseAbilitySlot, 0, Direction.North.AsVector().ToInt32());
 
         // Step 5: Wait
         WebTestHelper.PerformAndVerify(player, listener, game.Services, ActorActionType.Wait);
@@ -70,7 +70,7 @@ public class MultiTurnSequenceTest
             WebTestHelper.PerformAndVerify(player, listener, game.Services,
                 ActorActionType.SetAbilitySlot, ogrePotionAbility.Id, 5);
             WebTestHelper.PerformAndVerify(player, listener, game.Services,
-                ActorActionType.UseAbilitySlot, 5);
+                ActorActionType.UseAbilitySlot, 5, new Vector(0, 0).ToInt32());
         }
 
         // Step 7: Move east

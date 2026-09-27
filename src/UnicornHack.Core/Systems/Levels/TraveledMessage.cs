@@ -76,6 +76,12 @@ public class TraveledMessage : IMessage
         set;
     }
 
+    public int Delay
+    {
+        get;
+        set;
+    }
+
     string IMessage.MessageName
     {
         get => Name;
@@ -93,5 +99,6 @@ public class TraveledMessage : IMessage
         TargetHeading = default;
         TargetCell = default;
         Successful = default;
+        Delay = default;
     }
 }

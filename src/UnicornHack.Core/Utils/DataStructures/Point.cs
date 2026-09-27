@@ -34,6 +34,21 @@ public readonly struct Point : IEquatable<Point>, IComparable<Point>
 
     public Point Translate(Vector direction) => new((byte)(X + direction.X), (byte)(Y + direction.Y));
 
+    public Point? Translate(Vector? direction)
+    {
+        if (direction == null)
+        {
+            return null;
+        }
+
+        var x = X + direction.Value.X;
+        var y = Y + direction.Value.Y;
+        return x is >= byte.MinValue and <= byte.MaxValue
+               && y is >= byte.MinValue and <= byte.MaxValue
+            ? new Point((byte)x, (byte)y)
+            : null;
+    }
+
     public void Deconstruct(out byte x, out byte y)
     {
         x = X;

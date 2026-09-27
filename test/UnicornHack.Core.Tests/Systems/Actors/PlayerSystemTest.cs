@@ -5,6 +5,7 @@ using UnicornHack.Generation.Effects;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
+using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Systems.Time;
 
@@ -12,7 +13,7 @@ namespace UnicornHack.Systems.Actors;
 
 public class PlayerSystemTest
 {
-    private const string PickupItemAbilityName = "flask of healing: Drink";
+    private const string PickupItemAbilityName = "Drink";
 
     [Theory]
     [InlineData(AbilityType.MeleeAttack, AbilityAction.Punch, null, 100)]
@@ -38,7 +39,7 @@ public class PlayerSystemTest
         }.AddToAffectable(playerEntity).Entity;
         manager.Queue.ProcessQueue(manager);
 
-        var setSlot = SetAbilitySlotMessage.Create(manager);
+        var setSlot = SetAbilitySlotMessage.Create(playerEntity, manager);
         setSlot.AbilityEntity = abilityEntity;
         setSlot.Slot = 2;
         manager.Enqueue(setSlot);
@@ -108,7 +109,7 @@ public class PlayerSystemTest
         }.AddToAffectable(playerEntity).Entity;
         manager.Queue.ProcessQueue(manager);
 
-        var setSlot = SetAbilitySlotMessage.Create(manager);
+        var setSlot = SetAbilitySlotMessage.Create(playerEntity, manager);
         setSlot.AbilityEntity = ability;
         setSlot.Slot = 2;
         manager.Enqueue(setSlot);
@@ -173,7 +174,7 @@ public class PlayerSystemTest
             Effects = new List<Effect> { new Heal { Amount = "10" } }
         }.AddToAffectable(playerEntity).Entity;
         manager.Queue.ProcessQueue(manager);
-        var setSlot = SetAbilitySlotMessage.Create(manager);
+        var setSlot = SetAbilitySlotMessage.Create(playerEntity, manager);
         setSlot.AbilityEntity = ability;
         setSlot.Slot = 2;
         manager.Enqueue(setSlot);
@@ -298,7 +299,7 @@ public class PlayerSystemTest
         manager.Queue.ProcessQueue(manager);
         var spell = playerEntity.ActiveEffects!.Abilities.Single(
             ability => ability.Ability!.Action == AbilityAction.Spell);
-        var setSlotMessage = SetAbilitySlotMessage.Create(manager);
+        var setSlotMessage = SetAbilitySlotMessage.Create(playerEntity, manager);
         setSlotMessage.AbilityEntity = spell;
         setSlotMessage.Slot = 2;
         manager.Enqueue(setSlotMessage);
@@ -341,7 +342,91 @@ public class PlayerSystemTest
         // ProcessTurn returned false, so NextActionTick wasn't advanced by the
         // PickupItem case; the player remains the acting player on the same tick.
         Assert.Equal(initialTick, manager.Game.CurrentTick);
-        Assert.Same(playerEntity, manager.Game.ActingPlayer);
+        Assert.Same(playerEntity, manager.TemporalEntitiesIndex.First());
+        Assert.Equal(player.NextActionTick, TimeSystem.GetTick(playerEntity));
+        Assert.Null(player.NextAction);
+    }
+
+    [Theory]
+    [InlineData(ActorActionType.MoveOneCell, Direction.Down, "Can't move down.")]
+    [InlineData(ActorActionType.ChangeHeading, Direction.Up, "Can't move up.")]
+    public void Nonplanar_direction_is_rejected_without_delay(
+        ActorActionType action, Direction direction, string expectedMessage)
+    {
+        var room = TestHelper.BuildRoom("...");
+        var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(1, 0));
+        var observer = PlayerRace.InstantiatePlayer("Cudley", Sex.Female, room, new Point(2, 0));
+        observer.Position!.Heading = Direction.West;
+        var manager = playerEntity.Manager;
+        manager.Queue.ProcessQueue(manager);
+        playerEntity.Player!.LogEntries.Clear();
+        observer.Player!.LogEntries.Clear();
+        var actionTick = playerEntity.Player.NextActionTick;
+
+        playerEntity.Player.NextAction = action;
+        playerEntity.Player.NextActionTarget = (int)direction;
+        TestHelper.PerformTurn(playerEntity, manager);
+
+        Assert.Equal(expectedMessage, Assert.Single(playerEntity.Player.LogEntries).Message);
+        Assert.Empty(observer.Player.LogEntries);
+        Assert.Equal(actionTick, playerEntity.Player.NextActionTick);
+    }
+
+    [Fact]
+    public void Newly_discovered_obstacle_delays_and_logs_only_the_first_attempt()
+    {
+        var room = TestHelper.BuildRoom(".#");
+        var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(0, 0));
+        var manager = playerEntity.Manager;
+        manager.Queue.ProcessQueue(manager);
+        playerEntity.Position!.Heading = Direction.East;
+        playerEntity.Player!.LogEntries.Clear();
+
+        var obstacleIndex = room.PointToIndex![1, 0];
+        room.KnownTerrain[obstacleIndex] = MapFeature.Unexplored;
+        var actionTick = playerEntity.Player.NextActionTick;
+        playerEntity.Player.NextAction = ActorActionType.MoveOneCell;
+        playerEntity.Player.NextActionTarget = (int)Direction.East;
+
+        TestHelper.PerformTurn(playerEntity, manager);
+
+        Assert.Equal(new Point(0, 0), playerEntity.Position.Cell);
+        Assert.Equal(actionTick + playerEntity.Position.MovementDelay, playerEntity.Player.NextActionTick);
+        Assert.Equal("You try to move east, but fail.", Assert.Single(playerEntity.Player.LogEntries).Message);
+        Assert.Equal(MapFeature.StoneWall, room.KnownTerrain[obstacleIndex]);
+
+        playerEntity.Player.LogEntries.Clear();
+        actionTick = playerEntity.Player.NextActionTick;
+        playerEntity.Player.NextAction = ActorActionType.MoveOneCell;
+        playerEntity.Player.NextActionTarget = (int)Direction.East;
+
+        TestHelper.PerformTurn(playerEntity, manager);
+
+        Assert.Equal(actionTick, playerEntity.Player.NextActionTick);
+        Assert.Equal("Can't move east.", Assert.Single(playerEntity.Player.LogEntries).Message);
+    }
+
+    [Fact]
+    public void Equipping_an_item_advances_the_player_turn()
+    {
+        var room = TestHelper.BuildRoom(".");
+        var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(0, 0));
+        var manager = playerEntity.Manager;
+        ItemData.LongSword.Instantiate(playerEntity);
+        manager.Queue.ProcessQueue(manager);
+
+        var sword = playerEntity.Being!.Items.Single(
+            item => item.Item!.TemplateName == ItemData.LongSword.Name);
+        var player = playerEntity.Player!;
+        var actionTick = player.NextActionTick;
+        player.NextAction = ActorActionType.EquipItem;
+        player.NextActionTarget = sword.Id;
+        player.NextActionTarget2 = (int)EquipmentSlot.GraspPrimaryMelee;
+
+        TestHelper.PerformTurn(playerEntity, manager);
+
+        Assert.Equal(EquipmentSlot.GraspPrimaryMelee, sword.Item!.EquippedSlot);
+        Assert.Equal(actionTick + ItemUsageSystem.EquipmentActionDelay, player.NextActionTick);
     }
 
     [Fact]
@@ -362,9 +447,9 @@ public class PlayerSystemTest
 
         var slottedAbility = Assert.Contains(firstFreeSlot.Value, being.SlottedAbilities);
         Assert.Equal(PickupItemAbilityName, slottedAbility.Ability!.Name);
-        Assert.Equal(playerEntity.Id, slottedAbility.Ability.OwnerId);
         // The item physically moved into the player's container.
         var pickedUpItem = Assert.Single(being.Items);
+        Assert.Same(pickedUpItem, slottedAbility.Ability.OwnerEntity);
         Assert.Equal(playerEntity.Id, pickedUpItem.Item!.ContainerId);
         Assert.Null(pickedUpItem.Position!.Cell);
         Assert.Empty(room.Items);
@@ -477,6 +562,7 @@ public class PlayerSystemTest
 
         var displacedAbility = Assert.Contains(targetSlot, being.SlottedAbilities);
         Assert.Equal(PickupItemAbilityName, displacedAbility.Ability!.Name);
+        var displacedItem = displacedAbility.Ability.OwnerEntity!;
 
         // Spawn a second flask on the player's cell; the existing flask spills over
         // to (1,0) when the slot is cleared during the next pickup.
@@ -494,13 +580,14 @@ public class PlayerSystemTest
         var slottedAbility = Assert.Contains(targetSlot, being.SlottedAbilities);
         Assert.Equal(PickupItemAbilityName, slottedAbility.Ability!.Name);
         Assert.NotSame(displacedAbility, slottedAbility);
-        // The displaced flask was dropped (item-type slots drop their item on clear),
-        // so its WhilePossessed-added ability entity has been cleaned up.
-        Assert.Null(displacedAbility.Ability);
+        // The displaced flask was dropped, but its ability remains owned by the item.
+        Assert.NotNull(displacedAbility.Ability);
+        Assert.Null(displacedAbility.Ability.Slot);
+        Assert.Same(displacedItem, displacedAbility.Ability.OwnerEntity);
         // One flask was picked up (now in inventory); the displaced one spilled over
         // to the adjacent cell.
         Assert.Single(being.Items);
-        Assert.NotEmpty(room.Items);
+        Assert.Contains(displacedItem, room.Items.Values);
     }
 
     [Fact]
@@ -566,6 +653,7 @@ public class PlayerSystemTest
         Assert.Empty(being.Items);
         Assert.NotEmpty(room.Items);
         player.LogEntries.Clear();
+        var actionTick = player.NextActionTick;
 
         player.NextAction = ActorActionType.PickupItem;
         AdvanceTurnMessage.Enqueue(manager);
@@ -576,6 +664,100 @@ public class PlayerSystemTest
         Assert.Empty(being.Items);
         var log = Assert.Single(player.LogEntries);
         Assert.Equal(manager.Game.Services.Language.InventoryFull(), log.Message);
+        Assert.Equal(actionTick, player.NextActionTick);
+    }
+
+    [Fact]
+    public void PickupItem_uses_hotbar_capacity_instead_of_carried_item_count()
+    {
+        var (room, playerEntity, itemEntity) = SetupPlayerOnItem();
+        var manager = playerEntity.Manager;
+
+        for (var i = 0; i < playerEntity.Physical!.Capacity; i++)
+        {
+            using var itemReference = manager.CreateEntity();
+            var carriedEntity = itemReference.Referenced;
+            var item = manager.CreateComponent<ItemComponent>(EntityComponent.Item);
+            item.TemplateName = "inert test item " + i;
+            item.MaxStackSize = 1;
+            carriedEntity.Item = item;
+            carriedEntity.Physical = manager.CreateComponent<PhysicalComponent>(EntityComponent.Physical);
+            carriedEntity.ActiveEffects =
+                manager.CreateComponent<ActiveEffectsComponent>(EntityComponent.ActiveEffects);
+            ItemMovingSystem.SetItemRoom(carriedEntity, room.EntityId);
+            item.ContainerEntity = playerEntity;
+            manager.Queue.ProcessQueue(manager);
+        }
+
+        Assert.Equal(playerEntity.Physical.Capacity, playerEntity.Being!.Items.Count);
+        Assert.NotNull(manager.AbilitySlottingSystem.GetFirstFreeSlot(playerEntity));
+
+        playerEntity.Player!.NextAction = ActorActionType.PickupItem;
+        AdvanceTurnMessage.Enqueue(manager);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Contains(itemEntity, playerEntity.Being.Items);
+        Assert.Contains(
+            playerEntity.Being.SlottedAbilities.Values,
+            ability => ability.Ability!.Name == PickupItemAbilityName);
+    }
+
+    [Fact]
+    public void PickupItem_drops_the_item_when_its_ability_cannot_be_slotted()
+    {
+        var (room, playerEntity, itemEntity) = SetupPlayerOnItem();
+        var player = playerEntity.Player!;
+        var manager = playerEntity.Manager;
+        itemEntity.ActiveEffects!.Abilities.Single(
+            ability => ability.Ability!.Name == PickupItemAbilityName).Ability!.IsUsable = false;
+        manager.Queue.ProcessQueue(manager);
+        player.LogEntries.Clear();
+        var actionTick = player.NextActionTick;
+
+        player.NextAction = ActorActionType.PickupItem;
+        AdvanceTurnMessage.Enqueue(manager);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Empty(playerEntity.Being!.Items);
+        Assert.Same(itemEntity, room.Items[playerEntity.Position!.Cell!.Value]);
+        Assert.DoesNotContain(
+            playerEntity.Being.SlottedAbilities.Values,
+            ability => ability.Ability!.Name == PickupItemAbilityName);
+        Assert.Equal(actionTick, player.NextActionTick);
+    }
+
+    [Fact]
+    public void PickupItem_adds_another_ability_for_an_identical_item()
+    {
+        const string abilityName = "Equip";
+        var room = TestHelper.BuildRoom(".");
+        var manager = room.Entity.Manager;
+        Assert.True(ItemData.LongSword.Instantiate(room, new Point(0, 0)));
+        manager.Queue.ProcessQueue(manager);
+        var itemEntity = Assert.Single(room.Items.Values);
+        var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(0, 0));
+        ItemData.LongSword.Instantiate(playerEntity);
+        manager.Queue.ProcessQueue(manager);
+
+        var firstItem = Assert.Single(playerEntity.Being!.Items);
+        var firstAbility = Assert.Single(
+            firstItem.ActiveEffects!.Abilities,
+            ability => ability.Ability!.Name == abilityName);
+
+        playerEntity.Player!.NextAction = ActorActionType.PickupItem;
+        AdvanceTurnMessage.Enqueue(manager);
+        manager.Queue.ProcessQueue(manager);
+
+        var itemAbilities = playerEntity.Being.Items
+            .SelectMany(item => item.ActiveEffects!.Abilities)
+            .Where(ability => ability.Ability!.Name == abilityName)
+            .ToList();
+        Assert.Equal(2, itemAbilities.Count);
+        Assert.Contains(itemEntity, playerEntity.Being!.Items);
+        Assert.Contains(firstAbility, itemAbilities);
+        Assert.All(itemAbilities, ability => Assert.NotNull(ability.Ability!.Slot));
+        Assert.Equal(2, itemAbilities.Select(ability => ability.Ability!.Slot).Distinct().Count());
+        Assert.Empty(room.Items);
     }
 
     [Fact]
@@ -633,4 +815,5 @@ public class PlayerSystemTest
         var itemEntity = Assert.Single(room.Items.Values);
         return (room, playerEntity, itemEntity);
     }
+
 }

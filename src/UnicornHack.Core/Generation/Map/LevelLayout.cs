@@ -988,6 +988,31 @@ public abstract class LevelLayout
         return path;
     }
 
+    private static Dictionary<RoomGraphNode, int> GetDirectedDistances(
+        RoomGraphNode source,
+        IReadOnlyDictionary<RoomGraphNode, List<RoomGraphNode>> adjacency)
+    {
+        var distances = new Dictionary<RoomGraphNode, int>
+        {
+            [source] = 0
+        };
+        var queue = new Queue<RoomGraphNode>();
+        queue.Enqueue(source);
+        while (queue.TryDequeue(out var node))
+        {
+            var nextDistance = distances[node] + 1;
+            foreach (var neighbor in adjacency[node])
+            {
+                if (distances.TryAdd(neighbor, nextDistance))
+                {
+                    queue.Enqueue(neighbor);
+                }
+            }
+        }
+
+        return distances;
+    }
+
     /// <summary>
     ///     Finds an <b>ear</b>: a simple path <c>[anchor1, uncoveredInternal..., anchor2]</c>
     ///     where both anchors are already covered (have an entry in <paramref name="order" />)
@@ -1429,9 +1454,17 @@ public abstract class LevelLayout
         var degree = new Dictionary<RoomGraphNode, int>(nodes.Count);
         var visibleOutgoing = new Dictionary<RoomGraphNode, int>(nodes.Count);
         var incomingNeighbors = new Dictionary<RoomGraphNode, List<RoomGraphNode>>(nodes.Count);
+        var outgoingNeighbors = nodes.ToDictionary(
+            node => node,
+            _ => new List<RoomGraphNode>());
+        var reverseNeighbors = nodes.ToDictionary(
+            node => node,
+            _ => new List<RoomGraphNode>());
         foreach (var (source, target) in directedEdges)
         {
             graph.Connections.Add(new RoomGraphEdge { Source = source, Target = target, Hidden = false });
+            outgoingNeighbors[source].Add(target);
+            reverseNeighbors[target].Add(source);
             degree[source] = degree.GetValueOrDefault(source) + 1;
             degree[target] = degree.GetValueOrDefault(target) + 1;
             visibleOutgoing[source] = visibleOutgoing.GetValueOrDefault(source) + 1;
@@ -1442,6 +1475,19 @@ public abstract class LevelLayout
             }
             predecessors.Add(source);
         }
+
+        var entrance = nodes.Single(
+            node => (node.Features & RoomFeatures.Entrance) != 0);
+        var exit = nodes.Single(
+            node => (node.Features & RoomFeatures.Exit) != 0);
+        var distanceFromEntrance = GetDirectedDistances(entrance, outgoingNeighbors);
+        var distanceToExit = GetDirectedDistances(exit, reverseNeighbors);
+        var shortestPathLength = distanceFromEntrance[exit];
+        var onShortestPath = nodes
+            .Where(node => distanceFromEntrance.TryGetValue(node, out var fromEntrance)
+                           && distanceToExit.TryGetValue(node, out var toExit)
+                           && fromEntrance + toExit == shortestPathLength)
+            .ToHashSet();
 
         // Apply Reward / Curse feature tags. Rooms with low total degree (one in + one
         // out) are more likely to receive rewards as a "discovery prize". Reward picks
@@ -1505,7 +1551,13 @@ public abstract class LevelLayout
             // A hidden room always rewards the detour; a visible room rolls the normal chance.
             if (hidden || random.NextSingle(0f, 1f) < rewardChance)
             {
-                var reward = PickRewardFeature(levelCounts, globalCounts, parameters, random, hidden);
+                var reward = PickRewardFeature(
+                    levelCounts,
+                    globalCounts,
+                    parameters,
+                    random,
+                    hidden,
+                    allowPremium: !onShortestPath.Contains(node));
                 if (reward != RoomFeatures.Normal)
                 {
                     node.Features |= reward;
@@ -1606,21 +1658,31 @@ public abstract class LevelLayout
     /// </summary>
     private static readonly RoomFeatures[] RewardFeatureCandidates =
     [
+        RoomFeatures.DeityAltar,
+        RoomFeatures.MajorShrine,
+        RoomFeatures.MinorShrine,
+        RoomFeatures.RitualShrine,
         RoomFeatures.SmallFountain,
         RoomFeatures.BigFountain,
         RoomFeatures.SkillPedestal,
+        RoomFeatures.RacePedestal,
         RoomFeatures.TraitPedestal,
         RoomFeatures.FeatPedestal,
-        RoomFeatures.RacePedestal,
-        RoomFeatures.DeityAltar,
-        RoomFeatures.WeaponStand,
         RoomFeatures.ArmorStand,
+        RoomFeatures.GildedArmorStand,
         RoomFeatures.ItemCase,
-        RoomFeatures.MinorShrine,
-        RoomFeatures.MajorShrine,
-        RoomFeatures.RitualShrine,
+        RoomFeatures.GildedItemCase,
+        RoomFeatures.WeaponStand,
+        RoomFeatures.GildedWeaponStand,
         RoomFeatures.Shortcut
     ];
+
+    public const RoomFeatures PremiumRewardFeatures =
+        RoomFeatures.MajorShrine
+        | RoomFeatures.BigFountain
+        | RoomFeatures.GildedArmorStand
+        | RoomFeatures.GildedItemCase
+        | RoomFeatures.GildedWeaponStand;
 
     private const int LongestPathAttempts = 4;
 
@@ -2112,13 +2174,19 @@ public abstract class LevelLayout
         IReadOnlyDictionary<RoomFeatures, int> globalAssignedCounts,
         LayoutParameters parameters,
         SimpleRandom random,
-        bool hidden)
-        => random.Pick(RewardFeatureCandidates, feature => Math.Max(0f, GetRewardFeatureWeight(
-            feature,
-            assignedCounts.GetValueOrDefault(feature),
-            globalAssignedCounts.GetValueOrDefault(feature),
-            parameters,
-            hidden)));
+        bool hidden,
+        bool allowPremium)
+        => random.Pick(
+            RewardFeatureCandidates,
+            feature => !allowPremium
+                       && (feature & PremiumRewardFeatures) != 0
+                ? 0f
+                : Math.Max(0f, GetRewardFeatureWeight(
+                    feature,
+                    assignedCounts.GetValueOrDefault(feature),
+                    globalAssignedCounts.GetValueOrDefault(feature),
+                    parameters,
+                    hidden)));
 
     /// <summary>
     ///     Relative "quality" of each reward feature, used to skew a concealed (hidden)
@@ -2134,6 +2202,9 @@ public abstract class LevelLayout
             RoomFeatures.RitualShrine => 4f,
             RoomFeatures.MajorShrine => 3f,
             RoomFeatures.BigFountain => 3f,
+            RoomFeatures.GildedArmorStand => 3f,
+            RoomFeatures.GildedItemCase => 3f,
+            RoomFeatures.GildedWeaponStand => 3f,
             RoomFeatures.DeityAltar => 1.5f,
             RoomFeatures.RacePedestal => 1.5f,
             RoomFeatures.MinorShrine => 1.5f,
@@ -2197,6 +2268,9 @@ public abstract class LevelLayout
             // Deep-tier rewards — progressively unlocked with difficulty.
             RoomFeatures.BigFountain => Math.Clamp((difficulty - 1) * 4f, 0f, 32f),
             RoomFeatures.MajorShrine => Math.Clamp((difficulty - 1) / 2 * 4f, 0f, 24f),
+            RoomFeatures.GildedArmorStand => Math.Clamp((difficulty - 1) / 2 * 4f, 0f, 24f),
+            RoomFeatures.GildedItemCase => Math.Clamp((difficulty - 1) / 2 * 3f, 0f, 18f),
+            RoomFeatures.GildedWeaponStand => Math.Clamp((difficulty - 1) / 2 * 4f, 0f, 24f),
             RoomFeatures.RitualShrine => Math.Clamp((difficulty - 3) / 3 * 4f, 0f, 16f),
             _ => 0f
         };

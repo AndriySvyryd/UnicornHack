@@ -205,8 +205,13 @@ public class XPSystemTest
 
         manager.Queue.ProcessQueue(manager);
 
+        var flask = playerEntity.Being!.Items.Single(
+            item => item.Item!.TemplateName == ItemData.FlaskOfHealing.Name);
+        var potion = playerEntity.Being.Items.Single(
+            item => item.Item!.TemplateName == ItemData.PotionOfExperience.Name);
+
         var flaskAbilityEntity =
-            TestHelper.ActivateAbility(ItemData.FlaskOfHealing.Name + ": Drink", playerEntity, manager);
+            TestHelper.ActivateItemAbility(flask, "Drink", playerEntity, manager);
         manager.Queue.ProcessQueue(manager);
 
         Assert.NotNull(flaskAbilityEntity.Ability!.CooldownXpLeft);
@@ -218,7 +223,8 @@ public class XPSystemTest
 
         Assert.Equal(50, playerEntity.Being.HitPoints);
 
-        TestHelper.ActivateAbility(ItemData.PotionOfExperience.Name + ": Drink", playerEntity, manager, slot: 3);
+        TestHelper.ActivateItemAbility(
+            potion, "Drink", playerEntity, manager, slot: 3);
         manager.Queue.ProcessQueue(manager);
 
         Assert.Null(flaskAbilityEntity.Ability.CooldownXpLeft);
@@ -241,11 +247,13 @@ public class XPSystemTest
         manager.Queue.ProcessQueue(manager);
         ItemData.FlaskOfHealing.Instantiate(playerEntity);
         manager.Queue.ProcessQueue(manager);
+        var flask = playerEntity.Being!.Items.Single(
+            item => item.Item!.TemplateName == ItemData.FlaskOfHealing.Name);
 
         EffectTestHelper.ApplyStatus(playerEntity, EffectType.Slow, duration: 100, manager);
 
         var flaskAbilityEntity =
-            TestHelper.ActivateAbility(ItemData.FlaskOfHealing.Name + ": Drink", playerEntity, manager);
+            TestHelper.ActivateItemAbility(flask, "Drink", playerEntity, manager);
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(flaskAbilityEntity.Ability!.XPCooldown * 2, flaskAbilityEntity.Ability.CooldownXpLeft);
@@ -264,6 +272,8 @@ public class XPSystemTest
         ItemData.PotionOfExperience.Instantiate(playerEntity);
 
         manager.Queue.ProcessQueue(manager);
+        var potion = playerEntity.Being!.Items.Single(
+            item => item.Item!.TemplateName == ItemData.PotionOfExperience.Name);
 
         GameEntity debuffAbilityEntity;
         using (var abilityEntityReference = manager.CreateEntity())
@@ -302,7 +312,7 @@ public class XPSystemTest
         Assert.Equal(200, debuff.ExpirationTarget);
         Assert.Equal(9, playerEntity.Being!.Might);
 
-        TestHelper.ActivateAbility(ItemData.PotionOfExperience.Name + ": Drink", playerEntity, manager);
+        TestHelper.ActivateItemAbility(potion, "Drink", playerEntity, manager);
         manager.Queue.ProcessQueue(manager);
 
         Assert.DoesNotContain(

@@ -276,7 +276,7 @@ public class Item : ICSScriptSerializable, ILoadable
             ability.OwnerEntity = itemEntity;
         }
 
-        var activateAdded = false;
+        var possessionAbilityAdded = false;
         foreach (var abilityDefinition in Abilities)
         {
             using (var abilityEntityReference = manager.CreateEntity())
@@ -294,28 +294,23 @@ public class Item : ICSScriptSerializable, ILoadable
 
                 ability.OwnerEntity = itemEntity;
 
-                if ((abilityDefinition.Activation & ActivationType.Slottable) != 0)
+                if ((abilityDefinition.Activation & ActivationType.Slottable) != 0
+                    && item.EquipableSlots == EquipmentSlot.None)
                 {
-                    if (abilityDefinition.ItemCondition == ActivationType.Default
-                        || abilityDefinition.ItemCondition == ActivationType.WhilePossessed)
+                    if (possessionAbilityAdded)
                     {
-                        if (activateAdded)
-                        {
-                            throw new InvalidOperationException(
-                                $"Item {Name} has more than 1 activated itemAbility.");
-                        }
-
-                        activateAdded = true;
+                        throw new InvalidOperationException(
+                            $"Item {Name} has more than 1 activated itemAbility.");
                     }
 
-                    AddPossessedAbility(ability, abilityDefinition.ItemCondition, item, manager);
+                    possessionAbilityAdded = true;
                 }
             }
         }
 
-        if (!activateAdded)
+        if (!possessionAbilityAdded)
         {
-            AddPossessedAbility(itemAbility: null, ActivationType.Default, item, manager);
+            EnsureUseAbility(item, manager);
         }
 
         return item;
@@ -363,85 +358,36 @@ public class Item : ICSScriptSerializable, ILoadable
 
     }
 
-    private void AddPossessedAbility(
-        AbilityComponent? itemAbility, ActivationType itemCondition, ItemComponent item, GameManager manager)
+    private static GameEntity EnsureUseAbility(ItemComponent item, GameManager manager)
     {
-        using var abilityEntityReference = manager.CreateEntity();
-        var possessedAbilityEntity = abilityEntityReference.Referenced;
-
-        var possessedEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-        possessedEffect.EffectType = EffectType.AddAbility;
-        possessedEffect.CombinationFunction = ValueCombinationFunction.Sum;
-        possessedEffect.Duration = EffectDuration.Infinite;
-
-        possessedAbilityEntity.Effect = possessedEffect;
-
-        var possessedAbility = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
-        possessedAbility.Name = "Add " + (itemAbility?.Name ?? item.TemplateName) + " ability";
-        possessedAbility.Activation = itemCondition == ActivationType.Default
-            ? ActivationType.WhilePossessed
-            : itemCondition;
-        possessedEffect.TargetName = possessedAbility.Name;
-
-        possessedAbilityEntity.Ability = possessedAbility;
-
-        using (var addUseAbilityEntityReference = manager.CreateEntity())
+        var abilityName = item.EquipableSlots != EquipmentSlot.None ? "Equip" : "Drop";
+        foreach (var existingEntity in item.Abilities)
         {
-            var addUseAbilityEntity = addUseAbilityEntityReference.Referenced;
-
-            var addUseAbilityEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-            addUseAbilityEffect.EffectType = EffectType.AddAbility;
-            addUseAbilityEffect.CombinationFunction = ValueCombinationFunction.Sum;
-            addUseAbilityEffect.Duration = EffectDuration.Infinite;
-
-            addUseAbilityEntity.Effect = addUseAbilityEffect;
-            if (itemAbility != null)
+            if (existingEntity.Ability is { Type: AbilityType.Item } existingAbility
+                && existingAbility.Name == abilityName)
             {
-                var activateAbility = itemAbility.AddToEffect(addUseAbilityEntity, includeEffects: false);
-                activateAbility.Name = item.TemplateName + ": " + itemAbility.Name;
-                if (possessedAbility.Activation == ActivationType.WhilePossessed)
-                {
-                    activateAbility.Type = AbilityType.Item;
-                }
-
-                addUseAbilityEffect.ContainingAbilityId = possessedAbilityEntity.Id;
-
-                using var activateEffectEntityReference = manager.CreateEntity();
-                var activateEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                activateEffect.EffectType = EffectType.Activate;
-                activateEffect.TargetEntityId = itemAbility.EntityId;
-                activateEffect.Duration = (itemAbility.Activation & ActivationType.Continuous) == 0
-                    ? EffectDuration.Instant
-                    : EffectDuration.Infinite;
-                activateEffect.ContainingAbilityId = addUseAbilityEntity.Id;
-
-                activateEffectEntityReference.Referenced.Effect = activateEffect;
+                return existingEntity;
             }
-            else
-            {
-                var equip = item.EquipableSlots != EquipmentSlot.None;
-                var useAbility = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
-                useAbility.Name = item.TemplateName + ": " + (equip ? "Equip" : "Drop");
-                useAbility.Type = AbilityType.Item;
-                useAbility.Activation = ActivationType.Manual;
-
-                addUseAbilityEntity.Ability = useAbility;
-
-                addUseAbilityEffect.ContainingAbilityId = possessedAbilityEntity.Id;
-
-                using var useEffectEntityReference = manager.CreateEntity();
-                var useEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                useEffect.EffectType = equip ? EffectType.EquipItem : EffectType.Move;
-                useEffect.TargetEntityId = item.EntityId;
-                useEffect.ContainingAbilityId = addUseAbilityEntity.Id;
-
-                useEffectEntityReference.Referenced.Effect = useEffect;
-            }
-
-            addUseAbilityEffect.TargetName = addUseAbilityEntity.Ability!.Name;
         }
 
-        possessedAbility.OwnerEntity = item.Entity;
+        using var abilityEntityReference = manager.CreateEntity();
+        var abilityEntity = abilityEntityReference.Referenced;
+        var equip = item.EquipableSlots != EquipmentSlot.None;
+        var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
+        ability.Name = abilityName;
+        ability.Type = AbilityType.Item;
+        ability.Activation = ActivationType.Manual;
+        ability.OwnerEntity = item.Entity;
+        abilityEntity.Ability = ability;
+
+        using var effectEntityReference = manager.CreateEntity();
+        var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+        effect.EffectType = equip ? EffectType.EquipItem : EffectType.Move;
+        effect.TargetEntityId = item.EntityId;
+        effect.ContainingAbilityId = abilityEntity.Id;
+        effectEntityReference.Referenced.Effect = effect;
+
+        return abilityEntity;
     }
 
     private Func<string, int, int, float>? _weightFunction;

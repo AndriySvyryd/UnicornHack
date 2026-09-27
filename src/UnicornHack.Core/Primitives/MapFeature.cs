@@ -31,10 +31,16 @@ public enum MapFeature : byte
     InactiveFeatPedestal = 26,
     ArmorStand = 27,
     InactiveArmorStand = 28,
-    ItemCase = 29,
-    InactiveItemCase = 30,
-    WeaponStand = 31,
-    InactiveWeaponStand = 32,
+    GildedArmorStand = 29,
+    InactiveGildedArmorStand = 30,
+    ItemCase = 31,
+    InactiveItemCase = 32,
+    GildedItemCase = 33,
+    InactiveGildedItemCase = 34,
+    WeaponStand = 35,
+    InactiveWeaponStand = 36,
+    GildedWeaponStand = 37,
+    InactiveGildedWeaponStand = 38,
     Unexplored = 254
 }
 

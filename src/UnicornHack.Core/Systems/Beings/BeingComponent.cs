@@ -315,13 +315,13 @@ public class BeingComponent : GameComponent
     [Property<TorsoType>(DefaultCombinationFunction = ValueCombinationFunction.Override)]
     public TorsoType TorsoType => (TorsoType)Entity.ActiveEffects!.ResolveInt(nameof(TorsoType));
 
-    [Property<ExtremityType>]
+    [Property<ExtremityType>(DefaultCombinationFunction = ValueCombinationFunction.Override)]
     public ExtremityType UpperExtremities => (ExtremityType)Entity.ActiveEffects!.ResolveInt(nameof(UpperExtremities));
 
-    [Property<ExtremityType>]
+    [Property<ExtremityType>(DefaultCombinationFunction = ValueCombinationFunction.Override)]
     public ExtremityType LowerExtremities => (ExtremityType)Entity.ActiveEffects!.ResolveInt(nameof(LowerExtremities));
 
-    [Property<ExtremityType>]
+    [Property<ExtremityType>(DefaultCombinationFunction = ValueCombinationFunction.Override)]
     public ExtremityType BackExtremities => (ExtremityType)Entity.ActiveEffects!.ResolveInt(nameof(BackExtremities));
 
     [Property<int>(DefaultValue = 100, MinValue = 0)]

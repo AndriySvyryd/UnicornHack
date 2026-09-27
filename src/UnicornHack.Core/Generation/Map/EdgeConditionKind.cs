@@ -40,7 +40,7 @@ public enum EdgeConditionKind : byte
 
     /// <summary>Neighbor must be any non-outside tile (anything already placed).
     /// Authored as <c>F</c>.</summary>
-    Filled = MapFeature.InactiveWeaponStand + 1,
+    Filled = MapFeature.InactiveGildedWeaponStand + 1,
 
     /// <summary>Neighbor is either still-empty space inside the room or outside the room
     /// altogether (i.e. the room's own edge). Authored as <c>U</c>.</summary>

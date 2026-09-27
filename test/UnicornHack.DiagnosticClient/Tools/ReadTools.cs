@@ -102,7 +102,7 @@ public sealed class ReadTools
     [McpServerTool, Description(
         "List actors known to the player in the current room (including the player). By default lists both " +
         "currently-perceived and remembered actors; pass only_perceived=true to filter to live FOV. " +
-        "Columns: id symbol name x y dist hp/maxHp perceived heading next_at action.")]
+        "Columns: id symbol name x y dist hp/maxHp perceived heading next_at action target.")]
     public string get_known_actors(bool only_perceived = false)
     {
         lock (_store.Sync)
@@ -113,7 +113,7 @@ public sealed class ReadTools
                 return "(no actor data)";
             }
             var sb = new StringBuilder();
-            sb.Append("id\tsym\tname\tx\ty\tdist\thp/max\tperc\thead\tnext\taction\n");
+            sb.Append("id\tsym\tname\tx\ty\tdist\thp/max\tperc\thead\tnext\taction\ttarget\n");
             actors.TryGetValue(p.Id, out var self);
             foreach (var (id, a) in actors.OrderBy(kv => kv.Key))
             {
@@ -133,7 +133,8 @@ public sealed class ReadTools
                   .Append('\t').Append(a.IsCurrentlyPerceived ? "Y" : "n")
                   .Append('\t').Append((Direction)a.Heading)
                   .Append('\t').Append(a.NextActionTick)
-                  .Append('\t').Append(action).Append('\n');
+                  .Append('\t').Append(action)
+                  .Append('\t').Append(a.NextAction?.Target.ToString(CultureInfo.InvariantCulture) ?? "-").Append('\n');
             }
             return sb.ToString();
         }

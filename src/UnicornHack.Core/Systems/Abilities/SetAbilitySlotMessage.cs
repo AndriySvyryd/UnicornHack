@@ -6,11 +6,15 @@ public class SetAbilitySlotMessage : IMessage
 {
     public const string Name = "SetAbilitySlot";
 
-    public static SetAbilitySlotMessage Create(GameManager manager)
-        => manager.Queue.CreateMessage<SetAbilitySlotMessage>(Name);
+    public static SetAbilitySlotMessage Create(GameEntity actorEntity, GameManager manager)
+    {
+        var message = manager.Queue.CreateMessage<SetAbilitySlotMessage>(Name);
+        message.ActorEntity = actorEntity;
+        return message;
+    }
 
     private GameEntity? _abilityEntity;
-    private GameEntity? _ownerEntity;
+    private GameEntity? _actorEntity;
 
     public GameEntity? AbilityEntity
     {
@@ -23,14 +27,14 @@ public class SetAbilitySlotMessage : IMessage
         }
     }
 
-    public GameEntity OwnerEntity
+    public GameEntity ActorEntity
     {
-        get => _ownerEntity!;
+        get => _actorEntity!;
         set
         {
-            _ownerEntity?.RemoveReference(this);
-            _ownerEntity = value;
-            _ownerEntity?.AddReference(this);
+            _actorEntity?.RemoveReference(this);
+            _actorEntity = value;
+            _actorEntity?.AddReference(this);
         }
     }
 
@@ -39,12 +43,6 @@ public class SetAbilitySlotMessage : IMessage
         get;
         set;
     }
-
-    public string AbilityName
-    {
-        get;
-        set;
-    } = null!;
 
     string IMessage.MessageName
     {
@@ -55,8 +53,7 @@ public class SetAbilitySlotMessage : IMessage
     public void Clean()
     {
         AbilityEntity = default;
-        AbilityName = default!;
-        OwnerEntity = default!;
+        ActorEntity = default!;
         Slot = default;
     }
 }

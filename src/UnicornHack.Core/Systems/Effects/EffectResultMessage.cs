@@ -34,6 +34,12 @@ public abstract class EffectResultMessage : IMessage
         get;
     } = [];
 
+    public bool AnyEffectApplied
+    {
+        get;
+        set;
+    }
+
     public abstract string MessageName
     {
         get;
@@ -47,5 +53,6 @@ public abstract class EffectResultMessage : IMessage
         ActivatorEntity = default!;
         TargetEntity = default!;
         ResourceChanges.Clear();
+        AnyEffectApplied = default;
     }
 }

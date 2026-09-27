@@ -6,11 +6,25 @@ public static partial class CreatureData
     {
         Name = "giant spider",
         SpeciesClass = SpeciesClass.Vermin,
+        MovementDelay = -20,
+        TurningDelay = -20,
+        Weight = 150,
+        PerceptionBonus = -3,
+        MightBonus = -8,
+        SpeedBonus = -2,
+        FocusBonus = -8,
+        Armor = 3,
+        DecayResistance = 50,
+        ToppleResistance = 25,
+        TorsoType = TorsoType.Arachnid,
+        UpperExtremities = ExtremityType.Claws,
+        LowerExtremities = ExtremityType.Claws,
+        Clingy = true,
         Abilities = new List<Ability>
         {
             new Ability
             {
-                Name = "posion bite",
+                Name = "poison bite",
                 Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
@@ -20,7 +34,7 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new ToxinDamage { Duration = EffectDuration.UntilTimeout, Amount = "50*MightModifier()" } }
+                Effects = new List<Effect> { new ToxinDamage { Duration = EffectDuration.UntilTimeout, Amount = "10*MightModifier()" } }
             },
             new Ability
             {
@@ -32,12 +46,9 @@ public static partial class CreatureData
                 Action = AbilityAction.Bite,
                 SuccessCondition = AbilitySuccessCondition.NormalAttack,
                 Accuracy = "5+PerceptionModifier()",
-                Cooldown = 100,
+                Cooldown = 500,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect>
-                {
-                    new ChangeProperty<int> { Duration = EffectDuration.UntilTimeout, DurationAmount = "5*MightModifier()", Amount = "-1", PropertyName = "Might" }
-                }
+                Effects = new List<Effect> { new Weaken() }
             },
             new Ability
             {
@@ -49,26 +60,12 @@ public static partial class CreatureData
                 Action = AbilityAction.Spit,
                 SuccessCondition = AbilitySuccessCondition.NormalAttack,
                 Accuracy = "5+PerceptionModifier()",
-                Cooldown = 200,
+                Cooldown = 500,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new Cripple() }
+                Effects = new List<Effect> { new Paralyze { Amount = "100*MightModifier()" } }
             }
         },
         InitialLevel = 1,
-        GenerationWeight = "2",
-        Weight = 150,
-        MovementDelay = -20,
-        TurningDelay = -20,
-        PerceptionBonus = -7,
-        MightBonus = -8,
-        SpeedBonus = -7,
-        FocusBonus = -8,
-        Armor = 3,
-        DecayResistance = 50,
-        ToppleResistance = 25,
-        TorsoType = TorsoType.Quadruped,
-        UpperExtremities = ExtremityType.None,
-        LowerExtremities = ExtremityType.Claws,
-        Clingy = true
+        GenerationWeight = "2"
     };
 }

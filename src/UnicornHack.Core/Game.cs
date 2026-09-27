@@ -13,8 +13,6 @@ public class Game : NotificationEntity
     private int _nextCommandId;
     private SimpleRandom _random = null!;
     private GameOptions _options = new();
-    private int? _actingPlayerId;
-    private GameEntity? _actingPlayer;
     private GenerationStats? _generationStats;
 
     public int Id
@@ -59,18 +57,6 @@ public class Game : NotificationEntity
     {
         get => _options;
         set => SetWithNotify(value, ref _options);
-    }
-
-    public int? ActingPlayerId
-    {
-        get => _actingPlayerId;
-        set => SetWithNotify(value, ref _actingPlayerId);
-    }
-
-    public GameEntity? ActingPlayer
-    {
-        get => _actingPlayer;
-        set => SetWithNotify(value, ref _actingPlayer);
     }
 
     public ICollection<GameBranch> Branches

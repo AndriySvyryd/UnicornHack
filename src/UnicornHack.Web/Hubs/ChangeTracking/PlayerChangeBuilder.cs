@@ -252,7 +252,7 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
             : RoomChangeBuilder.SerializeRoom(position.RoomEntity, in context);
 
         var visibleAbilityCount = 0;
-        foreach (var abilityEntity in being.Abilities)
+        foreach (var abilityEntity in playerEntity.ActiveEffects!.AvailableAbilities)
         {
             var ability = abilityEntity.Ability!;
             if (!ability.IsLeveledSupplement && AbilityChangeBuilder.IsClientVisible(ability))
@@ -263,7 +263,7 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
 
         var placeholders = AbilityChangeBuilder.GetAccumulatorPlaceholders(playerEntity);
         var abilities = new Dictionary<int, AbilityChange>(visibleAbilityCount + placeholders.Count);
-        foreach (var abilityEntity in being.Abilities)
+        foreach (var abilityEntity in playerEntity.ActiveEffects!.AvailableAbilities)
         {
             var ability = abilityEntity.Ability!;
             if (!ability.IsLeveledSupplement && AbilityChangeBuilder.IsClientVisible(ability))

@@ -4,6 +4,7 @@ using UnicornHack.Generation;
 using UnicornHack.Hubs.ChangeTracking;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
+using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
 using Xunit;
@@ -41,9 +42,8 @@ public class ChangeBuilderTest
 
     private static void EnqueueSetSlot(GameManager manager, GameEntity playerEntity, GameEntity abilityEntity, int? slot)
     {
-        var msg = SetAbilitySlotMessage.Create(manager);
+        var msg = SetAbilitySlotMessage.Create(playerEntity, manager);
         msg.AbilityEntity = abilityEntity;
-        msg.OwnerEntity = playerEntity;
         msg.Slot = slot;
         manager.Enqueue(msg);
     }
@@ -767,8 +767,9 @@ public class ChangeBuilderTest
         ItemData.FlaskOfHealing.Instantiate(playerEntity);
         manager.Queue.ProcessQueue(manager);
 
-        var ability = manager.AffectableAbilitiesIndex[
-            (playerEntity.Id, "flask of healing: Drink")]!;
+        var ability = playerEntity.Being!.Items.Single(
+                item => item.Item!.TemplateName == ItemData.FlaskOfHealing.Name)
+            .ActiveEffects!.Abilities.Single(entity => entity.Ability!.Name == "Drink");
         Assert.NotNull(ability);
         ability.Ability!.Slot = null;
 
@@ -790,6 +791,48 @@ public class ChangeBuilderTest
         var fresh = WebTestHelper.PerformAndVerify(player, listener, game.Services, ActorActionType.Wait);
 
         Assert.DoesNotContain(ability.Id, fresh.Abilities!.Keys);
+    }
+
+    [Fact]
+    public void Duplicate_item_abilities_are_tracked_independently()
+    {
+        var game = TestHelper.CreateGame();
+        var room = TestHelper.BuildRoom("..", game);
+        var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(0, 0));
+        var manager = game.Manager;
+        ItemData.LongSword.Instantiate(playerEntity);
+        ItemData.LongSword.Instantiate(playerEntity);
+        manager.Queue.ProcessQueue(manager);
+
+        var swords = playerEntity.Being!.Items
+            .Where(item => item.Item!.TemplateName == ItemData.LongSword.Name)
+            .ToList();
+        var abilities = swords.Select(item => item.ActiveEffects!.Abilities.Single(
+                ability => ability.Ability!.Name == "Equip"))
+            .ToList();
+        var listener = WebTestHelper.SetupListeners(manager);
+        var playerBuilder = Assert.Single(listener.PlayerBuilders);
+        var clientState = ClientStateHelpers.Deserialize(
+            GameStateManager.GetState(playerEntity, game.Services));
+
+        Assert.All(abilities, ability => Assert.Contains(ability.Id, clientState.Abilities!.Keys));
+
+        var moveMessage = MoveItemMessage.Create(manager);
+        moveMessage.ItemEntity = swords[0];
+        moveMessage.TargetRoomEntity = room.Entity;
+        moveMessage.TargetCell = new Point(0, 0);
+        manager.Enqueue(moveMessage);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.True(playerBuilder.HasObservableChanges(manager));
+        var change = playerBuilder.BuildChangeSet(manager, game.Services);
+        ClientStateHelpers.ApplyDelta(clientState, change);
+        Assert.DoesNotContain(abilities[0].Id, clientState.Abilities!);
+        Assert.Contains(abilities[1].Id, clientState.Abilities!);
+
+        var freshState = ClientStateHelpers.Deserialize(
+            GameStateManager.GetState(playerEntity, game.Services));
+        ChangeSetAssert.AssertPlayerStatesEqual(freshState, clientState);
     }
 
     /// <summary>

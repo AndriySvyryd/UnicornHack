@@ -43,6 +43,9 @@ public class LivingSystemTest
 
         manager.Queue.ProcessQueue(manager);
 
+        var potion = playerEntity.Being!.Items.Single(
+            item => item.Item!.TemplateName == ItemData.PotionOfOgreness.Name);
+
         var being = playerEntity.Being!;
         Assert.Equal(1, being.EnergyRegeneration);
         Assert.Equal(100, being.EnergyPointMaximum);
@@ -59,7 +62,7 @@ public class LivingSystemTest
         Assert.Equal(59, being.EnergyPoints);
         Assert.Equal(50, being.HitPoints);
 
-        TestHelper.ActivateAbility(ItemData.PotionOfOgreness.Name + ": Drink", playerEntity, manager);
+        TestHelper.ActivateItemAbility(potion, "Drink", playerEntity, manager);
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(90, being.EnergyPointMaximum);

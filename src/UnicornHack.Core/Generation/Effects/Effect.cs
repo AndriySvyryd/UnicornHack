@@ -14,7 +14,8 @@ public abstract class Effect : ICSScriptSerializable
 
     private Func<GameEntity, GameEntity, GameEntity?, float>? _secondaryAmountFunction;
 
-    private static readonly EffectMetadata?[] _metadata = new EffectMetadata?[Enum.GetValues<EffectType>().Length];
+    private static readonly EffectMetadata?[] _metadata =
+        new EffectMetadata?[(int)Enum.GetValues<EffectType>().Max() + 1];
     private static readonly Dictionary<string, EffectMetadata> _metadataByStatusAbilityName =
         new(StringComparer.Ordinal);
 

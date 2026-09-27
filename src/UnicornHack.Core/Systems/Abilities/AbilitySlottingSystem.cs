@@ -5,6 +5,8 @@ namespace UnicornHack.Systems.Abilities;
 
 public class AbilitySlottingSystem :
     IGameSystem<SetAbilitySlotMessage>,
+    IGameSystem<ItemMovedMessage>,
+    IGameSystem<ItemEquippedMessage>,
     IGameSystem<EntityAddedMessage<GameEntity>>,
     IGameSystem<PropertyValueChangedMessage<GameEntity, bool>>,
     IGameSystem<PropertyValueChangedMessage<GameEntity, int>>
@@ -15,12 +17,24 @@ public class AbilitySlottingSystem :
 
     public MessageProcessingResult Process(SetAbilitySlotMessage message, GameManager manager)
     {
-        var ability = message.AbilityEntity?.Ability
-                      ?? manager.AffectableAbilitiesIndex[(message.OwnerEntity.Id, message.AbilityName)]?.Ability;
+        var actorEntity = message.ActorEntity;
+        if (actorEntity.Being == null)
+        {
+            throw new InvalidOperationException("No actor found for the ability slot.");
+        }
+
+        var abilityEntity = message.AbilityEntity;
+        var ability = message.AbilityEntity?.Ability;
+        if (abilityEntity != null
+            && !actorEntity.ActiveEffects!.AvailableAbilities.Contains(abilityEntity))
+        {
+            throw new InvalidOperationException(
+                $"Ability {abilityEntity.Id} is not available to actor {actorEntity.Id}.");
+        }
 
         if (message.Slot != null)
         {
-            var conflictingAbility = (ability?.OwnerEntity ?? message.OwnerEntity).Being!.SlottedAbilities
+            var conflictingAbility = actorEntity.Being.SlottedAbilities
                 .GetValueOrDefault(message.Slot.Value);
             if (conflictingAbility != null)
             {
@@ -29,7 +43,7 @@ public class AbilitySlottingSystem :
                     return MessageProcessingResult.ContinueProcessing;
                 }
 
-                ResetSlot(conflictingAbility, manager);
+                ResetSlot(conflictingAbility, actorEntity, manager);
 
                 if (conflictingAbility.Ability!.Slot != null)
                 {
@@ -45,7 +59,7 @@ public class AbilitySlottingSystem :
             Debug.Assert(ability.CooldownTick == null && ability.CooldownXpLeft == null);
 
             if (message.Slot.Value < 0
-                || message.Slot.Value >= ability.OwnerEntity!.Physical!.Capacity)
+                || message.Slot.Value >= actorEntity.Physical!.Capacity)
             {
                 throw new InvalidOperationException("Invalid slot " + message.Slot.Value);
             }
@@ -85,7 +99,7 @@ public class AbilitySlottingSystem :
             if (ability.IsActive
                 && ability.Slot != null)
             {
-                var deactivateMessage = DeactivateAbilityMessage.Create(ability, ability.OwnerEntity!, manager);
+                var deactivateMessage = DeactivateAbilityMessage.Create(ability, actorEntity, manager);
 
                 manager.Process(deactivateMessage);
             }
@@ -99,21 +113,15 @@ public class AbilitySlottingSystem :
 
             ability.Slot = null;
 
-            if (ability.Type == AbilityType.Item)
+            if (ability.OwnerEntity is { Item: { EquippedSlot: EquipmentSlot.None } } itemEntity)
             {
-                var itemId = GetTargetItemId(ability.Entity, manager);
-
-                if (manager.FindEntity(itemId)!.Item!.EquippedSlot == EquipmentSlot.None)
-                {
-                    var position = ability.OwnerEntity!.Position!;
-                    var dropMessage = MoveItemMessage.Create(manager);
-                    dropMessage.ItemEntity = manager.FindEntity(itemId)!;
-                    dropMessage.TargetRoomEntity = position.RoomEntity;
-                    dropMessage.TargetCell = position.Cell;
-
-                    manager.Enqueue(dropMessage);
-                }
+                DropItem(itemEntity, actorEntity, manager, suppressLog: false);
             }
+        }
+        else if (message.Slot is null)
+        {
+            throw new InvalidOperationException(
+                "An ability entity or a slot are required to change an ability slot.");
         }
 
         return MessageProcessingResult.ContinueProcessing;
@@ -121,73 +129,113 @@ public class AbilitySlottingSystem :
 
     public MessageProcessingResult Process(EntityAddedMessage<GameEntity> message, GameManager manager)
     {
-        // AbilitiesToAffectableRelationship
-        if (message.PrincipalEntity == null
-            || !message.PrincipalEntity.HasComponent(EntityComponent.Being))
+        if (message.Group.Name == nameof(GameManager.EntityItemsToContainerRelationship))
         {
-            return MessageProcessingResult.ContinueProcessing;
-        }
-
-        // The ability can already be gone if it was torn down in the same tick it was added, so tolerate a null Ability here.
-        if (message.Entity.Ability is not { } ability)
-        {
-            return MessageProcessingResult.ContinueProcessing;
-        }
-
-        if ((ability.Activation & ActivationType.Slottable) != 0
-            && ability.Type == AbilityType.Item)
-        {
-            Debug.Assert(!ability.IsActive);
-
-            var slot = GetFirstFreeSlot(message.PrincipalEntity);
-            if (slot != null)
+            if (message.PrincipalEntity?.Being != null)
             {
-                var setSlotMessage = SetAbilitySlotMessage.Create(manager);
-                setSlotMessage.AbilityEntity = message.Entity;
-                setSlotMessage.Slot = slot;
-
-                Process(setSlotMessage, manager);
-
-                manager.Queue.ReturnMessage(setSlotMessage);
-                return MessageProcessingResult.ContinueProcessing;
+                AssignAvailableItemAbilities(message.Entity, message.PrincipalEntity, manager);
             }
 
-            var itemId = GetTargetItemId(message.Entity, manager);
-
-            var position = message.PrincipalEntity.Position!;
-            var dropMessage = MoveItemMessage.Create(manager);
-            dropMessage.ItemEntity = manager.FindEntity(itemId)!;
-            dropMessage.TargetRoomEntity = position.RoomEntity;
-            dropMessage.TargetCell = position.Cell;
-            dropMessage.SuppressLog = true;
-
-            manager.Enqueue(dropMessage);
+            return MessageProcessingResult.ContinueProcessing;
         }
 
         return MessageProcessingResult.ContinueProcessing;
     }
 
-    private static int GetTargetItemId(GameEntity abilityEntity, GameManager manager)
+    public MessageProcessingResult Process(ItemMovedMessage message, GameManager manager)
     {
-        var itemId = 0;
-        foreach (var effectEntity in abilityEntity.Ability!.Effects)
+        if (!message.Successful
+            || message.InitialContainer != null
+            || message.InitialRoomCell == null
+            || message.ItemEntity.Item?.ContainerEntity is not { Being: not null } ownerEntity)
         {
-            var effect = effectEntity.Effect!;
-            switch (effect.EffectType)
-            {
-                case EffectType.Activate:
-                    itemId = manager.FindEntity(effect.TargetEntityId)!.Ability!.OwnerId!.Value;
-                    break;
-                case EffectType.EquipItem:
-                case EffectType.Move:
-                    itemId = effect.TargetEntityId!.Value;
-                    break;
-                default:
-                    continue;
-            }
+            return MessageProcessingResult.ContinueProcessing;
         }
 
-        return itemId;
+        if (AssignAvailableItemAbilities(message.ItemEntity, ownerEntity, manager))
+        {
+            return MessageProcessingResult.ContinueProcessing;
+        }
+
+        message.Successful = false;
+        DropItem(message.ItemEntity, ownerEntity, manager, suppressLog: true);
+        return MessageProcessingResult.ContinueProcessing;
+    }
+
+    public MessageProcessingResult Process(ItemEquippedMessage message, GameManager manager)
+    {
+        if (!message.Successful
+            || manager.AvailableAbilitiesToRoomActorsRelationship
+                .GetSlottableItemAbility(message.ItemEntity, message.ActorEntity) is not { } abilityEntity
+            || abilityEntity.Ability!.Slot != null)
+        {
+            return MessageProcessingResult.ContinueProcessing;
+        }
+
+        if (!TryAssignItemAbility(abilityEntity, message.ActorEntity, manager))
+        {
+            if (message.Slot == EquipmentSlot.None)
+            {
+                DropItem(message.ItemEntity, message.ActorEntity, manager, suppressLog: true);
+                return MessageProcessingResult.ContinueProcessing;
+            }
+
+            throw new InvalidOperationException(
+                $"Unable to slot ability {abilityEntity.Id} after changing equipment state.");
+        }
+
+        return MessageProcessingResult.ContinueProcessing;
+    }
+
+    private bool AssignAvailableItemAbilities(
+        GameEntity itemEntity, GameEntity ownerEntity, GameManager manager)
+    {
+        var abilityEntity = manager.AvailableAbilitiesToRoomActorsRelationship
+            .GetSlottableItemAbility(itemEntity, ownerEntity);
+        Debug.Assert(abilityEntity != null
+                     || manager.Game.Services.Data.Items.Find(itemEntity.Item!.TemplateName) == null,
+            $"Item {itemEntity.Id} must expose exactly one available slottable ability.");
+        return abilityEntity != null
+               && (abilityEntity.Ability!.Slot != null
+                   || TryAssignItemAbility(abilityEntity, ownerEntity, manager));
+    }
+
+    private bool TryAssignItemAbility(
+        GameEntity abilityEntity, GameEntity ownerEntity, GameManager manager)
+    {
+        var ability = abilityEntity.Ability;
+        var slot = GetFirstFreeSlot(ownerEntity);
+        if (ability == null
+            || slot == null
+            || !ability.IsUsable
+            || ability.CooldownTick != null
+            || ability.CooldownXpLeft != null)
+        {
+            return false;
+        }
+
+        var setSlotMessage = SetAbilitySlotMessage.Create(ownerEntity, manager);
+        setSlotMessage.AbilityEntity = abilityEntity;
+        setSlotMessage.Slot = slot;
+
+        Process(setSlotMessage, manager);
+
+        manager.Queue.ReturnMessage(setSlotMessage);
+        return ability.Slot == slot;
+    }
+
+    private static void DropItem(
+        GameEntity itemEntity, GameEntity ownerEntity, GameManager manager, bool suppressLog)
+    {
+        var position = ownerEntity.Position!;
+        var dropMessage = MoveItemMessage.Create(manager);
+        dropMessage.ItemEntity = itemEntity;
+        dropMessage.TargetRoomEntity = position.RoomEntity;
+        dropMessage.TargetCell = position.Cell;
+        dropMessage.SuppressLog = suppressLog;
+        dropMessage.Force = true;
+
+        manager.Enqueue(dropMessage);
     }
 
     public MessageProcessingResult Process(
@@ -196,9 +244,10 @@ public class AbilitySlottingSystem :
         var ability = message.Entity.Ability!;
         Debug.Assert(ability.CooldownXpLeft == null && ability.CooldownTick == null);
         if (!ability.IsUsable
-            && ability.Slot != null)
+            && ability.Slot != null
+            && manager.SlottedAbilitiesToRoomActorsRelationship.GetPrincipal(message.Entity) is { } actorEntity)
         {
-            ResetSlot(message.Entity, manager);
+            ResetSlot(message.Entity, actorEntity, manager);
         }
 
         return MessageProcessingResult.ContinueProcessing;
@@ -210,15 +259,17 @@ public class AbilitySlottingSystem :
         // Physical.Capacity
         if (message.NewValue < message.OldValue)
         {
-            foreach (var abilityEntity in message.Entity.ActiveEffects!.Abilities)
+            foreach (var (slot, abilityEntity) in message.Entity.Being!.SlottedAbilities.Reverse().ToList())
             {
-                var abilitySlot = abilityEntity.Ability!.Slot;
-                if (abilitySlot.HasValue
-                    && abilitySlot != DefaultMeleeAttackSlot
-                    && abilitySlot != DefaultRangedAttackSlot
-                    && abilitySlot >= message.NewValue)
+                if (slot < message.NewValue)
                 {
-                    ResetSlot(abilityEntity, manager);
+                    break;
+                }
+
+                if (slot != DefaultMeleeAttackSlot
+                    && slot != DefaultRangedAttackSlot)
+                {
+                    ResetSlot(abilityEntity, message.Entity, manager);
                 }
             }
         }
@@ -226,9 +277,9 @@ public class AbilitySlottingSystem :
         return MessageProcessingResult.ContinueProcessing;
     }
 
-    private void ResetSlot(GameEntity abilityEntity, GameManager manager)
+    private void ResetSlot(GameEntity abilityEntity, GameEntity actorEntity, GameManager manager)
     {
-        var resetMessage = SetAbilitySlotMessage.Create(manager);
+        var resetMessage = SetAbilitySlotMessage.Create(actorEntity, manager);
         resetMessage.AbilityEntity = abilityEntity;
 
         Process(resetMessage, manager);
@@ -243,11 +294,10 @@ public class AbilitySlottingSystem :
 
     public int? GetFirstFreeSlot(GameEntity owner)
     {
-        var abilities = owner.Being!.SlottedAbilities;
         var i = FirstPotentialSlot;
         for (; i < owner.Physical!.Capacity; i++)
         {
-            if (!abilities.ContainsKey(i))
+            if (!owner.Being!.SlottedAbilities.ContainsKey(i))
             {
                 break;
             }

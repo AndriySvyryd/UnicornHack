@@ -20,6 +20,23 @@ public readonly struct Vector : IEquatable<Vector>
 
     public static readonly byte[] OppositeDirectionIndexes = [4, 5, 6, 7, 0, 1, 2, 3];
 
+    public static Vector? Unpack(int? bits)
+        => bits == null ? null : Unpack(bits.Value);
+
+    public static Vector Unpack(int bits)
+        => new((sbyte)(bits >> 8), (sbyte)bits);
+
+    public int ToInt32()
+    {
+        if (X is < sbyte.MinValue or > sbyte.MaxValue
+            || Y is < sbyte.MinValue or > sbyte.MaxValue)
+        {
+            throw new InvalidOperationException($"Vector {this} cannot be packed.");
+        }
+
+        return (byte)X << 8 | (byte)Y;
+    }
+
     public bool IsCardinalAligned() => X == 0 || Y == 0;
 
     public bool IsIntercardinalAligned() => X == Y || X == -Y;

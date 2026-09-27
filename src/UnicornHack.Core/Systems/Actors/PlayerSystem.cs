@@ -27,10 +27,7 @@ public class PlayerSystem :
         if (player.PendingChoice != null
             || player.NextAction == ActorActionType.SelectChoice)
         {
-            if (!ProcessPlayerOptionSelection(message.Actor, player, manager))
-            {
-                manager.Game.ActingPlayer = message.Actor;
-            }
+            ProcessPlayerOptionSelection(message.Actor, player, manager);
 
             return MessageProcessingResult.ContinueProcessing;
         }
@@ -49,10 +46,7 @@ public class PlayerSystem :
             return MessageProcessingResult.ContinueProcessing;
         }
 
-        if (!ProcessTurn(message, manager))
-        {
-            manager.Game.ActingPlayer = message.Actor;
-        }
+        ProcessTurn(message, manager);
 
         return MessageProcessingResult.ContinueProcessing;
     }
@@ -209,18 +203,8 @@ public class PlayerSystem :
             case ActorActionType.ChangeHeading:
             case ActorActionType.MoveOneCell:
                 var moveDirection = (Direction)target!.Value;
-                switch (moveDirection)
-                {
-                    case Direction.Down:
-                    case Direction.Up:
-                        manager.LoggingSystem.WriteLog(
-                            manager.Game.Services.Language.UnableToMove(moveDirection), playerEntity, manager);
-                        break;
-                    default:
-                        Move(moveDirection, playerEntity, manager,
-                            onlyChangeHeading: performedAction == ActorActionType.ChangeHeading);
-                        break;
-                }
+                Move(moveDirection, playerEntity, manager,
+                    onlyChangeHeading: performedAction == ActorActionType.ChangeHeading);
 
                 break;
             case ActorActionType.MoveToCell:
@@ -289,7 +273,7 @@ public class PlayerSystem :
                 if (requestedSlot.HasValue
                     && playerEntity.Being!.SlottedAbilities.TryGetValue(requestedSlot.Value, out var conflictingAbility))
                 {
-                    var clearSlotMessage = SetAbilitySlotMessage.Create(manager);
+                    var clearSlotMessage = SetAbilitySlotMessage.Create(playerEntity, manager);
                     clearSlotMessage.AbilityEntity = conflictingAbility;
                     manager.Process(clearSlotMessage);
 
@@ -301,8 +285,8 @@ public class PlayerSystem :
                 }
 
                 // Process the pickup synchronously and drain the cascading effects
-                // (container change -> WhilePossessed activation -> AddAbility ->
-                // AbilitySlottingSystem auto-slot) so the player's SlottedAbilities
+                // (container change -> availability relationship -> AbilitySlottingSystem auto-slot)
+                // so the player's SlottedAbilities
                 // map reflects the post-pickup state before we inspect it. The
                 // recursive ProcessQueue call is safe: the queue's own secondary
                 // drain uses the same recursion, and the parent drain loop sees an
@@ -320,7 +304,7 @@ public class PlayerSystem :
 
                 // If a specific slot was requested and the auto-slot still landed the
                 // new ability somewhere else (e.g. the requested slot was beyond the
-                // first free slot), move it. A pickup adds at most one item-typed
+                // first free slot), move it. A pickup adds at most one available item-owned
                 // ability, so any new entry in SlottedAbilities relative to
                 // `slotsBefore` is the one to move.
                 if (requestedSlot.HasValue && slotsBefore != null)
@@ -332,7 +316,7 @@ public class PlayerSystem :
                             continue;
                         }
 
-                        var movePickupToSlotMessage = SetAbilitySlotMessage.Create(manager);
+                        var movePickupToSlotMessage = SetAbilitySlotMessage.Create(playerEntity, manager);
                         movePickupToSlotMessage.AbilityEntity = pickupAbilityEntity;
                         movePickupToSlotMessage.Slot = requestedSlot.Value;
                         manager.Process(movePickupToSlotMessage);
@@ -352,7 +336,14 @@ public class PlayerSystem :
                 equipMessage.ActorEntity = playerEntity;
                 equipMessage.ItemEntity = itemToEquip;
                 equipMessage.Slot = slot;
-                equipMessage.Force = true;
+
+                if (!manager.ItemUsageSystem.CanEquipItem(equipMessage, manager))
+                {
+                    manager.ReturnMessage(equipMessage);
+                    manager.LoggingSystem.WriteFailedAction(
+                        playerEntity, ActorActionType.EquipItem, manager);
+                    return false;
+                }
 
                 manager.Enqueue(equipMessage);
                 break;
@@ -371,9 +362,8 @@ public class PlayerSystem :
                 manager.Enqueue(unequipMessage);
                 break;
             case ActorActionType.SetAbilitySlot:
-                var setSlotMessage = SetAbilitySlotMessage.Create(manager);
+                var setSlotMessage = SetAbilitySlotMessage.Create(playerEntity, manager);
                 setSlotMessage.AbilityEntity = manager.FindEntity(target);
-                setSlotMessage.OwnerEntity = playerEntity;
                 setSlotMessage.Slot = target2;
 
                 manager.Enqueue(setSlotMessage);
@@ -451,7 +441,7 @@ public class PlayerSystem :
                 var player = actorEntity.Player!;
                 player.NextAction = ActorActionType.UseAbilitySlot;
                 player.NextActionTarget = ability.Slot;
-                player.NextActionTarget2 = (-targetEntity?.Id) ?? targetCell.ToInt32();
+                player.NextActionTarget2 = (-targetEntity?.Id) ?? position.Cell.Value.DifferenceTo(targetCell).ToInt32();
                 player.QueuedAction = true;
 
                 return true;
@@ -476,33 +466,12 @@ public class PlayerSystem :
         return Move(direction.Value, playerEntity, manager);
     }
 
-    public MessageProcessingResult Process(TraveledMessage message, GameManager state)
+    public MessageProcessingResult Process(TraveledMessage message, GameManager manager)
     {
-        var player = message.Entity.Player;
         if (!message.Successful
-            && player != null)
+            && message.Entity.Player is { } player)
         {
-            var manager = message.Entity.Manager;
-            if (player.PendingChoice == null)
-            {
-                var language = manager.Game.Services.Language;
-                var statusAbility = !message.Entity.Being!.CanMove
-                    ? EffectApplicationSystem.GetAbilitiesAffectingProperty(
-                            message.Entity, nameof(BeingComponent.CanMove), AbilityType.Debuff)
-                        .FirstOrDefault()
-                    : null;
-                manager.LoggingSystem.WriteLog(statusAbility != null
-                        ? language.StatusPreventsMovement(statusAbility)
-                        : language.UnableToMove(message.TargetHeading),
-                    message.Entity, manager);
-            }
-
             ResetNextAction(player);
-
-            if (manager.Game.ActingPlayer == null)
-            {
-                manager.Game.ActingPlayer = message.Entity;
-            }
         }
 
         return MessageProcessingResult.ContinueProcessing;

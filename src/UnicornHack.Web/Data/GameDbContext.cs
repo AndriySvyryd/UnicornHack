@@ -22,7 +22,7 @@ public class GameDbContext : DbContext, IRepository
         public bool IsEffect { get; init; }
     }
 
-    private static readonly Expression<Func<GameDbContext, int, IQueryable<int>>> RoomIdsQuery =
+    private static readonly Expression<Func<GameDbContext, int, IQueryable<int>>> CurrentLevelRoomIdsQuery =
         (GameDbContext context, int id) =>
             context.PlayerComponents
                 .Where(playerComponent => playerComponent.GameId == id)
@@ -30,34 +30,38 @@ public class GameDbContext : DbContext, IRepository
                     playerComponent => new { playerComponent.GameId, playerComponent.EntityId },
                     positionComponent => new { positionComponent.GameId, positionComponent.EntityId },
                     (_, positionComponent) => positionComponent.RoomId)
-                .Union(context.PlayerComponents
-                    .Where(playerComponent => playerComponent.GameId == id)
-                    .Join(context.PositionComponents,
-                        playerComponent => new { playerComponent.GameId, playerComponent.EntityId },
-                        positionComponent => new { positionComponent.GameId, positionComponent.EntityId },
-                        (_, positionComponent) => positionComponent.RoomId)
-                    .Join(context.RoomComponents,
-                        roomId => new { GameId = id, EntityId = roomId },
-                        roomComponent => new { roomComponent.GameId, roomComponent.EntityId },
-                        (_, playerRoom) => new { playerRoom.BranchName, playerRoom.Depth })
-                    .Join(context.RoomComponents,
-                        level => new { GameId = id, level.BranchName, level.Depth },
-                        roomComponent => new { roomComponent.GameId, roomComponent.BranchName, roomComponent.Depth },
-                        (_, levelRoom) => levelRoom.EntityId)
-                    .Join(context.PositionComponents,
-                        levelRoomId => new { GameId = id, RoomId = levelRoomId },
-                        positionComponent => new { positionComponent.GameId, positionComponent.RoomId },
-                        (_, positionComponent) => new { positionComponent.GameId, positionComponent.EntityId })
+                .Join(context.RoomComponents,
+                    roomId => new { GameId = id, EntityId = roomId },
+                    roomComponent => new { roomComponent.GameId, roomComponent.EntityId },
+                    (_, playerRoom) => new { playerRoom.BranchName, playerRoom.Depth })
+                .Join(context.RoomComponents,
+                    level => new { GameId = id, level.BranchName, level.Depth },
+                    roomComponent => new { roomComponent.GameId, roomComponent.BranchName, roomComponent.Depth },
+                    (_, levelRoom) => levelRoom.EntityId);
+
+    private static readonly Func<GameDbContext, int, IEnumerable<int>> GetCurrentLevelRoomIds =
+        EF.CompileQuery(CurrentLevelRoomIdsQuery);
+
+    private static readonly Func<GameDbContext, int, IAsyncEnumerable<int>> GetCurrentLevelRoomIdsAsync =
+        EF.CompileAsyncQuery(CurrentLevelRoomIdsQuery);
+
+    private static readonly Expression<Func<GameDbContext, int, int[], IQueryable<int>>>
+        ConnectionTargetRoomIdsQuery =
+            (GameDbContext context, int gameId, int[] currentLevelRoomIds) =>
+                context.PositionComponents
+                    .Where(position => position.GameId == gameId
+                                       && currentLevelRoomIds.Contains(position.RoomId))
                     .Join(context.ConnectionComponents,
-                        x => new { x.GameId, x.EntityId },
-                        connectionComponent => new { connectionComponent.GameId, connectionComponent.EntityId },
-                        (_, connectionComponent) => connectionComponent.TargetRoomId));
+                        position => new { position.GameId, position.EntityId },
+                        connection => new { connection.GameId, connection.EntityId },
+                        (_, connection) => connection.TargetRoomId)
+                    .Distinct();
 
-    private static readonly Func<GameDbContext, int, IEnumerable<int>> GetRoomIds =
-        EF.CompileQuery(RoomIdsQuery);
+    private static readonly Func<GameDbContext, int, int[], IEnumerable<int>> GetConnectionTargetRoomIds =
+        EF.CompileQuery(ConnectionTargetRoomIdsQuery);
 
-    private static readonly Func<GameDbContext, int, IAsyncEnumerable<int>> GetRoomIdsAsync =
-        EF.CompileAsyncQuery(RoomIdsQuery);
+    private static readonly Func<GameDbContext, int, int[], IAsyncEnumerable<int>> GetConnectionTargetRoomIdsAsync =
+        EF.CompileAsyncQuery(ConnectionTargetRoomIdsQuery);
 
     private static readonly Expression<Func<GameDbContext, int, int[], IQueryable<int>>> RoomResidentIdsQuery =
         (GameDbContext context, int gameId, int[] roomIds) =>
@@ -320,10 +324,6 @@ public class GameDbContext : DbContext, IRepository
             eb.Navigation(g => g.Options).IsRequired();
             eb.OwnsOne(g => g.GenerationStats, ConfigureGenerationStats);
             eb.Navigation(g => g.GenerationStats).IsRequired();
-            eb.HasOne(g => g.ActingPlayer)
-                .WithOne()
-                .HasForeignKey<Game>(l => new { l.Id, l.ActingPlayerId })
-                .OnDelete(DeleteBehavior.Restrict);
             eb.HasMany(g => g.Branches)
                 .WithOne(l => l.Game)
                 .HasForeignKey(l => l.GameId);
@@ -607,6 +607,7 @@ public class GameDbContext : DbContext, IRepository
         {
             eb.HasKey(c => new { c.GameId, c.EntityId });
             eb.Ignore(c => c.Abilities);
+            eb.Ignore(c => c.AvailableAbilities);
             eb.OwnsMany(c => c.PropertyEffects, ib =>
             {
                 ib.WithOwner(e => (ActiveEffectsComponent)e.ContainingComponent!)
@@ -699,14 +700,27 @@ public class GameDbContext : DbContext, IRepository
     private async ValueTask<Game> LoadGame(
         int gameId, bool useAsync, CancellationToken cancellationToken = default)
     {
-        // For each player: emit the player's current room id, plus - by walking
-        // player -> position (player's room id) -> player's room (BranchName, Depth)
-        // -> every room on that level -> that room's connections - each connection's
-        // target room id. Union deduplicates.
-        var roomIds = useAsync
-            ? await ToListAsync(GetRoomIdsAsync(this, gameId), cancellationToken)
+        // Resolve the current levels once instead of repeating the player -> position -> level
+        // joins in a UNION arm. The second query needs only Position -> Connection and a small
+        // OPENJSON set of current-level room ids.
+        var currentLevelRoomIds = useAsync
+            ? await ToListAsync(GetCurrentLevelRoomIdsAsync(this, gameId), cancellationToken)
                 .ConfigureAwait(false)
-            : await ToList(GetRoomIds(this, gameId));
+            : await ToList(GetCurrentLevelRoomIds(this, gameId));
+
+        var currentLevelRoomIdArray = currentLevelRoomIds.ToArray();
+        var connectionTargetRoomIds = currentLevelRoomIdArray.Length == 0
+            ? []
+            : useAsync
+                ? await ToListAsync(
+                        GetConnectionTargetRoomIdsAsync(this, gameId, currentLevelRoomIdArray),
+                        cancellationToken)
+                    .ConfigureAwait(false)
+                : await ToList(GetConnectionTargetRoomIds(this, gameId, currentLevelRoomIdArray));
+        var roomIds = currentLevelRoomIds
+            .Concat(connectionTargetRoomIds)
+            .Distinct()
+            .ToList();
 
         await LoadRooms(roomIds, useAsync, cancellationToken).ConfigureAwait(false);
 
@@ -927,7 +941,6 @@ public class GameDbContext : DbContext, IRepository
         Game game, bool useAsync, CancellationToken cancellationToken = default)
     {
         var gameId = game.Id;
-        game.ActingPlayerId = null;
 
         if (useAsync)
         {

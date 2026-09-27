@@ -1,6 +1,7 @@
 ﻿using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
+using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Utils.MessagingECS;
 
@@ -28,7 +29,7 @@ public partial class GameManager
         private set;
     } = null!;
 
-    public LookupEntityRelationship<GameEntity, int, SortedDictionary<int, GameEntity>>
+    public SkipLookupEntityRelationship<GameEntity, int, SortedDictionary<int, GameEntity>>
         SlottedAbilitiesToRoomActorsRelationship
     {
         get;
@@ -77,23 +78,11 @@ public partial class GameManager
             roomEntity => (SortedDictionary<Point, GameEntity>)roomEntity.Room!.Actors,
             keepDependentAlive: true);
 
-        SlottedAbilitiesToRoomActorsRelationship = new(
-            nameof(SlottedAbilitiesToRoomActorsRelationship),
-            Abilities,
-            RoomActors,
-            new SimpleKeyValueGetter<GameEntity, int>(
-                component => ((AbilityComponent)component).OwnerId,
-                (int)EntityComponent.Ability),
-            new SimpleKeyValueGetter<GameEntity, int>(
-                component => ((AbilityComponent)component).Slot,
-                (int)EntityComponent.Ability),
-            (abilityEntity, _) => abilityEntity.RemoveComponent(EntityComponent.Ability),
-            actorEntity => (SortedDictionary<int, GameEntity>)actorEntity.Being!.SlottedAbilities);
-
         AISystem = new AISystem();
         queue.Register<PerformActionMessage>(AISystem, PerformActionMessage.AIName, 0);
         queue.Register<DecideNextActionMessage>(AISystem, DecideNextActionMessage.Name, 0);
         queue.Register<DelayMessage>(AISystem, DelayMessage.Name, 0);
+        queue.Register<ItemEquippedMessage>(AISystem, ItemEquippedMessage.Name, 5);
         queue.Register<DiedMessage>(AISystem, DiedMessage.Name, 4);
         queue.Register<EntityAddedMessage<GameEntity>>(AISystem,
             AbilitiesToAffectableRelationship.Dependents.GetEntityAddedMessageName(),

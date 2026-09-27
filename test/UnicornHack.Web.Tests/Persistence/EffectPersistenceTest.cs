@@ -4,6 +4,7 @@ using System.Reflection;
 using UnicornHack.Data;
 using UnicornHack.Data.Abilities;
 using UnicornHack.Data.Creatures;
+using UnicornHack.Data.Items;
 using UnicornHack.Generation;
 using UnicornHack.Generation.Effects;
 using UnicornHack.Systems.Abilities;
@@ -18,8 +19,66 @@ using Xunit;
 
 namespace UnicornHack.Persistence;
 
-public class PersistenceEffectTest
+public class EffectPersistenceTest
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Duplicate_item_abilities_preserve_identity_and_slots_after_reload(bool useAsync)
+    {
+        Assert.SkipUnless(
+            PersistedGame.IsLocalDbAvailable, "SQL Server LocalDB is not available in this environment.");
+
+        using var persisted = PersistedGame.CreateAndSave();
+        var playerEntity = persisted.PlayerEntity;
+        var manager = persisted.Game.Manager;
+        ItemData.LongSword.Instantiate(playerEntity);
+        ItemData.LongSword.Instantiate(playerEntity);
+        manager.Queue.ProcessQueue(manager);
+
+        var expected = playerEntity.Being!.Items
+            .Where(item => item.Item!.TemplateName == ItemData.LongSword.Name)
+            .Select(item =>
+            {
+                var abilityEntity = item.ActiveEffects!.Abilities.Single(
+                    ability => ability.Ability!.Name == "Equip");
+                return (ItemId: item.Id, AbilityId: abilityEntity.Id, Slot: abilityEntity.Ability!.Slot!.Value);
+            })
+            .OrderBy(value => value.ItemId)
+            .ToList();
+        Assert.Equal(2, expected.Count);
+        Assert.Equal(2, expected.Select(value => value.Slot).Distinct().Count());
+
+        var coolingAbility = manager.FindEntity(expected[0].AbilityId)!.Ability!;
+        var expectedCooldownTick = manager.Game.CurrentTick + 100;
+        coolingAbility.CooldownTick = expectedCooldownTick;
+        persisted.Context.SaveChanges();
+
+        if (useAsync)
+        {
+            await persisted.ReloadAsync();
+        }
+        else
+        {
+            persisted.Reload();
+        }
+
+        var reloadedPlayer = persisted.PlayerEntity;
+        var reloadedManager = persisted.Game.Manager;
+        foreach (var value in expected)
+        {
+            var itemEntity = reloadedManager.FindEntity(value.ItemId)!;
+            var abilityEntity = reloadedManager.FindEntity(value.AbilityId)!;
+            Assert.Same(itemEntity, abilityEntity.Ability!.OwnerEntity);
+            Assert.Equal(value.Slot, abilityEntity.Ability.Slot);
+            Assert.Same(abilityEntity, reloadedPlayer.Being!.SlottedAbilities[value.Slot]);
+        }
+
+        Assert.Equal(
+            expectedCooldownTick,
+            reloadedManager.FindEntity(expected[0].AbilityId)!.Ability!.CooldownTick);
+    }
+
     [Fact]
     public async Task Loading_a_game_ignores_entities_with_the_same_ids_from_other_games()
     {
@@ -428,7 +487,7 @@ public class PersistenceEffectTest
         }
 
         using (var connection = new SqlConnection(
-                   @"Server=(localdb)\MSSQLLocalDB;Database=UnicornHackTest_PersistenceEffectTest;Integrated Security=True;Connect Timeout=60;"))
+                   @"Server=(localdb)\MSSQLLocalDB;Database=UnicornHackTest_EffectPersistenceTest;Integrated Security=True;Connect Timeout=60;"))
         {
             connection.Open();
             using var command = connection.CreateCommand();
@@ -480,13 +539,7 @@ public class PersistenceEffectTest
         var expectedCount = 0;
         foreach (var entity in manager.TemporalEntities)
         {
-            var actionTick = TimeSystem.GetTick(entity);
-            var effectTick = entity.ActiveEffects?.NextEffectTick;
-            var tick = actionTick == null
-                ? effectTick
-                : effectTick == null
-                    ? actionTick
-                    : Math.Min(actionTick.Value, effectTick.Value);
+            var tick = TimeSystem.GetTick(entity);
             if (tick == null)
             {
                 continue;
@@ -903,7 +956,7 @@ public class PersistenceEffectTest
             effectReference.Referenced.Effect = effect;
         }
 
-        var setSlotMessage = SetAbilitySlotMessage.Create(manager);
+        var setSlotMessage = SetAbilitySlotMessage.Create(player, manager);
         setSlotMessage.AbilityEntity = toggledAbility;
         setSlotMessage.Slot = 2;
         manager.Enqueue(setSlotMessage);

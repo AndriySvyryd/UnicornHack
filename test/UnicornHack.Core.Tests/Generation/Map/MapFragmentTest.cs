@@ -291,7 +291,9 @@ PP
         {
             RoomFeatures.DeityAltar, RoomFeatures.SkillPedestal, RoomFeatures.TraitPedestal,
             RoomFeatures.FeatPedestal, RoomFeatures.RacePedestal, RoomFeatures.WeaponStand,
-            RoomFeatures.ArmorStand, RoomFeatures.ItemCase, RoomFeatures.SmallFountain,
+            RoomFeatures.GildedWeaponStand, RoomFeatures.ArmorStand,
+            RoomFeatures.GildedArmorStand, RoomFeatures.ItemCase,
+            RoomFeatures.GildedItemCase, RoomFeatures.SmallFountain,
             RoomFeatures.BigFountain, RoomFeatures.MinorShrine, RoomFeatures.MajorShrine,
             RoomFeatures.RitualShrine
         };

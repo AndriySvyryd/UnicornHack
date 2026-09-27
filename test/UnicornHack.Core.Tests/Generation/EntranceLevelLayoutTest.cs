@@ -26,6 +26,12 @@ public class EntranceLevelLayoutTest
                     $"BigFountain assigned on seed {seed}");
                 Assert.True((room.Features & RoomFeatures.MajorShrine) == 0,
                     $"MajorShrine assigned on seed {seed}");
+                Assert.True((room.Features & RoomFeatures.GildedArmorStand) == 0,
+                    $"GildedArmorStand assigned on seed {seed}");
+                Assert.True((room.Features & RoomFeatures.GildedItemCase) == 0,
+                    $"GildedItemCase assigned on seed {seed}");
+                Assert.True((room.Features & RoomFeatures.GildedWeaponStand) == 0,
+                    $"GildedWeaponStand assigned on seed {seed}");
                 Assert.True((room.Features & RoomFeatures.RitualShrine) == 0,
                     $"RitualShrine assigned on seed {seed}");
             }

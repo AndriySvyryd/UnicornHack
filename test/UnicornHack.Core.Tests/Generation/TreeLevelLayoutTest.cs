@@ -253,8 +253,11 @@ public class TreeLevelLayoutTest
             RoomFeatures.RacePedestal,
             RoomFeatures.DeityAltar,
             RoomFeatures.WeaponStand,
+            RoomFeatures.GildedWeaponStand,
             RoomFeatures.ArmorStand,
+            RoomFeatures.GildedArmorStand,
             RoomFeatures.ItemCase,
+            RoomFeatures.GildedItemCase,
             RoomFeatures.MinorShrine,
             RoomFeatures.MajorShrine,
             RoomFeatures.RitualShrine
@@ -281,6 +284,92 @@ public class TreeLevelLayoutTest
             Assert.True((observed & flag) != 0,
                 $"Reward distribution never produced {flag} across 500 seeds");
         }
+    }
+
+    [Fact]
+    public void Premium_rewards_are_never_assigned_on_a_shortest_path()
+    {
+        var layout = new TreeLevelLayout
+        {
+            RewardRoomProbability = 1f,
+            CurseRoomProbability = 0f
+        };
+        var observedPremium = RoomFeatures.Normal;
+        for (uint seed = 1; seed <= 500; seed++)
+        {
+            var graph = layout.BuildGraph(
+                layout.GetParameters(LevelGenerator.MaxDifficulty),
+                new SimpleRandom { Seed = seed },
+                new LevelGenerationStats(),
+                new GenerationStats());
+            if (graph == null)
+            {
+                continue;
+            }
+
+            var entrance = graph.Rooms.Single(
+                room => (room.Features & RoomFeatures.Entrance) != 0);
+            var exit = graph.Rooms.Single(
+                room => (room.Features & RoomFeatures.Exit) != 0);
+            foreach (var room in GetNodesOnAnyShortestDirectedPath(
+                         graph, entrance, exit))
+            {
+                Assert.Equal(
+                    RoomFeatures.Normal,
+                    room.Features & LevelLayout.PremiumRewardFeatures);
+            }
+
+            observedPremium |= graph.Rooms.Aggregate(
+                RoomFeatures.Normal,
+                (features, room) => features | room.Features & LevelLayout.PremiumRewardFeatures);
+        }
+
+        Assert.NotEqual(RoomFeatures.Normal, observedPremium);
+    }
+
+    private static IEnumerable<RoomGraphNode> GetNodesOnAnyShortestDirectedPath(
+        RoomGraph graph,
+        RoomGraphNode entrance,
+        RoomGraphNode exit)
+    {
+        var outgoing = graph.Rooms.ToDictionary(
+            room => room, _ => new List<RoomGraphNode>());
+        var incoming = graph.Rooms.ToDictionary(
+            room => room, _ => new List<RoomGraphNode>());
+        foreach (var connection in graph.Connections)
+        {
+            outgoing[connection.Source].Add(connection.Target);
+            incoming[connection.Target].Add(connection.Source);
+        }
+
+        var fromEntrance = GetDistances(entrance, outgoing);
+        var toExit = GetDistances(exit, incoming);
+        var shortestDistance = fromEntrance[exit];
+        return graph.Rooms.Where(
+            room => fromEntrance.TryGetValue(room, out var from)
+                    && toExit.TryGetValue(room, out var to)
+                    && from + to == shortestDistance);
+    }
+
+    private static Dictionary<RoomGraphNode, int> GetDistances(
+        RoomGraphNode source,
+        IReadOnlyDictionary<RoomGraphNode, List<RoomGraphNode>> adjacency)
+    {
+        var distances = new Dictionary<RoomGraphNode, int> { [source] = 0 };
+        var queue = new Queue<RoomGraphNode>();
+        queue.Enqueue(source);
+        while (queue.TryDequeue(out var room))
+        {
+            foreach (var neighbor in adjacency[room])
+            {
+                if (distances.TryAdd(neighbor, distances[room] + 1))
+                {
+                    queue.Enqueue(neighbor);
+                }
+            }
+        }
+
+        return distances;
     }
 
     [Theory]
@@ -379,4 +468,3 @@ public class TreeLevelLayoutTest
         Assert.Equal((byte)32, layout.MaxRooms);
     }
 }
-

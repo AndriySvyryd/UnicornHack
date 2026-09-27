@@ -8,5 +8,6 @@ public enum ExtremityType
     Claws,
     Hooves,
     Tentacles,
-    Fins
+    Fins,
+    Pads
 }

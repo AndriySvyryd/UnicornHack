@@ -5,7 +5,7 @@ namespace UnicornHack.Utils.MessagingECS;
 /// <summary>
 ///     A one-to-many relationship: each principal can have a collection of dependent entities.
 /// </summary>
-public class CollectionEntityRelationship<TEntity, TCollection> : EntityRelationshipBase<TEntity>
+public class CollectionEntityRelationship<TEntity, TCollection> : EntityRelationshipBase<TEntity>, IRelationship<TEntity>
     where TEntity : Entity, new()
     where TCollection : class, ICollection<TEntity>, new()
 {

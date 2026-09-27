@@ -2,6 +2,19 @@ namespace UnicornHack.Utils.DataStructures;
 
 public class VectorTest
 {
+    [Theory]
+    [InlineData(-128, -128)]
+    [InlineData(-1, 0)]
+    [InlineData(0, 0)]
+    [InlineData(1, -1)]
+    [InlineData(127, 127)]
+    public void Packed_vectors_round_trip(int x, int y)
+    {
+        var vector = new Vector(x, y);
+
+        Assert.Equal(vector, Vector.Unpack(vector.ToInt32()));
+    }
+
     [Fact]
     public void GetInverse()
     {

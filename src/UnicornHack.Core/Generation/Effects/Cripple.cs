@@ -9,7 +9,7 @@ public class Cripple : ResistedEffect
             EffectType.Cripple, AbilityData.Crippled.Name,
             statusCategory: StatusCategory.Physical,
             resistanceProperty: nameof(Systems.Beings.BeingComponent.CrippleResistance),
-            statusAbilityDuration: "100*MightModifier()", defaultAmount: "600*MightModifier()");
+            statusAbilityDuration: "200*MightModifier()", defaultAmount: "100*MightModifier()");
 
     [System.Runtime.CompilerServices.ModuleInitializer]
     internal static void RegisterMetadataProvider() => _ = _metadata;

@@ -83,7 +83,7 @@ public sealed class ActionTools
     public Task<string> use_ability_slot(
         int slot, int? target_id = null, CancellationToken cancellationToken = default)
     {
-        int? targetCell = null;
+        int? target = null;
         if (target_id is { } actorId)
         {
             lock (_store.Sync)
@@ -93,11 +93,11 @@ public sealed class ActionTools
                     return Task.FromResult($"error: actor {actorId} is not known in the current room");
                 }
 
-                targetCell = PackPoint(actor.LevelX, actor.LevelY);
+                target = -actorId;
             }
         }
 
-        return Invoke(ActorActionType.UseAbilitySlot, slot, targetCell, cancellationToken);
+        return Invoke(ActorActionType.UseAbilitySlot, slot, target, cancellationToken);
     }
 
     [McpServerTool, Description("Travel to a known target room by id (see get_connections / LevelMap.AvailableTargets).")]

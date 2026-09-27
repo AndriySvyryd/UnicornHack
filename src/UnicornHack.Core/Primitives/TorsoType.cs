@@ -6,5 +6,8 @@ public enum TorsoType
     Humanoid,
     Quadruped,
     Serpentine,
-    Amorphic
+    Amorphic,
+    Avian,
+    Insectoid,
+    Arachnid
 }

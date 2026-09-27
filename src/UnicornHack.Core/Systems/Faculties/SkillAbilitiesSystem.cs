@@ -172,7 +172,7 @@ public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
         string? abilityName, GameEntity owner, GameManager manager)
     {
         if (abilityName == null
-            || Ability.FindTemplate(manager, abilityName) is not { } template)
+            || Ability.FindTemplate(manager, abilityName, item: false) is not { } template)
         {
             return;
         }
@@ -355,12 +355,11 @@ public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
             }
         }
 
-        var setSlotMessage = SetAbilitySlotMessage.Create(manager);
+        var setSlotMessage = SetAbilitySlotMessage.Create(actorEntity, manager);
         setSlotMessage.Slot = melee
             ? AbilitySlottingSystem.DefaultMeleeAttackSlot
             : AbilitySlottingSystem.DefaultRangedAttackSlot;
         setSlotMessage.AbilityEntity = defaultAttackAbility?.Entity;
-        setSlotMessage.OwnerEntity = actorEntity;
         manager.Enqueue(setSlotMessage);
 
         return canUseWeapons;

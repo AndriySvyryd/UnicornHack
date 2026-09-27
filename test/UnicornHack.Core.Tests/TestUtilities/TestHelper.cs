@@ -22,11 +22,12 @@ public static class TestHelper
 
     public static void AdvanceToNextPlayerTurn(GameManager manager)
     {
-        while (manager.Game.ActingPlayer == null
-               && manager.Players.Any(p => p.Being!.IsAlive))
+        while (manager.Players.Any(p => p.Being!.IsAlive))
         {
-            AdvanceTurnMessage.Enqueue(manager);
-            manager.Queue.ProcessQueue(manager);
+            if (manager.TimeSystem.AdvanceSingleTurn(manager) != TurnResult.Continue)
+            {
+                return;
+            }
         }
     }
 
@@ -268,10 +269,23 @@ public static class TestHelper
     public static GameEntity ActivateAbility(
         string abilityName, GameEntity activatorEntity, GameManager manager, int? slot = null)
     {
-        var ability = manager.AffectableAbilitiesIndex[(activatorEntity.Id, abilityName)]!;
+        var ability = manager.AffectableAbilitiesIndex[(activatorEntity.Id, abilityName)]
+                      ?? activatorEntity.Being!.Items
+                          .SelectMany(item => item.ActiveEffects!.Abilities)
+                          .SingleOrDefault(entity =>
+                              string.Equals(entity.Ability!.Name, abilityName, StringComparison.OrdinalIgnoreCase));
         Assert.NotNull(ability);
 
         return ActivateAbility(ability, activatorEntity, manager, slot);
+    }
+
+    public static GameEntity ActivateItemAbility(
+        GameEntity itemEntity, string abilityName,
+        GameEntity activatorEntity, GameManager manager, int? slot = null)
+    {
+        var abilityEntity = itemEntity.ActiveEffects!.Abilities.Single(
+            ability => ability.Ability!.Name == abilityName);
+        return ActivateAbility(abilityEntity, activatorEntity, manager, slot);
     }
 
     public static GameEntity ActivateAbility(
@@ -279,7 +293,7 @@ public static class TestHelper
     {
         slot ??= abilityEntity.Ability!.Slot;
 
-        var setSlotMessage = SetAbilitySlotMessage.Create(manager);
+        var setSlotMessage = SetAbilitySlotMessage.Create(activatorEntity, manager);
         setSlotMessage.AbilityEntity = abilityEntity;
         setSlotMessage.Slot = slot ?? 2;
         manager.Enqueue(setSlotMessage);

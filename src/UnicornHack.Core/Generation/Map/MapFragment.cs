@@ -65,8 +65,11 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             ['"'] = RoomFeatures.TraitPedestal,
             ['='] = RoomFeatures.FeatPedestal,
             ['['] = RoomFeatures.ArmorStand,
+            [']'] = RoomFeatures.GildedArmorStand,
             ['('] = RoomFeatures.ItemCase,
+            [':'] = RoomFeatures.GildedItemCase,
             [')'] = RoomFeatures.WeaponStand,
+            [';'] = RoomFeatures.GildedWeaponStand,
             [TrapGlyph] = RoomFeatures.Trapped,
             [FeatureWildcardGlyph] = null
         }.ToFrozenDictionary();
@@ -93,8 +96,11 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             [RoomFeatures.TraitPedestal] = MapFeature.TraitPedestal,
             [RoomFeatures.FeatPedestal] = MapFeature.FeatPedestal,
             [RoomFeatures.ArmorStand] = MapFeature.ArmorStand,
+            [RoomFeatures.GildedArmorStand] = MapFeature.GildedArmorStand,
             [RoomFeatures.ItemCase] = MapFeature.ItemCase,
-            [RoomFeatures.WeaponStand] = MapFeature.WeaponStand
+            [RoomFeatures.GildedItemCase] = MapFeature.GildedItemCase,
+            [RoomFeatures.WeaponStand] = MapFeature.WeaponStand,
+            [RoomFeatures.GildedWeaponStand] = MapFeature.GildedWeaponStand
         }.ToFrozenDictionary();
 
     /// <summary>
@@ -151,9 +157,12 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             [RoomFeatures.FeatPedestal] = "feat-pedestal",
             [RoomFeatures.RacePedestal] = "race-pedestal",
             [RoomFeatures.DeityAltar] = "deity-altar",
-            [RoomFeatures.WeaponStand] = "weapon-stand",
             [RoomFeatures.ArmorStand] = "armor-stand",
+            [RoomFeatures.GildedArmorStand] = "gilded-armor-stand",
             [RoomFeatures.ItemCase] = "item-case",
+            [RoomFeatures.GildedItemCase] = "gilded-item-case",
+            [RoomFeatures.WeaponStand] = "weapon-stand",
+            [RoomFeatures.GildedWeaponStand] = "gilded-weapon-stand",
             [RoomFeatures.SmallFountain] = "small-fountain",
             [RoomFeatures.BigFountain] = "big-fountain",
             [RoomFeatures.MinorShrine] = "minor-shrine",
@@ -1145,7 +1154,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
                     '\\' or '/' or '&' => "shrine",
                     '{' or '}' => "fountain",
                     '?' or '!' or '"' or '=' => "pedestal",
-                    '[' or '(' or ')' => "stand",
+                    '[' or ']' or '(' or ':' or ')' or ';' => "stand",
                     '<' => "entrance",
                     '>' when !positives.Contains("shortcut") => "exit",
                     '^' => "trap",
@@ -3042,8 +3051,11 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
                 or MapFeature.InactiveTraitPedestal
                 or MapFeature.InactiveFeatPedestal
                 or MapFeature.InactiveArmorStand
+                or MapFeature.InactiveGildedArmorStand
                 or MapFeature.InactiveItemCase
+                or MapFeature.InactiveGildedItemCase
                 or MapFeature.InactiveWeaponStand
+                or MapFeature.InactiveGildedWeaponStand
                 or MapFeature.Unexplored))
             {
                 result.Add(feature);

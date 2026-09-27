@@ -20,8 +20,10 @@ public enum EffectType
     SonicDamage,
     Wither,
 
-    // Status
-    Bind,
+    // Buffs
+
+    // Debuffs
+    Bind = 40,
     Blind,
     Cancel,
     Chill,
@@ -50,9 +52,10 @@ public enum EffectType
     Taunt,
     Topple,
     Wet,
+    Weaken,
 
     // Structural
-    AddAbility,
+    AddAbility = 80,
     DecreaseAbilityLevel,
     ConferLycanthropy,
     DisableItem,
@@ -61,7 +64,7 @@ public enum EffectType
     RemoveItem,
 
     // Other
-    Activate,
+    Activate = 90,
     ChangeProperty,
     GainXP,
     Heal,

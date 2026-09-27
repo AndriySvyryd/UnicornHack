@@ -867,7 +867,7 @@ public class EffectTest
             effectReference.Referenced.Effect = effect;
         }
 
-        var setSlotMessage = SetAbilitySlotMessage.Create(manager);
+        var setSlotMessage = SetAbilitySlotMessage.Create(player, manager);
         setSlotMessage.AbilityEntity = toggledAbility;
         setSlotMessage.Slot = 2;
         manager.Enqueue(setSlotMessage);

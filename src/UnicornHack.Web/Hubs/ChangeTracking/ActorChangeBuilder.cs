@@ -3,6 +3,7 @@ using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
+using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Hubs.ChangeTracking;
@@ -403,9 +404,7 @@ public class ActorChangeBuilder
             refreshAll || (dirtyMask & LevelYDirty) != 0 ? levelY : prior.LevelY,
             refreshAll || (dirtyMask & HeadingDirty) != 0 ? (byte)heading : prior.Heading,
             refreshAll || (dirtyMask & BaseNameDirty) != 0
-                ? !identified ? null : ai != null
-                    ? services.Language.GetTemplateName(being.Races.First().Ability!, abbreviate: false)
-                    : "player"
+                ? !identified ? null : GetBaseName(knownEntity, services)
                 : prior.BaseName,
             refreshAll || (dirtyMask & NameDirty) != 0
                 ? !identified ? null : services.Language.GetActorName(knownEntity, identified)
@@ -534,10 +533,7 @@ public class ActorChangeBuilder
             LevelX = position.CellX!.Value,
             LevelY = position.CellY!.Value,
             Heading = (byte)position.Heading!,
-            BaseName = ai != null
-                ? context.Services.Language.GetTemplateName(
-                    being.Races.First().Ability!, abbreviate: false)
-                : "player",
+            BaseName = GetBaseName(knownEntity, context.Services),
             Name = context.Services.Language.GetActorName(knownEntity, actorKnowledge.IsIdentified),
             IsCurrentlyPerceived = currentlyPerceived,
             Hp = being.HitPoints,
@@ -558,6 +554,11 @@ public class ActorChangeBuilder
             : null;
         return change;
     }
+
+    private static string? GetBaseName(GameEntity actor, GameServices services)
+        => actor.AI == null
+            ? "player"
+            : services.Language.GetTemplateName(actor.Being!.Races.First().Ability!, abbreviate: false);
 
     private static ActorActionChange? SerializeNextAction(
         AIComponent ai, GameManager manager, GameServices services)
@@ -583,11 +584,14 @@ public class ActorChangeBuilder
                 }
 
                 var ability = abilityEntity.Ability!;
+                var actionTarget = (ai.Entity.Position!.Cell!.Value.Translate(Vector.Unpack(ai.NextActionTarget2))
+                            ?? ai.Entity.Position.Cell.Value).ToInt32();
+
                 return new ActorActionChange
                 {
                     Type = ai.NextAction.Value,
                     Name = services.Language.GetString(ability),
-                    Target = ai.NextActionTarget2 ?? 0,
+                    Target = actionTarget,
                     TargetingShape = ability.TargetingShape,
                     TargetingShapeSize = ability.TargetingShapeSize
                 };

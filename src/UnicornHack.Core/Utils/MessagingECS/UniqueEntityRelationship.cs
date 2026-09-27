@@ -5,7 +5,7 @@ namespace UnicornHack.Utils.MessagingECS;
 /// <summary>
 ///     A one-to-one relationship: each principal has at most one dependent entity.
 /// </summary>
-public class UniqueEntityRelationship<TEntity> : EntityRelationshipBase<TEntity>
+public class UniqueEntityRelationship<TEntity> : EntityRelationshipBase<TEntity>, IRelationship<TEntity>
     where TEntity : Entity, new()
 {
     private DependentsGroup? _dependents;

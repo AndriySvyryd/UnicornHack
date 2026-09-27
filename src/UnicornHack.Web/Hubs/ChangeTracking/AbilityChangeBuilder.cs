@@ -66,14 +66,14 @@ public class AbilityChangeBuilder
     {
         manager.Abilities.AddListener(this);
         manager.AffectableEntities.AddListener(this);
-        manager.AbilitiesToAffectableRelationship.AddDependentsListener(this);
+        manager.AvailableAbilitiesToRoomActorsRelationship.AddDependentsListener(this);
     }
 
     public void UnregisterFromGroups(GameManager manager)
     {
         manager.Abilities.RemoveListener(this);
         manager.AffectableEntities.RemoveListener(this);
-        manager.AbilitiesToAffectableRelationship.RemoveDependentsListener(this);
+        manager.AvailableAbilitiesToRoomActorsRelationship.RemoveDependentsListener(this);
     }
 
     private bool IsRelevantPrincipal(GameEntity principal)
@@ -83,9 +83,13 @@ public class AbilityChangeBuilder
     // drive the HUD; races are included so generic ability transport can replace the dedicated race DTO.
     private bool IsRelevant(GameEntity entity)
         => entity.Ability is { } ability
-            && ability.OwnerId == _playerEntityId
+            && IsAvailableToPlayer(entity)
             && !ability.IsLeveledSupplement
             && IsClientVisible(ability);
+
+    private bool IsAvailableToPlayer(GameEntity entity)
+        => entity.Manager.AvailableAbilitiesToRoomActorsRelationship.GetPrincipal(entity)?.Id
+           == _playerEntityId;
 
     private bool IsRelevantOnRemove(in EntityChange<GameEntity> entityChange)
         => entityChange.RemovedComponent is AbilityComponent ability
@@ -109,7 +113,7 @@ public class AbilityChangeBuilder
             return;
         }
 
-        if (entity.Ability?.OwnerId != _playerEntityId)
+        if (!IsAvailableToPlayer(entity))
         {
             return;
         }
@@ -479,7 +483,7 @@ public class AbilityChangeBuilder
     {
         _projection.Clear();
         _prepared.Clear();
-        foreach (var abilityEntity in ownerEntity.Being!.Abilities)
+        foreach (var abilityEntity in ownerEntity.ActiveEffects!.AvailableAbilities)
         {
             if (TryGetProjection(
                     abilityEntity,
@@ -568,7 +572,7 @@ public class AbilityChangeBuilder
         }
 
         if (entity.Ability is not { } ability
-            || ability.OwnerId != _playerEntityId
+            || !IsAvailableToPlayer(entity)
             || ability.IsLeveledSupplement
             || !IsClientVisible(ability))
         {

@@ -49,6 +49,12 @@ public partial class EffectApplicationSystem
             var changedAmount = ApplyResourceChange(
                 metadata, combinationFunction, target, resourceAmount,
                 restoresActivator ? activatorEntity : null, manager);
+            if (changedAmount != 0
+                && result != null)
+            {
+                result.AnyEffectApplied = true;
+            }
+
             if (changedAmount > 0
                 && result == null)
             {
@@ -58,6 +64,11 @@ public partial class EffectApplicationSystem
         }
         else
         {
+            if (result != null)
+            {
+                result.AnyEffectApplied = true;
+            }
+
             if (result is AttackResultMessage attackResult)
             {
                 attackResult.LingeringEffects.TryGetValue(effect.EffectType, out var existing);

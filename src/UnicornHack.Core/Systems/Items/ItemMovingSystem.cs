@@ -32,16 +32,61 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
             moved = TryMove(message, manager);
         }
 
-        if (!moved.Successful
-            && !message.SuppressLog
-            && message.TargetContainerEntity is { Player: not null } playerEntity)
+        if (!moved.Successful)
         {
-            manager.LoggingSystem.WriteLog(
-                manager.Game.Services.Language.InventoryFull(), playerEntity, manager);
+            HandleFailedMove(message, moved, manager);
         }
 
-        manager.Enqueue(moved);
+        manager.Enqueue(
+            moved,
+            lowPriority: moved.Successful
+                         && moved.InitialContainer == null
+                         && moved.InitialRoomCell != null
+                         && message.TargetContainerEntity?.Being != null);
         return MessageProcessingResult.ContinueProcessing;
+    }
+
+    private static void HandleFailedMove(
+        MoveItemMessage message, ItemMovedMessage moved, GameManager manager)
+    {
+        if (message.Force)
+        {
+            return;
+        }
+
+        var actorEntity = moved.InitialContainer is { } initialContainer
+            ? manager.ItemMovingSystem.GetTopContainer(initialContainer, manager)
+            : message.TargetContainerEntity is { } targetContainer
+                ? manager.ItemMovingSystem.GetTopContainer(targetContainer, manager)
+                : null;
+        if (actorEntity == null)
+        {
+            return;
+        }
+
+        var pickup = moved.InitialContainer == null;
+        if (!pickup)
+        {
+            DelayMessage.Enqueue(actorEntity, TimeSystem.DefaultActionDelay, manager);
+        }
+
+        if (message.SuppressLog)
+        {
+            return;
+        }
+
+        if (pickup
+            && actorEntity.Player != null)
+        {
+            manager.LoggingSystem.WriteLog(
+                manager.Game.Services.Language.InventoryFull(), actorEntity, manager);
+            return;
+        }
+
+        manager.LoggingSystem.WriteFailedAction(
+            actorEntity,
+            pickup ? ActorActionType.PickupItem : ActorActionType.DropItem,
+            manager);
     }
 
     public MessageProcessingResult Process(TraveledMessage message, GameManager manager)
@@ -226,7 +271,8 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
             }
 
             if (initialTopContainer != null
-                && !pretend)
+                && !pretend
+                && !message.Force)
             {
                 // TODO: Calculate delay
                 DelayMessage.Enqueue(initialTopContainer, TimeSystem.DefaultActionDelay / 2, manager);
@@ -263,9 +309,9 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
 
             if (leftover != null)
             {
-                if (targetContainer!.Capacity <= targetContainer.Items.Count
-                    || (targetContainer.Entity.Being != null
-                        && manager.AbilitySlottingSystem.GetFirstFreeSlot(targetContainer.Entity) == null))
+                if (targetContainer!.Entity.Being == null
+                    ? targetContainer.Capacity <= targetContainer.Items.Count
+                    : manager.AbilitySlottingSystem.GetFirstFreeSlot(targetContainer.Entity) == null)
                 {
                     return itemMovedMessage;
                 }
@@ -373,6 +419,7 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
         if (!pretend)
         {
             MoveIntoContainer(item, existingItem.Entity);
+            itemMovedMessage.ItemEntity = existingItem.Entity;
         }
 
         return null;

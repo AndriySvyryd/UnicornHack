@@ -368,6 +368,8 @@ public class BeveledVisibilityCalculator
                 secondDistance = secondVector.Length();
             }
 
+            var previousM = m;
+            var previousN = n;
             if (firstIndex != -1)
             {
                 if ((!((onDiagonal && firstVector.IsIntercardinalAligned()) ||
@@ -386,6 +388,22 @@ public class BeveledVisibilityCalculator
                        (!onDiagonal && secondVector.IsCardinalAligned()))
                      && secondDistance <= firstDistance)
                     || firstIndex == -1)
+                {
+                    visibleTerrainCells.Add((secondPoint, secondVisibility));
+                    n++;
+                }
+            }
+
+            if (m == previousM
+                && n == previousN)
+            {
+                if (secondIndex == -1
+                    || firstIndex != -1 && firstDistance <= secondDistance)
+                {
+                    visibleTerrainCells.Add((firstPoint, firstVisibility));
+                    m++;
+                }
+                else
                 {
                     visibleTerrainCells.Add((secondPoint, secondVisibility));
                     n++;

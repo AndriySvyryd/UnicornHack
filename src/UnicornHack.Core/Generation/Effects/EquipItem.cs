@@ -18,28 +18,13 @@ public class EquipItem : Effect
     private static void Apply(in EffectApplicationContext context)
     {
         var itemEntity = context.Manager.FindEntity(context.Effect.Component.TargetEntityId!.Value)!;
-        var equipped = false;
         foreach (var slot in context.Manager.ItemUsageSystem.GetEquipableSlots(
                      itemEntity.Item!, context.TargetEntity!))
         {
             if (!context.Manager.ItemUsageSystem.TryEquip(
                     itemEntity, slot, context.TargetEntity!, force: false))
             {
-                equipped = true;
                 break;
-            }
-        }
-
-        if (!equipped)
-        {
-            foreach (var slot in context.Manager.ItemUsageSystem.GetEquipableSlots(
-                         itemEntity.Item!, context.TargetEntity!))
-            {
-                if (!context.Manager.ItemUsageSystem.TryEquip(
-                        itemEntity, slot, context.TargetEntity!, force: true))
-                {
-                    break;
-                }
             }
         }
     }

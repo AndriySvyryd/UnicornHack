@@ -40,8 +40,6 @@ public static class GameStateManager
         var builders = collectChanges ? roomChangeBuilder.PlayerBuilders : null;
         var changeSetsAccumulator = new Dictionary<int, List<TurnChangeSet>>();
 
-        currentPlayer.Game.ActingPlayer = null;
-
         if (collectChanges)
         {
             foreach (var builder in builders!)

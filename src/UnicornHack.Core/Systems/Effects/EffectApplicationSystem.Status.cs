@@ -29,6 +29,11 @@ public partial class EffectApplicationSystem
         {
             var amount = GetEffectiveStatusAmount(context, combinationFunction);
             var secondaryAmount = context.SecondaryAmount;
+            if ((!isBuildUp || amount != 0)
+                && context.Result != null)
+            {
+                context.Result.AnyEffectApplied = true;
+            }
 
             EffectExpiration expiration = default;
             if (application.Duration != EffectDuration.Instant)

@@ -299,6 +299,7 @@ public class EnglishLanguageService : ILanguageService
             "drained" => "Health and energy regeneration stop; severe draining also slows ability recovery.",
             "staggered" => "Encumbered and lurching a step in a random direction after each action.",
             "unstable" => "Off-balance in melee; level 2 doubles the attack and evasion penalties.",
+            "weakened" => "Might is reduced.",
             "frightened" => "Attacks against the source are impaired; level 2 prevents approaching it.",
             "taunted" => "You cannot move away; level 2 redirects attacks to the source and level 3 requires approaching.",
             "greased" => "Quietness rises and physical immobilization is suppressed further at each level.",
@@ -395,6 +396,7 @@ public class EnglishLanguageService : ILanguageService
             EffectType.Daze => $"Leaves the target {AbilityRef(AbilityData.Dazed.Name)}.",
             EffectType.Chill => $"Leaves the target {AbilityRef(AbilityData.Chilled.Name)}.",
             EffectType.Wet => $"Leaves the target {AbilityRef(AbilityData.Wetted.Name)}.",
+            EffectType.Weaken => $"Leaves the target {AbilityRef(AbilityData.Weakened.Name)}.",
             EffectType.Expose => $"Leaves the target {AbilityRef(AbilityData.Exposed.Name)}.",
             EffectType.Topple => $"Builds {AbilityRef(AbilityData.Unstable.Name)} on the target.",
             EffectType.Fascinate => $"Leaves the target {AbilityRef(AbilityData.Fascinated.Name)}.",
@@ -716,6 +718,12 @@ public class EnglishLanguageService : ILanguageService
             name = "attack";
         }
 
+        if (ability.OwnerEntity?.Item is { } item
+            && (ability.Activation & ActivationType.Slottable) != 0)
+        {
+            name = item.TemplateName + ": " + name;
+        }
+
         return Capitalize(new StringBuilder(name)).ToString();
     }
 
@@ -938,6 +946,40 @@ public class EnglishLanguageService : ILanguageService
 
     #region Events
 
+    public virtual string? GetString(in ActorActionFailedEvent @event)
+    {
+        if (@event.ActorSensed == SenseType.None)
+        {
+            return null;
+        }
+
+        var actorPerson = @event.SensorEntity == @event.ActorEntity
+            ? EnglishPerson.Second
+            : EnglishPerson.Third;
+        var verbForm = actorPerson == EnglishPerson.Third
+            ? EnglishVerbForm.ThirdPersonSingularPresent
+            : EnglishVerbForm.BareInfinitive;
+        var action = @event.Action switch
+        {
+            ActorActionType.ChangeHeading => "to turn " + GetString(@event.Direction!.Value, abbreviate: false),
+            ActorActionType.MoveOneCell => "to move " + GetString(@event.Direction!.Value, abbreviate: false),
+            ActorActionType.PickupItem => "to pick up an item",
+            ActorActionType.DropItem => "to drop an item",
+            ActorActionType.EquipItem => "to equip an item",
+            ActorActionType.UnequipItem => "to unequip an item",
+            ActorActionType.UseAbilitySlot when @event.Ability != null => "to use " + GetString(@event.Ability),
+            ActorActionType.UseAbilitySlot => "to use an ability",
+            _ => "to perform an action"
+        };
+
+        return ToSentence(
+            GetString(@event.ActorEntity, actorPerson, @event.ActorSensed),
+            EnglishMorphologicalProcessor.ProcessVerb("try", verbForm),
+            action,
+            ", but",
+            EnglishMorphologicalProcessor.ProcessVerb("fail", verbForm));
+    }
+
     public virtual string? GetString(in AttackEvent @event)
     {
         if (@event.SensorEntity != @event.VictimEntity
@@ -1011,11 +1053,13 @@ public class EnglishLanguageService : ILanguageService
                     return attackSentence;
                 }
 
-                return attackSentence + " " + FormatDamage(
+                var effectResult = FormatDamage(
                     @event.ResourceChanges,
                     victimPerson == EnglishPerson.Second,
                     EnglishMorphologicalProcessor.GetPronoun(
-                        EnglishPronounForm.Normal, EnglishNumber.Singular, victimPerson, victimGender));
+                        EnglishPronounForm.Normal, EnglishNumber.Singular, victimPerson, victimGender),
+                    @event.AnyEffectApplied);
+                return effectResult == null ? attackSentence : attackSentence + " " + effectResult;
             }
 
             return ToSentence(attacker,
@@ -1050,11 +1094,13 @@ public class EnglishLanguageService : ILanguageService
                 return attackSentence;
             }
 
-            return attackSentence + " " + FormatDamage(
+            var effectResult = FormatDamage(
                 @event.ResourceChanges,
                 victimPerson == EnglishPerson.Second,
                 EnglishMorphologicalProcessor.GetPronoun(
-                    EnglishPronounForm.Normal, EnglishNumber.Singular, victimPerson, victimGender));
+                    EnglishPronounForm.Normal, EnglishNumber.Singular, victimPerson, victimGender),
+                @event.AnyEffectApplied);
+            return effectResult == null ? attackSentence : attackSentence + " " + effectResult;
         }
 
         return victim == null
@@ -1066,14 +1112,17 @@ public class EnglishLanguageService : ILanguageService
                 victim);
     }
 
-    protected virtual string FormatDamage(
-        IReadOnlyDictionary<EffectType, int> resourceChanges, bool reflexive, string victimPronoun)
+    protected virtual string? FormatDamage(
+        IReadOnlyDictionary<EffectType, int> resourceChanges, bool reflexive, string victimPronoun,
+        bool anyEffectApplied)
     {
         var damageTag = TaggingService.GetDamageTag(resourceChanges, out var damageTaken);
 
         return damageTaken
             ? string.Format(Culture, reflexive ? "[{0} pts.]" : "({0} pts.)", damageTag)
-            : ToSentence(victimPronoun, reflexive ? "are" : "is", "unaffected.");
+            : anyEffectApplied
+                ? null
+                : ToSentence(victimPronoun, reflexive ? "are" : "is", "unaffected.");
     }
 
     public virtual string GetString(in DeathEvent @event)
@@ -1092,17 +1141,14 @@ public class EnglishLanguageService : ILanguageService
         var targetPerson = @event.SensorEntity == @event.TargetEntity
             ? EnglishPerson.Second
             : EnglishPerson.Third;
-        var sentence = ToSentence(
+        var status = AbilityRef(
+            $"{@event.StatusName}#{@event.AbilityLevel}",
+            @event.StatusName);
+        return ToSentence(
             GetString(@event.TargetEntity, targetPerson, @event.TargetSensed),
             targetPerson == EnglishPerson.Second ? "are" : "is",
-            @event.StatusName,
+            status,
             targetPerson == EnglishPerson.Second ? "!" : ".");
-
-        // Only the afflicted player is told the mechanical detail of how the status affects them; an
-        // onlooker just learns that the condition has taken hold.
-        return targetPerson == EnglishPerson.Second
-            ? ToSentence(sentence, GetAbilityDescription(@event.StatusName))
-            : sentence;
     }
 
     public virtual string GetString(in LingeringAttackEvent @event)
@@ -1277,9 +1323,6 @@ public class EnglishLanguageService : ILanguageService
     public string NoAbilityInSlot(int slot)
         => $"No ability in slot {slot}.";
 
-    public string AbilityCannotBeActivated(AbilityComponent ability)
-        => $"Can't use {GetString(ability)}.";
-
     public string AbilityNotSlotted(AbilityComponent ability)
         => $"{GetString(ability)} isn't assigned to a slot.";
 
@@ -1358,6 +1401,9 @@ public class EnglishLanguageService : ILanguageService
     public string NothingToPickUp()
         => "There's nothing to pick up here.";
 
+    public string CannotMove(Direction direction)
+        => $"Can't move {GetString(direction, abbreviate: false)}.";
+
     public string NoPath() => "No path to target!";
 
     public string TooAfraidToApproach(GameEntity source)
@@ -1375,9 +1421,6 @@ public class EnglishLanguageService : ILanguageService
             "Welcome to the {0}, {1}!",
             playerEntity.Position!.RoomEntity.Room!.Level.Branch.Name,
             GetString(playerEntity, EnglishPerson.Third, SenseType.Sight));
-
-    public virtual string UnableToMove(Direction direction)
-        => string.Format(Culture, "Can't move {0}.", GetString(direction, abbreviate: false));
 
     public virtual string SoundFrom(Direction direction)
         => string.Format(Culture, "You hear a sound from the {0}.", GetString(direction, abbreviate: false));
@@ -1483,18 +1526,21 @@ public class EnglishLanguageService : ILanguageService
         AppendIf(features, RoomFeatures.Cursed, "Cursed", parts);
         AppendIf(features, RoomFeatures.Challenge, "Challenge", parts);
         AppendIf(features, RoomFeatures.DeityAltar, "Deity altar", parts);
-        AppendIf(features, RoomFeatures.SkillPedestal, "Skill pedestal", parts);
-        AppendIf(features, RoomFeatures.TraitPedestal, "Trait pedestal", parts);
-        AppendIf(features, RoomFeatures.FeatPedestal, "Feat pedestal", parts);
-        AppendIf(features, RoomFeatures.RacePedestal, "Race pedestal", parts);
-        AppendIf(features, RoomFeatures.WeaponStand, "Weapon stand", parts);
-        AppendIf(features, RoomFeatures.ArmorStand, "Armor stand", parts);
-        AppendIf(features, RoomFeatures.ItemCase, "Item case", parts);
+        AppendIf(features, RoomFeatures.MajorShrine, "Major shrine", parts);
+        AppendIf(features, RoomFeatures.MinorShrine, "Minor shrine", parts);
+        AppendIf(features, RoomFeatures.RitualShrine, "Ritual shrine", parts);
         AppendIf(features, RoomFeatures.SmallFountain, "Fountain", parts);
         AppendIf(features, RoomFeatures.BigFountain, "Big fountain", parts);
-        AppendIf(features, RoomFeatures.MinorShrine, "Minor shrine", parts);
-        AppendIf(features, RoomFeatures.MajorShrine, "Major shrine", parts);
-        AppendIf(features, RoomFeatures.RitualShrine, "Ritual shrine", parts);
+        AppendIf(features, RoomFeatures.SkillPedestal, "Skill pedestal", parts);
+        AppendIf(features, RoomFeatures.RacePedestal, "Race pedestal", parts);
+        AppendIf(features, RoomFeatures.TraitPedestal, "Trait pedestal", parts);
+        AppendIf(features, RoomFeatures.FeatPedestal, "Feat pedestal", parts);
+        AppendIf(features, RoomFeatures.ArmorStand, "Armor stand", parts);
+        AppendIf(features, RoomFeatures.GildedArmorStand, "Gilded armor stand", parts);
+        AppendIf(features, RoomFeatures.ItemCase, "Item case", parts);
+        AppendIf(features, RoomFeatures.GildedItemCase, "Gilded item case", parts);
+        AppendIf(features, RoomFeatures.WeaponStand, "Weapon stand", parts);
+        AppendIf(features, RoomFeatures.GildedWeaponStand, "Gilded weapon stand", parts);
         AppendIf(features, RoomFeatures.Shortcut, "Shortcut", parts);
         AppendIf(features, RoomFeatures.Secret, "Secret", parts);
         return string.Join(", ", parts);

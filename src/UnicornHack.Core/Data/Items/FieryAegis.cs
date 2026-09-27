@@ -17,7 +17,6 @@ public static partial class ItemData
             {
                 Name = "Activate",
                 Activation = ActivationType.WhileToggled,
-                ItemCondition = ActivationType.WhileEquipped,
                 Cooldown = 200,
                 Delay = "50",
                 EnergyPointCost = 20,

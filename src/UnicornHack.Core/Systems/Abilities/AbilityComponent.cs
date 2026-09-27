@@ -53,7 +53,8 @@ public class AbilityComponent : GameComponent
                 return _template;
             }
 
-            _template = Ability.FindTemplate(Entity.Manager, _name);
+            _template = Ability.FindTemplate(
+                Entity.Manager, _name, item: OwnerEntity?.Item != null);
             _templateLoaded = true;
             return _template;
         }

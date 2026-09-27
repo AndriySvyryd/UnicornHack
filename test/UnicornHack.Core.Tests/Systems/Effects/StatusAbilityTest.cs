@@ -1166,15 +1166,56 @@ public class StatusAbilityTest
     }
 
     [Fact]
-    public void Giant_spider_has_a_crippling_web()
+    public void Giant_spider_has_a_paralyzing_web()
     {
         var level = TestHelper.BuildRoom("..");
         var manager = level.Entity.Manager;
 
         var target = ApplyCreatureAbilityStatus(
-            CreatureData.GiantSpider, EffectType.Cripple, manager, level);
+            CreatureData.GiantSpider, EffectType.Paralyze, manager, level);
 
-        Assert.True(target.Being!.HasEffectOrAccumulator(EffectType.Cripple));
+        Assert.True(target.Being!.HasEffectOrAccumulator(EffectType.Paralyze));
+    }
+
+    [Fact]
+    public void Giant_spider_weakening_bite_applies_weaken()
+    {
+        var level = TestHelper.BuildRoom("..");
+        var manager = level.Entity.Manager;
+        var weakeningBite = CreatureData.GiantSpider.Abilities.Single(
+            ability => ability.Name == "weakening bite");
+
+        Assert.Contains(weakeningBite.Effects!, effect => effect is Weaken);
+        Assert.DoesNotContain(
+            weakeningBite.Effects!,
+            effect => effect is ChangeProperty<int> change && change.PropertyName == nameof(BeingComponent.Might));
+
+        var target = ApplyCreatureAbilityStatus(
+            CreatureData.GiantSpider, EffectType.Weaken, manager, level);
+
+        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(target, AbilityData.Weakened.Name));
+        Assert.Equal(9, target.Being!.Might);
+    }
+
+    [Theory]
+    [InlineData(100, 1)]
+    [InlineData(200, 2)]
+    [InlineData(300, 3)]
+    [InlineData(400, 3)]
+    public void Weakened_reduces_might_by_one_per_authored_level(int amount, int expectedReduction)
+    {
+        var level = TestHelper.BuildRoom(".");
+        var manager = level.Entity.Manager;
+        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        manager.Queue.ProcessQueue(manager);
+        var baseMight = npc.Being!.Might;
+
+        ApplyStatus(npc, EffectType.Weaken, duration: 100, manager, amount: amount);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(expectedReduction, Math.Min(3, EffectApplicationSystem.GetAbilityLevel(
+            npc, AbilityData.Weakened.Name)));
+        Assert.Equal(baseMight - expectedReduction, npc.Being.Might);
     }
 
     [Fact]

@@ -1,4 +1,5 @@
-﻿using UnicornHack.Systems.Actors;
+﻿using UnicornHack.Systems.Abilities;
+using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Time;
 using UnicornHack.Utils.MessagingECS;
 
@@ -6,6 +7,8 @@ namespace UnicornHack.Systems.Items;
 
 public class ItemUsageSystem : IGameSystem<EquipItemMessage>
 {
+    public const int EquipmentActionDelay = TimeSystem.DefaultActionDelay / 20;
+
     public bool CanEquipItem(EquipItemMessage message, GameManager manager)
     {
         var equipped = TryEquip(message, manager, pretend: true);
@@ -100,8 +103,7 @@ public class ItemUsageSystem : IGameSystem<EquipItemMessage>
                     return equippedMessage;
                 }
 
-                if (!message.Force
-                    || !Unequip(equippedItem, message.ActorEntity, manager, pretend))
+                if (!Unequip(equippedItem, message.ActorEntity, message.Force, manager, pretend))
                 {
                     return equippedMessage;
                 }
@@ -112,8 +114,7 @@ public class ItemUsageSystem : IGameSystem<EquipItemMessage>
             {
                 equippedItem = GetEquippedItem(EquipmentSlot.GraspBothMelee, message.ActorEntity);
                 if (equippedItem != null
-                    && (!message.Force
-                        || !Unequip(equippedItem, message.ActorEntity, manager, pretend)))
+                    && !Unequip(equippedItem, message.ActorEntity, message.Force, manager, pretend))
                 {
                     return equippedMessage;
                 }
@@ -122,16 +123,14 @@ public class ItemUsageSystem : IGameSystem<EquipItemMessage>
             {
                 equippedItem = GetEquippedItem(EquipmentSlot.GraspPrimaryMelee, message.ActorEntity);
                 if (equippedItem != null
-                    && (!message.Force
-                        || !Unequip(equippedItem, message.ActorEntity, manager, pretend)))
+                    && !Unequip(equippedItem, message.ActorEntity, message.Force, manager, pretend))
                 {
                     return equippedMessage;
                 }
 
                 equippedItem = GetEquippedItem(EquipmentSlot.GraspSecondaryMelee, message.ActorEntity);
                 if (equippedItem != null
-                    && (!message.Force
-                        || !Unequip(equippedItem, message.ActorEntity, manager, pretend)))
+                    && !Unequip(equippedItem, message.ActorEntity, message.Force, manager, pretend))
                 {
                     return equippedMessage;
                 }
@@ -142,8 +141,7 @@ public class ItemUsageSystem : IGameSystem<EquipItemMessage>
             {
                 equippedItem = GetEquippedItem(EquipmentSlot.GraspBothRanged, message.ActorEntity);
                 if (equippedItem != null
-                    && (!message.Force
-                        || !Unequip(equippedItem, message.ActorEntity, manager, pretend)))
+                    && !Unequip(equippedItem, message.ActorEntity, message.Force, manager, pretend))
                 {
                     return equippedMessage;
                 }
@@ -152,16 +150,14 @@ public class ItemUsageSystem : IGameSystem<EquipItemMessage>
             {
                 equippedItem = GetEquippedItem(EquipmentSlot.GraspPrimaryRanged, message.ActorEntity);
                 if (equippedItem != null
-                    && (!message.Force
-                        || !Unequip(equippedItem, message.ActorEntity, manager, pretend)))
+                    && !Unequip(equippedItem, message.ActorEntity, message.Force, manager, pretend))
                 {
                     return equippedMessage;
                 }
 
                 equippedItem = GetEquippedItem(EquipmentSlot.GraspSecondaryRanged, message.ActorEntity);
                 if (equippedItem != null
-                    && (!message.Force
-                        || !Unequip(equippedItem, message.ActorEntity, manager, pretend)))
+                    && !Unequip(equippedItem, message.ActorEntity, message.Force, manager, pretend))
                 {
                     return equippedMessage;
                 }
@@ -175,16 +171,12 @@ public class ItemUsageSystem : IGameSystem<EquipItemMessage>
 
             item.EquippedSlot = message.Slot;
 
-            DelayMessage.Enqueue(message.ActorEntity, TimeSystem.DefaultActionDelay / 20, manager);
+            DelayMessage.Enqueue(message.ActorEntity, EquipmentActionDelay, manager);
         }
         else
         {
             if (item.EquippedSlot == EquipmentSlot.None
-                || (!message.Force
-                    && item.Abilities.Select(a => a.Ability!)
-                            .Any(a => a.CooldownTick != null
-                                      || a.CooldownXpLeft != null
-                                      || (a.Activation & ActivationType.Slottable) != 0 && a.IsActive)))
+                || !CanUnequip(message.ItemEntity, message.ActorEntity, message.Force, manager))
             {
                 return equippedMessage;
             }
@@ -197,19 +189,39 @@ public class ItemUsageSystem : IGameSystem<EquipItemMessage>
 
             item.EquippedSlot = EquipmentSlot.None;
 
-            DelayMessage.Enqueue(message.ActorEntity, TimeSystem.DefaultActionDelay / 20, manager);
+            DelayMessage.Enqueue(message.ActorEntity, EquipmentActionDelay, manager);
         }
 
         return equippedMessage;
     }
 
+    private static bool CanUnequip(
+        GameEntity itemEntity, GameEntity actorEntity, bool force, GameManager manager)
+    {
+        var itemAbilities = itemEntity.Item!.Abilities;
+        if (itemAbilities.Select(entity => entity.Ability!).Any(IsAbilityInUse))
+        {
+            return false;
+        }
+
+        return force
+               || manager.AbilitySlottingSystem.GetFirstFreeSlot(actorEntity) != null
+               || itemAbilities.Any(entity => entity.Ability!.Slot is >= 2);
+    }
+
+    private static bool IsAbilityInUse(AbilityComponent ability)
+          => ability.CooldownTick != null
+              || ability.CooldownXpLeft != null
+              || (ability.Activation & ActivationType.Slottable) != 0 && ability.IsActive;
+
     private bool Unequip(
-        GameEntity equippedItem, GameEntity actorEntity, GameManager manager, bool pretend)
+        GameEntity equippedItem, GameEntity actorEntity, bool force, GameManager manager, bool pretend)
     {
         var unequipMessage = EquipItemMessage.Create(manager);
         unequipMessage.ItemEntity = equippedItem;
         unequipMessage.ActorEntity = actorEntity;
         unequipMessage.Slot = EquipmentSlot.None;
+        unequipMessage.Force = force;
 
         var equipped = TryEquip(unequipMessage, manager, pretend);
 

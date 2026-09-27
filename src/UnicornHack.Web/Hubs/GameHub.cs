@@ -132,8 +132,7 @@ public class GameHub : Hub
                 result.AbilitySlot = slot;
                 var abilities = result.SlottableAbilities;
 
-                foreach (var slottableAbilityEntity in manager.AbilitiesToAffectableRelationship.GetDependents(
-                             player.Entity))
+                foreach (var slottableAbilityEntity in player.Entity.ActiveEffects!.AvailableAbilities)
                 {
                     var ability = slottableAbilityEntity.Ability!;
                     if (!ability.IsUsable)

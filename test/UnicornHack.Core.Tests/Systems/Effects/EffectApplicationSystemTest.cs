@@ -1355,7 +1355,7 @@ public class EffectApplicationSystemTest
                 effect => effect.TargetName == nameof(BeingComponent.AcidResistance))
                 .MagnitudeSecondary);
 
-        var setSlotMessage = SetAbilitySlotMessage.Create(manager);
+        var setSlotMessage = SetAbilitySlotMessage.Create(playerEntity, manager);
         setSlotMessage.AbilityEntity = toggledAbility;
 
         manager.Enqueue(setSlotMessage);
@@ -1414,7 +1414,7 @@ public class EffectApplicationSystemTest
 
         Assert.Equal(21, being.HitPoints);
 
-        var clearSlot = SetAbilitySlotMessage.Create(manager);
+        var clearSlot = SetAbilitySlotMessage.Create(playerEntity, manager);
         clearSlot.AbilityEntity = healingAbility;
         manager.Enqueue(clearSlot);
         manager.Queue.ProcessQueue(manager);
@@ -1962,7 +1962,7 @@ public class EffectApplicationSystemTest
         Assert.Contains(
             playerEntity.ActiveEffects.PropertyEffects,
             effect => effect.TargetName == nameof(BeingComponent.UpperExtremities)
-                      && effect.CombinationFunction == ValueCombinationFunction.Sum);
+                      && effect.CombinationFunction == ValueCombinationFunction.Override);
 
         ItemData.PotionOfDwarfness.Instantiate(playerEntity);
         ItemData.PotionOfElfness.Instantiate(playerEntity);
@@ -1978,18 +1978,25 @@ public class EffectApplicationSystemTest
         Assert.Equal(10, playerEntity.Being.Perception);
         Assert.Equal(10, playerEntity.Being.Focus);
 
-        TestHelper.ActivateAbility(ItemData.PotionOfElfness.Name + ": Drink", playerEntity, manager);
+        GameEntity GetPotion(string templateName)
+            => playerEntity.Being.Items.Single(item => item.Item!.TemplateName == templateName);
+
+        TestHelper.ActivateItemAbility(
+            GetPotion(ItemData.PotionOfElfness.Name), "Drink", playerEntity, manager);
         manager.Queue.ProcessQueue(manager);
 
-        TestHelper.ActivateAbility(ItemData.PotionOfDwarfness.Name + ": Drink", playerEntity, manager);
+        TestHelper.ActivateItemAbility(
+            GetPotion(ItemData.PotionOfDwarfness.Name), "Drink", playerEntity, manager);
         manager.Queue.ProcessQueue(manager);
 
-        TestHelper.ActivateAbility(ItemData.PotionOfOgreness.Name + ": Drink", playerEntity, manager);
+        TestHelper.ActivateItemAbility(
+            GetPotion(ItemData.PotionOfOgreness.Name), "Drink", playerEntity, manager);
         manager.Queue.ProcessQueue(manager);
 
         ItemData.PotionOfOgreness.Instantiate(playerEntity);
         manager.Queue.ProcessQueue(manager);
-        TestHelper.ActivateAbility(ItemData.PotionOfOgreness.Name + ": Drink", playerEntity, manager);
+        TestHelper.ActivateItemAbility(
+            GetPotion(ItemData.PotionOfOgreness.Name), "Drink", playerEntity, manager);
         manager.Queue.ProcessQueue(manager);
 
         const string ogreRaceName = "ogre race";
@@ -2015,7 +2022,8 @@ public class EffectApplicationSystemTest
             playerEntity.ActiveEffects.ComponentEffects,
             effect => effect is { EffectType: EffectType.AddAbility, TargetName: ogreRaceName });
 
-        TestHelper.ActivateAbility(ItemData.PotionOfInhumanity.Name + ": Drink", playerEntity, manager);
+        TestHelper.ActivateItemAbility(
+            GetPotion(ItemData.PotionOfInhumanity.Name), "Drink", playerEntity, manager);
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(7, playerEntity.Physical.Size);
@@ -2997,11 +3005,12 @@ public class EffectApplicationSystemTest
 
         ItemData.PotionOfPolymorph.Instantiate(playerEntity);
         manager.Queue.ProcessQueue(manager);
+        var potion = playerEntity.Being!.Items.Single(
+            item => item.Item!.TemplateName == ItemData.PotionOfPolymorph.Name);
 
         // Drinking the potion (a full action, exercising the normal turn flow) transforms the drinker into
         // the potion's creature form.
-        var drinkAbility = ItemData.PotionOfPolymorph.Name + ": Drink";
-        TestHelper.ActivateAbility(drinkAbility, playerEntity, manager);
+        TestHelper.ActivateItemAbility(potion, "Drink", playerEntity, manager);
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(Creature.Loader.GetId("gnome"), being.Species);
