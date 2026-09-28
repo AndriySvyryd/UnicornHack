@@ -24,8 +24,7 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 3,
-        GenerationWeight = "3",
-        Behavior = AIBehavior.GoldCollector | AIBehavior.GemCollector,
+        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 3",
         Size = 2,
         Weight = 100,
         MovementDelay = 300,

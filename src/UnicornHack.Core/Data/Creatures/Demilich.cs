@@ -24,6 +24,7 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 14,
+        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 1.0",
         PreviousStageName = "lich",
         Behavior = AIBehavior.MagicUser,
         Noise = ActorNoiseType.Mumble,

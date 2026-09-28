@@ -52,7 +52,7 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 9,
-        GenerationWeight = "2",
+        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 2",
         PreviousStageName = "gargoyle",
         Behavior = AIBehavior.MagicUser,
         Noise = ActorNoiseType.Grunt,

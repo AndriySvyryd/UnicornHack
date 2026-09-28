@@ -155,6 +155,7 @@ namespace UnicornHack.Utils
                 selectedCounts[value]++;
                 Assert.InRange(value, 0, maxValue - 1);
             }
+
             var expectedCountMin = 0.95 * selectionCount / maxValue;
             var expectedCountMax = 1.05 * selectionCount / maxValue;
             Assert.All(selectedCounts, count => Assert.InRange(count, expectedCountMin, expectedCountMax));

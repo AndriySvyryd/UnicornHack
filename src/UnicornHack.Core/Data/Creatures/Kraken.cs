@@ -68,6 +68,7 @@ public static partial class CreatureData
         InitialLevel = 20,
         GenerationWeight = "0",
         GenerationFlags = CreatureGenerationFlags.NonPolymorphable,
+        Behavior = AIBehavior.Roaming,
         Size = 16,
         Weight = 2000,
         MovementDelay = 300,

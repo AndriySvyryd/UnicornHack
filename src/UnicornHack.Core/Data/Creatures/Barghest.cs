@@ -38,8 +38,8 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 9,
-        GenerationWeight = "2",
-        Behavior = AIBehavior.AlignmentAware | AIBehavior.Mountable,
+        GenerationWeight = "$branch == 'entrance' ? 0 : 2",
+        Behavior = AIBehavior.Mountable,
         Noise = ActorNoiseType.Bark,
         Weight = 1200,
         MovementDelay = -25,

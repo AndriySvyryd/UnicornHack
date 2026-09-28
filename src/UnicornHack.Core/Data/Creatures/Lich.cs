@@ -38,6 +38,7 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 11,
+        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 1.0",
         NextStageName = "demilich",
         Behavior = AIBehavior.MagicUser,
         Noise = ActorNoiseType.Mumble,

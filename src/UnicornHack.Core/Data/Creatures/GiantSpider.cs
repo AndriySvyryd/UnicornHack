@@ -66,6 +66,6 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 1,
-        GenerationWeight = "2"
+        GenerationWeight = "$branch == 'entrance' ? 0 : 2"
     };
 }

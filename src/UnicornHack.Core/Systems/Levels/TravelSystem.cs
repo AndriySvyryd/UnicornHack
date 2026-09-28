@@ -5,7 +5,10 @@ using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Levels;
 
-public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
+public class TravelSystem :
+    IGameSystem<TravelMessage>,
+    IGameSystem<TraveledMessage>,
+    IGameSystem<DiedMessage>
 {
     public bool CanTravel(TravelMessage message, GameManager manager)
     {
@@ -19,6 +22,22 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
     {
         var traveled = TryTravel(message, manager);
         EnqueueTraveled(traveled, manager);
+        return MessageProcessingResult.ContinueProcessing;
+    }
+
+    public MessageProcessingResult Process(TraveledMessage message, GameManager manager)
+    {
+        if (!message.Successful
+            || message.Entity.Player == null
+            || message.Entity.Position?.RoomEntity.Room is not { } playerDestination
+            || message.InitialLevel.Room is not { } initialRoom
+            || initialRoom == playerDestination
+            || initialRoom.Level != playerDestination.Level)
+        {
+            return MessageProcessingResult.ContinueProcessing;
+        }
+
+        RelocateRoamingCreature(initialRoom.Level, playerDestination, manager);
         return MessageProcessingResult.ContinueProcessing;
     }
 
@@ -310,9 +329,12 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
         GameEntity actorEntity, PositionComponent position, Direction targetHeading, Point targetCell,
         GameManager manager)
     {
+        var initialRoom = position.RoomEntity.Room!;
         var traveledMessage = TraveledMessage.Create(manager);
         traveledMessage.Entity = actorEntity;
         traveledMessage.InitialLevel = position.RoomEntity;
+        traveledMessage.InitialBranchName = initialRoom.BranchName;
+        traveledMessage.InitialDepth = initialRoom.Depth;
         traveledMessage.InitialHeading = position.Heading!.Value;
         traveledMessage.InitialLevelCell = position.Cell!.Value;
         traveledMessage.TargetHeading = targetHeading;
@@ -389,6 +411,8 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
         var traveledMessage = TraveledMessage.Create(manager);
         traveledMessage.Entity = actorEntity;
         traveledMessage.InitialLevel = initialRoomEntity;
+        traveledMessage.InitialBranchName = currentRoom.BranchName;
+        traveledMessage.InitialDepth = currentRoom.Depth;
         traveledMessage.InitialHeading = initialHeading;
         traveledMessage.InitialLevelCell = initialCell;
         traveledMessage.TargetHeading = position.Heading!.Value;
@@ -485,7 +509,7 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
             var currentLevel = currentRoom.Level;
             if (isIntraLevel)
             {
-                DeleteRoomContents(currentRoom, manager);
+                DeleteRoomContents(currentRoom, manager, preserveRoamingCreatures: true);
             }
             else if (newRoom.Level.BranchName == currentLevel.BranchName)
             {
@@ -498,8 +522,179 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
         }
     }
 
+    private void RelocateRoamingCreature(
+        GameLevel level, RoomComponent playerDestination, GameManager manager)
+    {
+        GameEntity? roamingCreature = null;
+        foreach (var room in level.Rooms)
+        {
+            foreach (var actor in room.Actors.Values)
+            {
+                if (actor.AI is not { } ai
+                    || (ai.Behavior & AIBehavior.Roaming) == 0)
+                {
+                    continue;
+                }
+
+                if (roamingCreature == null
+                    || actor.Id < roamingCreature.Id)
+                {
+                    roamingCreature = actor;
+                }
+            }
+        }
+
+        if (roamingCreature?.Position is not { Cell: { } initialCell } roamingPosition
+            || manager.EngulferToVictimRelationship.GetVictim(roamingCreature) != null
+            || manager.EngulferToVictimRelationship.GetEngulfer(roamingCreature) != null)
+        {
+            return;
+        }
+
+        var currentRoom = roamingPosition.RoomEntity.Room!;
+        if (currentRoom == playerDestination)
+        {
+            return;
+        }
+
+        var destinationRooms = GetRoamingCreatureDestinationRooms(currentRoom, level);
+        if (destinationRooms.Count == 0)
+        {
+            return;
+        }
+
+        var destinationRoom = destinationRooms[level.GenerationRandom.Next(destinationRooms.Count)];
+        if (!TryFindRoamingCreatureCell(
+                destinationRoom.Room,
+                destinationRoom.PreferredCell,
+                manager,
+                out var targetCell))
+        {
+            return;
+        }
+
+        var initialRoomEntity = roamingPosition.RoomEntity;
+        var initialHeading = roamingPosition.Heading!.Value;
+        roamingPosition.SetRoomPosition(destinationRoom.Room.EntityId, targetCell);
+        PropagateRoomId(roamingCreature, destinationRoom.Room.EntityId, manager);
+
+        var traveledMessage = TraveledMessage.Create(manager);
+        traveledMessage.Entity = roamingCreature;
+        traveledMessage.InitialLevel = initialRoomEntity;
+        traveledMessage.InitialBranchName = currentRoom.BranchName;
+        traveledMessage.InitialDepth = currentRoom.Depth;
+        traveledMessage.InitialHeading = initialHeading;
+        traveledMessage.InitialLevelCell = initialCell;
+        traveledMessage.TargetHeading = initialHeading;
+        traveledMessage.TargetCell = targetCell;
+        traveledMessage.Successful = true;
+        manager.EffectApplicationSystem.ExtendEffectsOnMovement(roamingCreature, manager);
+        manager.Enqueue(traveledMessage);
+    }
+
+    private static List<RoamingCreatureDestinationRoom> GetRoamingCreatureDestinationRooms(
+        RoomComponent currentRoom, GameLevel level)
+    {
+        var destinationRooms = new Dictionary<int, RoamingCreatureDestinationRoom>();
+        foreach (var connectionEntity in currentRoom.Connections.Values)
+        {
+            var connection = connectionEntity.Connection!;
+            if (currentRoom.Entity.Manager.FindEntity(connection.TargetRoomId)?.Room is not { } targetRoom
+                || targetRoom.Level != level
+                || targetRoom.IsVisited
+                || connection.TargetCell is not { } targetCell)
+            {
+                continue;
+            }
+
+            destinationRooms[targetRoom.EntityId] =
+                new RoamingCreatureDestinationRoom(targetRoom, targetCell);
+        }
+
+        foreach (var connectionEntity in currentRoom.IncomingConnections)
+        {
+            if (connectionEntity.Position is not { Cell: { } sourceCell } connectionPosition
+                || currentRoom.Entity.Manager.FindEntity(connectionPosition.RoomId)?.Room is not { } sourceRoom
+                || sourceRoom.Level != level
+                || sourceRoom.IsVisited)
+            {
+                continue;
+            }
+
+            destinationRooms.TryAdd(
+                sourceRoom.EntityId,
+                new RoamingCreatureDestinationRoom(sourceRoom, sourceCell));
+        }
+
+        return destinationRooms.Values
+            .OrderBy(destination => destination.Room.EntityId)
+            .ToList();
+    }
+
+    private static bool TryFindRoamingCreatureCell(
+        RoomComponent room, Point preferredCell, GameManager manager, out Point targetCell)
+    {
+        if (IsFreeRoamingCreatureCell(room, preferredCell, manager))
+        {
+            targetCell = preferredCell;
+            return true;
+        }
+
+        var bestDistance = int.MaxValue;
+        targetCell = default;
+        var found = false;
+        for (byte y = 0; y < room.Height; y++)
+        {
+            for (byte x = 0; x < room.Width; x++)
+            {
+                var candidate = new Point(x, y);
+                if (!IsFreeRoamingCreatureCell(room, candidate, manager))
+                {
+                    continue;
+                }
+
+                var distance = candidate.DistanceTo(preferredCell);
+                if (distance >= bestDistance)
+                {
+                    continue;
+                }
+
+                bestDistance = distance;
+                targetCell = candidate;
+                found = true;
+            }
+        }
+
+        return found;
+    }
+
+    private static bool IsFreeRoamingCreatureCell(
+        RoomComponent room, Point cell, GameManager manager)
+        => manager.TravelSystem.IsActorFreeCell(cell, room);
+
+    private readonly struct RoamingCreatureDestinationRoom
+    {
+        public RoamingCreatureDestinationRoom(RoomComponent room, Point preferredCell)
+        {
+            Room = room;
+            PreferredCell = preferredCell;
+        }
+
+        public RoomComponent Room
+        {
+            get;
+        }
+
+        public Point PreferredCell
+        {
+            get;
+        }
+    }
+
     /// <summary>
     ///     Deletes every non-player actor and every loose floor item in <paramref name="room" />.
+    ///     Roaming creatures can be preserved when clearing an abandoned room so a
+    ///     creature with no eligible unvisited destination is not removed from the game.
     ///     Called when the player abandons a room they can never return to, so its contents never
     ///     need processing again. The player (and any other player sharing the room) is left
     ///     untouched.
@@ -510,12 +705,16 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
     ///         deferred actor survives any intervening room teardown and is then fully removed.
     ///     </para>
     /// </summary>
-    public void DeleteRoomContents(RoomComponent room, GameManager manager)
+    public void DeleteRoomContents(
+        RoomComponent room, GameManager manager, bool preserveRoamingCreatures = false)
     {
         // Snapshot first: deleting mutates the room's Actors / Items dictionaries.
         foreach (var actorEntity in room.Actors.Values)
         {
-            if (!actorEntity.HasComponent(EntityComponent.Player))
+            if (!actorEntity.HasComponent(EntityComponent.Player)
+                && (!preserveRoamingCreatures
+                    || actorEntity.AI is not { } ai
+                    || (ai.Behavior & AIBehavior.Roaming) == 0))
             {
                 DeleteEntityMessage.Enqueue(actorEntity, manager);
             }

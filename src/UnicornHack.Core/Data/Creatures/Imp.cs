@@ -24,7 +24,7 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 3,
-        GenerationWeight = "5",
+        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 5",
         Behavior = AIBehavior.Wandering | AIBehavior.Stalking,
         Noise = ActorNoiseType.Cuss,
         Size = 1,

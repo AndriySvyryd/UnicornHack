@@ -38,6 +38,7 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 7,
+        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 1.0",
         PreviousStageName = "giant eel",
         Size = 8,
         Weight = 600,

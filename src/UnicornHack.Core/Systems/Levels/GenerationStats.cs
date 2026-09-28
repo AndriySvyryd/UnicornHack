@@ -40,6 +40,7 @@ public class GenerationStats : NotificationEntity
     private readonly Dictionary<string, int> _itemInstancesByName = [];
     private readonly Dictionary<ItemType, int> _itemInstancesByType = [];
     private readonly Dictionary<RoomFeatures, int> _roomCountsByFeature = [];
+    private int _namedNonBossCreatureCount;
 
     /// <summary>Map-fragment instance counts keyed by fragment source name.</summary>
     public Dictionary<string, int> FragmentInstancesByName
@@ -78,6 +79,12 @@ public class GenerationStats : NotificationEntity
     public Dictionary<CreatureGenerationFlags, int> CreatureInstancesByFlag
     {
         get { EnsureDictionariesInitialized(); return _creatureInstancesByFlag; }
+    }
+
+    public int NamedNonBossCreatureCount
+    {
+        get => _namedNonBossCreatureCount;
+        set => SetWithNotify(value, ref _namedNonBossCreatureCount);
     }
 
     /// <summary>Item instance counts keyed by variant name. Stacks count once, not per unit.</summary>
@@ -273,13 +280,48 @@ public class GenerationStats : NotificationEntity
     ///     Records a spawned creature instance: bumps the per-name counter and the
     ///     per-flag counters for every set bit in <paramref name="flags" />.
     /// </summary>
-    public void RecordCreatureInstance(string name, CreatureGenerationFlags flags)
+    public void RecordCreatureInstance(
+        string name, CreatureGenerationFlags flags, bool isNamedNonBoss)
     {
         Increment(CreatureInstancesByName, name);
         foreach (var flag in flags.GetSetBits())
         {
             Increment(CreatureInstancesByFlag, flag);
         }
+
+        if (isNamedNonBoss)
+        {
+            NamedNonBossCreatureCount++;
+        }
+    }
+
+    public void RemoveCreatureInstances(GenerationStats source)
+    {
+        if (NamedNonBossCreatureCount < source.NamedNonBossCreatureCount)
+        {
+            throw new InvalidOperationException(
+                $"Cannot remove {source.NamedNonBossCreatureCount} named non-boss instances "
+                + $"from a count of {NamedNonBossCreatureCount}.");
+        }
+
+        foreach (var (name, count) in source.CreatureInstancesByName)
+        {
+            Decrement(CreatureInstancesByName, name, count);
+        }
+
+        foreach (var (flag, count) in source.CreatureInstancesByFlag)
+        {
+            Decrement(CreatureInstancesByFlag, flag, count);
+        }
+
+        NamedNonBossCreatureCount -= source.NamedNonBossCreatureCount;
+    }
+
+    public void ClearCreatureInstances()
+    {
+        CreatureInstancesByName.Clear();
+        CreatureInstancesByFlag.Clear();
+        NamedNonBossCreatureCount = 0;
     }
 
     /// <summary>
@@ -312,5 +354,25 @@ public class GenerationStats : NotificationEntity
     private static void Increment<TKey>(Dictionary<TKey, int> bucket, TKey key) where TKey : notnull
     {
         bucket[key] = bucket.TryGetValue(key, out var count) ? count + 1 : 1;
+    }
+
+    private static void Decrement<TKey>(
+        Dictionary<TKey, int> bucket, TKey key, int amount) where TKey : notnull
+    {
+        if (!bucket.TryGetValue(key, out var count)
+            || count < amount)
+        {
+            throw new InvalidOperationException(
+                $"Cannot remove {amount} '{key}' creature instances from a count of {count}.");
+        }
+
+        if (count == amount)
+        {
+            bucket.Remove(key);
+        }
+        else
+        {
+            bucket[key] = count - amount;
+        }
     }
 }

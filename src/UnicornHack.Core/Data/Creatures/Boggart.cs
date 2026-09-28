@@ -31,7 +31,6 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 1,
-        Behavior = AIBehavior.WeaponCollector,
         Noise = ActorNoiseType.Grunt,
         Size = 2,
         Weight = 400,

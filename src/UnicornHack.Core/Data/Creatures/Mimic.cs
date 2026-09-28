@@ -38,6 +38,7 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 8,
+        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 1.0",
         Weight = 600,
         MovementDelay = 300,
         TurningDelay = 300,

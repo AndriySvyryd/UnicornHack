@@ -67,8 +67,8 @@ public class Game : NotificationEntity
 
     /// <summary>
     ///     Game-wide cumulative generation statistics. Populated alongside the per-level
-    ///     <see cref="GameLevel.GenerationStats" /> on every successful fragment / creature
-    ///     / item placement and persisted as an owned entity. Backs the
+    ///     <see cref="GameLevel.GenerationStats" /> as creatures are placed, with failed
+    ///     generation attempts rolled back, and persisted as an owned entity. Backs the
     ///     <c>$globalInstances</c>, <c>$globalTagInstances</c>, and
     ///     <c>$globalFeatureInstances</c> DSL parameters so weight expressions can
     ///     throttle fragments / tags / room features that have already appeared in

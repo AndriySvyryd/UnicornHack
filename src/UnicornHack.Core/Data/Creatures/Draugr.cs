@@ -45,8 +45,8 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 3,
-        GenerationWeight = "2",
-        Behavior = AIBehavior.Stalking | AIBehavior.WeaponCollector | AIBehavior.MagicUser,
+        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 2",
+        Behavior = AIBehavior.Stalking | AIBehavior.MagicUser,
         Noise = ActorNoiseType.Howl,
         Weight = 1200,
         PerceptionBonus = -8,

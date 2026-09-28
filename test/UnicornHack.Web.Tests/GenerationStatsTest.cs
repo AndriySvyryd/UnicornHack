@@ -59,8 +59,12 @@ public class GenerationStatsTest
     {
         var stats = new GenerationStats();
 
-        stats.RecordCreatureInstance("goblin", CreatureGenerationFlags.SmallGroup);
-        stats.RecordCreatureInstance("goblin", CreatureGenerationFlags.SmallGroup | CreatureGenerationFlags.LargeGroup);
+        stats.RecordCreatureInstance(
+            "goblin", CreatureGenerationFlags.SmallGroup, isNamedNonBoss: false);
+        stats.RecordCreatureInstance(
+            "goblin",
+            CreatureGenerationFlags.SmallGroup | CreatureGenerationFlags.LargeGroup,
+            isNamedNonBoss: false);
 
         Assert.Equal(2, stats.CreatureInstancesByName["goblin"]);
         Assert.Equal(2, stats.CreatureInstancesByFlag[CreatureGenerationFlags.SmallGroup]);
@@ -71,6 +75,40 @@ public class GenerationStatsTest
         var flagEntries = GetEntries<KeyCountPair<CreatureGenerationFlags>>(stats, "_creatureInstancesByFlagEntries");
         Assert.Equal(2, flagEntries.Single(e => e.Key == CreatureGenerationFlags.SmallGroup).Count);
         Assert.Equal(1, flagEntries.Single(e => e.Key == CreatureGenerationFlags.LargeGroup).Count);
+    }
+
+    [Fact]
+    public void Recording_removing_and_clearing_named_non_bosses_updates_the_dedicated_count()
+    {
+        var gameStats = new GenerationStats();
+        var levelStats = new GenerationStats();
+        var countChanges = 0;
+        gameStats.PropertyChanged += (_, eventArgs) =>
+        {
+            if (eventArgs.PropertyName == nameof(GenerationStats.NamedNonBossCreatureCount))
+            {
+                countChanges++;
+            }
+        };
+
+        levelStats.RecordCreatureInstance(
+            "Ankou", CreatureGenerationFlags.None, isNamedNonBoss: true);
+        gameStats.RecordCreatureInstance(
+            "Ankou", CreatureGenerationFlags.None, isNamedNonBoss: true);
+
+        Assert.Equal(1, levelStats.NamedNonBossCreatureCount);
+        Assert.Equal(1, gameStats.NamedNonBossCreatureCount);
+        Assert.Equal(1, countChanges);
+
+        gameStats.RemoveCreatureInstances(levelStats);
+
+        Assert.Equal(0, gameStats.NamedNonBossCreatureCount);
+        Assert.Equal(2, countChanges);
+
+        levelStats.ClearCreatureInstances();
+
+        Assert.Equal(0, levelStats.NamedNonBossCreatureCount);
+        Assert.Empty(levelStats.CreatureInstancesByName);
     }
 
     [Fact]
@@ -119,7 +157,8 @@ public class GenerationStatsTest
     public void Dictionary_clear_clears_the_backing_list()
     {
         var stats = new GenerationStats();
-        stats.RecordCreatureInstance("goblin", CreatureGenerationFlags.SmallGroup);
+        stats.RecordCreatureInstance(
+            "goblin", CreatureGenerationFlags.SmallGroup, isNamedNonBoss: false);
 
         stats.SyncEntries();
         var nameEntries = GetEntries<KeyCountPair<string>>(stats, "_creatureInstancesByNameEntries");
@@ -166,7 +205,8 @@ public class GenerationStatsTest
         Assert.Equal(2, nameEntries.Count);
 
         // After hydration, further mutations keep the mirror in sync once SyncEntries is invoked.
-        stats.RecordCreatureInstance("kobold", CreatureGenerationFlags.None);
+        stats.RecordCreatureInstance(
+            "kobold", CreatureGenerationFlags.None, isNamedNonBoss: false);
         stats.SyncEntries();
 
         Assert.Equal(5, stats.CreatureInstancesByName["kobold"]);

@@ -31,8 +31,8 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 9,
+        GenerationWeight = "$branch == 'entrance' ? 0 : 1.0",
         GenerationFlags = CreatureGenerationFlags.NonPolymorphable,
-        Behavior = AIBehavior.WeaponCollector,
         Noise = ActorNoiseType.Imitate,
         Weight = 1000,
         PerceptionBonus = -5,

@@ -58,8 +58,8 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 6,
-        GenerationWeight = "4",
-        Behavior = AIBehavior.Wandering | AIBehavior.WeaponCollector,
+        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 4",
+        Behavior = AIBehavior.Wandering,
         Sex = Sex.None,
         Size = 8,
         Weight = 600,

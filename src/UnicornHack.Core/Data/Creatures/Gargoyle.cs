@@ -52,7 +52,7 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 6,
-        GenerationWeight = "5",
+        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 5",
         NextStageName = "winged gargoyle",
         Noise = ActorNoiseType.Grunt,
         Weight = 1000,

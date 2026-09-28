@@ -81,6 +81,7 @@ public partial class GameManager
 
         TravelSystem = new TravelSystem();
         queue.Register<TravelMessage>(TravelSystem, TravelMessage.Name, 0);
+        queue.Register<TraveledMessage>(TravelSystem, TraveledMessage.Name, 4);
         queue.Register<DiedMessage>(TravelSystem, DiedMessage.Name, 6);
     }
 

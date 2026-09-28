@@ -59,8 +59,8 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 7,
+        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 1.0",
         GenerationFlags = CreatureGenerationFlags.NonPolymorphable | CreatureGenerationFlags.SmallGroup,
-        Behavior = AIBehavior.AlignmentAware | AIBehavior.WeaponCollector,
         Noise = ActorNoiseType.Speach,
         Weight = 800,
         PerceptionBonus = -6,

@@ -52,9 +52,10 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 30,
-        GenerationWeight = "$branch == 'hell' ? 0 : 1",
-        GenerationFlags = CreatureGenerationFlags.NonGenocidable | CreatureGenerationFlags.NonPolymorphable,
-        Behavior = AIBehavior.Stalking,
+        GenerationWeight = "$branch == 'hell' || $branch == 'entrance' || $branch == 'dungeon' ? 0 : 1",
+        GenerationFlags = CreatureGenerationFlags.NonGenocidable
+                          | CreatureGenerationFlags.NonPolymorphable,
+        Behavior = AIBehavior.Stalking | AIBehavior.Roaming,
         Noise = ActorNoiseType.Cuss,
         Sex = Sex.Male,
         Size = 16,

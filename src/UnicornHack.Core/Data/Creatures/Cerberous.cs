@@ -43,6 +43,7 @@ public static partial class CreatureData
         },
         InitialLevel = 12,
         GenerationWeight = "$branch == 'hell' ? 6 : 0",
+        Behavior = AIBehavior.Roaming,
         Noise = ActorNoiseType.Bark,
         Weight = 700,
         MovementDelay = -15,

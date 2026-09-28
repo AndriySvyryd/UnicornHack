@@ -24,6 +24,7 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 11,
+        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 1.0",
         Sex = Sex.None,
         Size = 8,
         Weight = 1500,

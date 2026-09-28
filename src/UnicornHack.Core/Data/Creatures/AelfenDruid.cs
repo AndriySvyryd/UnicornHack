@@ -45,8 +45,7 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 8,
-        GenerationWeight = "3",
-        Behavior = AIBehavior.AlignmentAware | AIBehavior.WeaponCollector,
+        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 3",
         Noise = ActorNoiseType.Speach,
         Sex = Sex.Male,
         Weight = 800,

@@ -38,7 +38,7 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 2,
-        GenerationWeight = "4",
+        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 4",
         GenerationFlags = CreatureGenerationFlags.SmallGroup,
         Noise = ActorNoiseType.Bleat,
         Weight = 600,

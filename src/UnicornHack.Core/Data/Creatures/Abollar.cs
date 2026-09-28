@@ -48,8 +48,7 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 21,
-        GenerationWeight = "4.0",
-        Behavior = AIBehavior.GoldCollector | AIBehavior.GemCollector | AIBehavior.WeaponCollector,
+        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 4.0",
         Noise = ActorNoiseType.Gurgle,
         Size = 8,
         Weight = 1200,

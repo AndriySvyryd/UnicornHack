@@ -38,8 +38,8 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 4,
-        GenerationWeight = "5",
-        Behavior = AIBehavior.AlignmentAware | AIBehavior.RangedPeaceful | AIBehavior.Wandering | AIBehavior.GemCollector,
+        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 5",
+        Behavior = AIBehavior.RangedPeaceful | AIBehavior.Wandering,
         Noise = ActorNoiseType.Neigh,
         Size = 8,
         Weight = 1300,

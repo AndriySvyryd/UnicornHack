@@ -1,4 +1,5 @@
 using UnicornHack.Data.Branches;
+using UnicornHack.Data.Creatures;
 using UnicornHack.Generation;
 using UnicornHack.Hubs;
 using Xunit;
@@ -29,6 +30,26 @@ public class LevelMapDialogTest
         // The server bakes the localized header into the tooltip. The player is standing in
         // this room, so it's the current room.
         Assert.StartsWith("<b>Current room</b>", entry.Tooltip ?? "");
+    }
+
+    [Fact]
+    public void SerializeLevelMap_prefers_a_named_creature_as_the_strongest_actor()
+    {
+        var game = TestHelper.CreateGame();
+        var room = TestHelper.BuildRoom(".....", game);
+        var manager = game.Manager;
+        var player = PlayerRace.InstantiatePlayer(
+            "Tester", Sex.Male, room, new Point(0, 0));
+        var named = CreatureData.Cerberous.Instantiate(room, new Point(1, 0));
+        var stronger = CreatureData.RedDragon.Instantiate(room, new Point(2, 0));
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.True(stronger.Being!.HitPointMaximum > named.Being!.HitPointMaximum);
+
+        var entry = Assert.Single(GameQueryProcessor.SerializeLevelMap(player).Rooms);
+
+        Assert.Equal("Cerberous", entry.StrongestActorName);
+        Assert.Contains("Strongest: Cerberous", entry.Tooltip);
     }
 
     [Fact]

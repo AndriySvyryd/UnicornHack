@@ -38,7 +38,7 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 3,
-        GenerationWeight = "4",
+        GenerationWeight = "$branch == 'entrance' ? 0 : 4",
         Sex = Sex.None,
         Size = 2,
         Weight = 0,

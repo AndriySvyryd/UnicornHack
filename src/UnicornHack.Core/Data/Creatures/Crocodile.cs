@@ -24,7 +24,7 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 8,
-        GenerationWeight = "2",
+        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 2",
         PreviousStageName = "baby crocodile",
         Size = 8,
         Weight = 1500,

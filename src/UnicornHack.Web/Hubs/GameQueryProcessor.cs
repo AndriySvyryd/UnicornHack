@@ -1,4 +1,5 @@
 using UnicornHack.Data.Abilities;
+using UnicornHack.Generation;
 using UnicornHack.Generation.Effects;
 using UnicornHack.Hubs.ChangeTracking;
 using UnicornHack.Services;
@@ -475,27 +476,36 @@ public static class GameQueryProcessor
 
             var isCurrent = room.EntityId == currentRoom.EntityId;
             var isClose = isCurrent || adjacentRoomIds.Contains(room.EntityId);
-            if (isClose || room.IsVisited)
+            var canSeeDetails = isClose || room.IsVisited;
+            if (canSeeDetails)
             {
                 entry.RevealedActorCount = isCurrent
                     ? room.Actors.Values.Count(a => a != playerEntity)
                     : room.Actors.Count;
                 entry.RevealedItemCount = room.Items.Count;
-            }
 
-            if (room.IsVisited)
-            {
                 GameEntity? strongest = null;
                 var bestHp = -1;
+                var namedFound = false;
                 foreach (var actor in room.Actors.Values)
                 {
                     if (actor == playerEntity)
                     {
                         continue;
                     }
-                    var hp = actor.Being?.HitPointMaximum ?? 0;
-                    if (hp > bestHp)
+
+                    var isNamed = Creature.GetTemplate(actor) is { IsNamed: true };
+                    if (!isNamed
+                        && (namedFound || !room.IsVisited))
                     {
+                        continue;
+                    }
+
+                    var hp = actor.Being?.HitPointMaximum ?? 0;
+                    if ((isNamed && !namedFound)
+                        || isNamed == namedFound && hp > bestHp)
+                    {
+                        namedFound = isNamed;
                         bestHp = hp;
                         strongest = actor;
                     }

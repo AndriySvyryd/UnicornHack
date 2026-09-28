@@ -45,8 +45,7 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 10,
-        GenerationWeight = "2",
-        Behavior = AIBehavior.GemCollector | AIBehavior.WeaponCollector,
+        GenerationWeight = "$branch == 'entrance' ? 0 : 2",
         Noise = ActorNoiseType.Boast,
         Size = 16,
         Weight = 2250,

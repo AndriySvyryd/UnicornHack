@@ -41,8 +41,9 @@ public class RoomEntry
     public int RevealedItemCount { get; set; } = -1;
 
     /// <summary>
-    ///     Localized name of the actor with the highest <c>HitPointMaximum</c> in the room
-    ///     (a stand-in "strongest creature" metric). Set only for visited rooms.
+    ///     Localized name of a named creature in the room when one is present and room details
+    ///     are visible; otherwise the actor with the highest <c>HitPointMaximum</c> in a visited
+    ///     room.
     /// </summary>
     [Key(8)]
     public string? StrongestActorName { get; set; }

@@ -86,7 +86,7 @@ public static partial class CreatureData
         },
         InitialLevel = 10,
         GenerationWeight = "$branch == 'hell' ? 2 : 0",
-        Behavior = AIBehavior.Stalking | AIBehavior.WeaponCollector | AIBehavior.MagicUser,
+        Behavior = AIBehavior.Stalking | AIBehavior.MagicUser,
         Noise = ActorNoiseType.Mumble,
         Size = 8,
         Weight = 1500,

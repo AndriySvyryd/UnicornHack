@@ -65,6 +65,16 @@ public class Creature : Being, ICSScriptSerializable, ILoadable
         set;
     }
 
+    public bool IsNamed
+        => IsBoss
+           || Name.Length > 0 && char.IsUpper(Name[0]);
+
+    public bool IsBoss
+        => (GenerationFlags & (CreatureGenerationFlags.LevelBoss
+                               | CreatureGenerationFlags.BranchBoss)) != 0;
+
+    public bool IsNamedNonBoss => IsNamed && !IsBoss;
+
     public AIBehavior Behavior
     {
         get;
@@ -208,6 +218,20 @@ public class Creature : Being, ICSScriptSerializable, ILoadable
 
     public float GetWeight(RoomComponent room)
     {
+        var levelStats = room.Level.GenerationStats;
+        if (IsNamed)
+        {
+            if (room.Level.Game.GenerationStats.CreatureInstancesByName.GetValueOrDefault(Name) > 0)
+            {
+                return 0;
+            }
+
+            if (IsNamedNonBoss && levelStats.NamedNonBossCreatureCount > 0)
+            {
+                return 0;
+            }
+        }
+
         if (_weightFunction == null)
         {
             try
@@ -222,12 +246,51 @@ public class Creature : Being, ICSScriptSerializable, ILoadable
 
         try
         {
-            return _weightFunction(room.Level.Branch.Name, room.Level.Depth, 0);
+            return _weightFunction(
+                room.Level.Branch.Name,
+                room.Level.Depth,
+                levelStats.CreatureInstancesByName.GetValueOrDefault(Name));
         }
         catch (Exception e)
         {
             throw new InvalidOperationException("Error while evaluating the Weight for " + Name, e);
         }
+    }
+
+    public static Creature? GetTemplate(GameEntity entity)
+    {
+        if (entity.Player != null
+            || entity.Being is not { } being)
+        {
+            return null;
+        }
+
+        Creature? firstTemplate = null;
+        var firstTemplateEntityId = int.MaxValue;
+        Creature? namedTemplate = null;
+        var namedTemplateEntityId = int.MaxValue;
+        foreach (var raceEntity in being.Races)
+        {
+            var raceName = raceEntity.Ability?.Template?.Name ?? raceEntity.Ability?.Name;
+            if (raceName != null
+                && entity.Manager.Game.Services.Data.Creatures.FindByIndex(raceName) is { } creature)
+            {
+                if (raceEntity.Id < firstTemplateEntityId)
+                {
+                    firstTemplate = creature;
+                    firstTemplateEntityId = raceEntity.Id;
+                }
+
+                if (creature.IsNamed
+                    && raceEntity.Id < namedTemplateEntityId)
+                {
+                    namedTemplate = creature;
+                    namedTemplateEntityId = raceEntity.Id;
+                }
+            }
+        }
+
+        return namedTemplate ?? firstTemplate;
     }
 
     public static readonly IndexedGroupedCSScriptLoader<byte, string, Creature> Loader =

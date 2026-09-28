@@ -47,7 +47,6 @@ public static partial class CreatureData
         InitialLevel = 2,
         GenerationWeight = "0",
         GenerationFlags = CreatureGenerationFlags.NonPolymorphable,
-        Behavior = AIBehavior.AlignmentAware | AIBehavior.GoldCollector | AIBehavior.GemCollector | AIBehavior.WeaponCollector,
         Noise = ActorNoiseType.Speach
     };
 }

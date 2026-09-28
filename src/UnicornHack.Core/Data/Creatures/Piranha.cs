@@ -24,6 +24,7 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 5,
+        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 1.0",
         GenerationFlags = CreatureGenerationFlags.SmallGroup,
         Size = 1,
         Weight = 60,

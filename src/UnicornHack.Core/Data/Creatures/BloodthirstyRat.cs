@@ -24,7 +24,7 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 2,
-        GenerationWeight = "5",
+        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 5",
         PreviousStageName = "sewer rat",
         GenerationFlags = CreatureGenerationFlags.SmallGroup,
         Noise = ActorNoiseType.Sqeek,

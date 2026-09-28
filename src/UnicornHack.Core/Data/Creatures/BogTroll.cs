@@ -59,8 +59,8 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 11,
-        GenerationWeight = "$branch == 'hell' ? 0 : 1",
-        Behavior = AIBehavior.Stalking | AIBehavior.WeaponCollector,
+        GenerationWeight = "$branch == 'hell' || $branch == 'entrance' || $branch == 'dungeon' ? 0 : 1",
+        Behavior = AIBehavior.Stalking,
         Noise = ActorNoiseType.Grunt,
         Size = 8,
         Weight = 1200,

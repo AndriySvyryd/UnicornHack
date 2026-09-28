@@ -31,9 +31,8 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 10,
-        GenerationWeight = "$branch == 'hell' ? 0 : 1",
+        GenerationWeight = "$branch == 'hell' || $branch == 'entrance' || $branch == 'dungeon' ? 0 : 1",
         GenerationFlags = CreatureGenerationFlags.SmallGroup,
-        Behavior = AIBehavior.GemCollector | AIBehavior.WeaponCollector,
         Noise = ActorNoiseType.Boast,
         Size = 16,
         Weight = 2250,

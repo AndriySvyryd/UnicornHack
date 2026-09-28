@@ -70,6 +70,8 @@ public static class LevelGenerator
             }
             catch (Exception e)
             {
+                RollbackCreatureInstances(level);
+
                 // TODO: Log parameters if failed
                 var msg = $@"Error while generating level '{level.BranchName}:{level.Depth}', initial seed {level.Game.Options.InitialSeed}:
 ";
@@ -137,6 +139,8 @@ public static class LevelGenerator
     /// </summary>
     private static void ResetGeneratedState(GameLevel gameLevel)
     {
+        RollbackCreatureInstances(gameLevel);
+
         foreach (var room in gameLevel.Rooms.ToList())
         {
             if (room.IncomingConnections.Count > 0)
@@ -151,6 +155,12 @@ public static class LevelGenerator
             room.Entity.RemoveComponent((int)EntityComponent.Room);
             gameLevel.Rooms.Remove(room);
         }
+    }
+
+    private static void RollbackCreatureInstances(GameLevel gameLevel)
+    {
+        gameLevel.Game.GenerationStats.RemoveCreatureInstances(gameLevel.GenerationStats);
+        gameLevel.GenerationStats.ClearCreatureInstances();
     }
 
     /// <summary>

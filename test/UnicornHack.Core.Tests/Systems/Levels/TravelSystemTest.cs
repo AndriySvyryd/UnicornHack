@@ -740,6 +740,80 @@ public class TravelSystemTest
     }
 
     [Fact]
+    public void Roaming_creature_moves_to_an_unvisited_room_connected_in_the_reverse_direction()
+    {
+        var game = TestHelper.CreateGame(seed: 1u);
+        var playerSource = TestHelper.BuildRoom("...", game);
+        var playerDestination = TestHelper.BuildRoom("...", game);
+        var roamingSource = TestHelper.BuildRoom("...", game);
+        var roamingDestination = TestHelper.BuildRoom("...", game);
+        var manager = game.Manager;
+        var level = playerSource.Level;
+
+        MoveRoomToLevel(playerDestination, level);
+        MoveRoomToLevel(roamingSource, level);
+        MoveRoomToLevel(roamingDestination, level);
+
+        ConnectRooms(
+            playerSource, new Point(1, 0),
+            playerDestination, new Point(0, 0),
+            manager);
+        ConnectRooms(
+            roamingDestination, new Point(2, 0),
+            roamingSource, new Point(0, 0),
+            manager);
+
+        var roamingCreature = CreatureData.Cerberous.Instantiate(
+            roamingSource, new Point(1, 0));
+        var player = PlayerRace.InstantiatePlayer(
+            "Dudley", Sex.Male, playerSource, new Point(1, 0));
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.True(manager.TravelSystem.TravelToRoom(
+            player, playerDestination.EntityId, manager));
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(roamingDestination.EntityId, roamingCreature.Position!.RoomId);
+        Assert.False(roamingDestination.IsVisited);
+    }
+
+    [Fact]
+    public void Roaming_creature_stays_when_the_player_enters_its_room()
+    {
+        var game = TestHelper.CreateGame(seed: 1u);
+        var playerSource = TestHelper.BuildRoom("...", game);
+        var destination = TestHelper.BuildRoom("...", game);
+        var escapeRoom = TestHelper.BuildRoom("...", game);
+        var manager = game.Manager;
+        var level = playerSource.Level;
+
+        MoveRoomToLevel(destination, level);
+        MoveRoomToLevel(escapeRoom, level);
+
+        ConnectRooms(
+            playerSource, new Point(1, 0),
+            destination, new Point(0, 0),
+            manager);
+        ConnectRooms(
+            destination, new Point(2, 0),
+            escapeRoom, new Point(0, 0),
+            manager);
+
+        var roamingCreature = CreatureData.Cerberous.Instantiate(
+            destination, new Point(1, 0));
+        var player = PlayerRace.InstantiatePlayer(
+            "Dudley", Sex.Male, playerSource, new Point(1, 0));
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.True(manager.TravelSystem.TravelToRoom(
+            player, destination.EntityId, manager));
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(destination.EntityId, roamingCreature.Position!.RoomId);
+        Assert.Equal(destination.EntityId, player.Position!.RoomId);
+    }
+
+    [Fact]
     public void Inter_level_travel_deletes_the_whole_abandoned_level()
     {
         var game = TestHelper.CreateGame();
@@ -880,5 +954,35 @@ public class TravelSystemTest
 
         // The destination branch is untouched.
         Assert.NotNull(manager.FindEntity(branchBRoom.EntityId));
+    }
+
+    private static void MoveRoomToLevel(RoomComponent room, GameLevel level)
+    {
+        room.Level.Rooms.Remove(room);
+        room.Level = level;
+        level.Rooms.Add(room);
+    }
+
+    private static GameEntity ConnectRooms(
+        RoomComponent source,
+        Point sourceCell,
+        RoomComponent target,
+        Point targetCell,
+        GameManager manager)
+    {
+        using var connectionReference = manager.CreateEntity();
+        var connectionEntity = connectionReference.Referenced;
+        var position = manager.CreateComponent<PositionComponent>(EntityComponent.Position);
+        position.RoomEntity = source.Entity;
+        position.Cell = sourceCell;
+        connectionEntity.Position = position;
+
+        var connection = manager.CreateComponent<ConnectionComponent>(EntityComponent.Connection);
+        connection.TargetRoomId = target.EntityId;
+        connection.TargetCell = targetCell;
+        connection.Directionality = Directionality.Source;
+        connection.Orientation = Direction.East;
+        connectionEntity.Connection = connection;
+        return connectionEntity;
     }
 }

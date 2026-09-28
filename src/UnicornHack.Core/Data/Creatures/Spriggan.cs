@@ -38,7 +38,7 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 6,
-        Behavior = AIBehavior.WeaponCollector,
+        GenerationWeight = "$branch == 'entrance' ? 0 : 1.0",
         Noise = ActorNoiseType.Seduction,
         Sex = Sex.Female,
         Weight = 600,

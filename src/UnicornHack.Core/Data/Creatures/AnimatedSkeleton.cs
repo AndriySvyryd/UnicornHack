@@ -31,9 +31,8 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 3,
-        GenerationWeight = "3",
+        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 3",
         GenerationFlags = CreatureGenerationFlags.SmallGroup,
-        Behavior = AIBehavior.WeaponCollector,
         Weight = 300,
         MovementDelay = 100,
         TurningDelay = 100,

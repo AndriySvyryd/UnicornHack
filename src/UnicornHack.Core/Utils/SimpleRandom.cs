@@ -306,9 +306,11 @@ public class SimpleRandom : NotificationEntity
 
     private uint NextUInt()
     {
+        FirePropertyChanging(nameof(Seed));
         _seed ^= _seed << 13;
         _seed ^= _seed >> 17;
         _seed ^= _seed << 5;
+        FirePropertyChanged(nameof(Seed));
         return _seed - 1; // _seed is never 0
     }
 

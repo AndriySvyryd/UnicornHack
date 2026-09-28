@@ -174,7 +174,7 @@ public partial class GameManager
 
         KnowledgeSystem = new KnowledgeSystem();
         queue.Register<VisibleTerrainChangedMessage>(KnowledgeSystem, VisibleTerrainChangedMessage.Name, 0);
-        queue.Register<TraveledMessage>(KnowledgeSystem, TraveledMessage.Name, 4);
+        queue.Register<TraveledMessage>(KnowledgeSystem, TraveledMessage.Name, 5);
         queue.Register<ItemMovedMessage>(KnowledgeSystem, ItemMovedMessage.Name, 0);
         queue.Register<AttackResultMessage>(KnowledgeSystem, AttackResultMessage.Name, 1);
         queue.Register<SoundMessage>(KnowledgeSystem, SoundMessage.Name, 0);
@@ -188,7 +188,7 @@ public partial class GameManager
         queue.Register<ItemEquippedMessage>(LoggingSystem, ItemEquippedMessage.Name, 1);
         queue.Register<AttackResultMessage>(LoggingSystem, AttackResultMessage.Name, 2);
         queue.Register<ItemActivationResultMessage>(LoggingSystem, ItemActivationResultMessage.Name, 2);
-        queue.Register<TraveledMessage>(LoggingSystem, TraveledMessage.Name, 5);
+        queue.Register<TraveledMessage>(LoggingSystem, TraveledMessage.Name, 6);
         queue.Register<DiedMessage>(LoggingSystem, DiedMessage.Name, 1);
     }
 }

@@ -20,7 +20,7 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 2,
-        GenerationWeight = "3",
+        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 3",
         Behavior = AIBehavior.Wandering,
         Sex = Sex.None,
         Size = 2,

@@ -31,8 +31,8 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 9,
+        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 1.0",
         GenerationFlags = CreatureGenerationFlags.SmallGroup,
-        Behavior = AIBehavior.GemCollector | AIBehavior.WeaponCollector,
         Noise = ActorNoiseType.Boast,
         Size = 16,
         Weight = 2250,

@@ -38,7 +38,7 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 2,
-        GenerationWeight = "4",
+        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 4",
         Behavior = AIBehavior.Stalking,
         Sex = Sex.None,
         Size = 2,

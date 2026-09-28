@@ -181,7 +181,9 @@ public class CreatureGenerator
                 if (creatureVariant.Instantiate(room, point) != null)
                 {
                     room.Level.GenerationStats.RecordCreatureInstance(
-                        creatureVariant.Name, creatureVariant.GenerationFlags);
+                        creatureVariant.Name, creatureVariant.GenerationFlags, creatureVariant.IsNamedNonBoss);
+                    room.Level.Game.GenerationStats.RecordCreatureInstance(
+                        creatureVariant.Name, creatureVariant.GenerationFlags, creatureVariant.IsNamedNonBoss);
                     return true;
                 }
             }

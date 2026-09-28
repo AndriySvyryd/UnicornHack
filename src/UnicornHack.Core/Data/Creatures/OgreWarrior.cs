@@ -44,10 +44,9 @@ public static partial class CreatureData
         LowerExtremities = ExtremityType.Fingers,
         Infravisible = true,
         InitialLevel = 5,
-        GenerationWeight = "3",
+        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 3",
         NextStageName = "ogre lord",
         GenerationFlags = CreatureGenerationFlags.SmallGroup,
-        Behavior = AIBehavior.GoldCollector | AIBehavior.GemCollector | AIBehavior.WeaponCollector,
         Noise = ActorNoiseType.Grunt
     };
 }

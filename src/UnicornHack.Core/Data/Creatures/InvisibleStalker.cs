@@ -24,6 +24,7 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 8,
+        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 1.0",
         Behavior = AIBehavior.Wandering | AIBehavior.Stalking,
         Size = 8,
         Weight = 900,

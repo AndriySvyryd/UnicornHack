@@ -41,7 +41,7 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 5,
-        GenerationWeight = "5",
+        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 5",
         PreviousStageName = "giant bat",
         Behavior = AIBehavior.Wandering,
         Noise = ActorNoiseType.Sqeek,
