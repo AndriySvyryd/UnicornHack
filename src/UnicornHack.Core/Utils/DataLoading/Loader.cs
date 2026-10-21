@@ -20,7 +20,7 @@ public abstract class Loader<T> : ILoader<T>
         throw new InvalidOperationException($"{typeof(T).Name} '{name}' not found");
     }
 
-    public T? Find(string name)
+    public virtual T? Find(string name)
         => NameLookup.TryGetValue(name, out var variant)
         ? variant
         : null;

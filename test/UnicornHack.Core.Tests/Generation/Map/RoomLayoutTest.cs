@@ -434,8 +434,8 @@ public class RoomLayoutTest
         var manager = game.Manager;
 
         var surfaceBranch = BranchData.Surface.Instantiate(game);
-        BranchData.Entrance.Instantiate(game);
-        BranchData.Dungeon.Instantiate(game);
+        BranchData.OuterWards.Instantiate(game);
+        BranchData.RuinedStronghold.Instantiate(game);
 
         var surfaceLevel = LevelGenerator.CreateEmpty(surfaceBranch, depth: 1, seed, manager);
         LevelGenerator.EnsureGenerated(surfaceLevel);
@@ -478,8 +478,8 @@ public class RoomLayoutTest
         var manager = game.Manager;
 
         var surfaceBranch = BranchData.Surface.Instantiate(game);
-        BranchData.Entrance.Instantiate(game);
-        BranchData.Dungeon.Instantiate(game);
+        BranchData.OuterWards.Instantiate(game);
+        BranchData.RuinedStronghold.Instantiate(game);
 
         var surfaceLevel = LevelGenerator.CreateEmpty(surfaceBranch, depth: 1, seed, manager);
         LevelGenerator.EnsureGenerated(surfaceLevel);
@@ -491,7 +491,7 @@ public class RoomLayoutTest
         // Follow the entrance level's exit into the first dungeon level (the room the reported
         // disconnected chunk appeared in) and check it too.
         var dungeonRoom = entranceRoom.Level.Rooms
-            .FirstOrDefault(r => (r.Features & RoomFeatures.Exit) != 0)?.Connections.Values
+            .FirstOrDefault(r => (r.FeatureTags & RoomFeatures.Exit) != 0)?.Connections.Values
             .Select(c => c.Connection!)
             .FirstOrDefault(c => c.Orientation == Direction.Down)?.TargetRoomEntity.Room;
         if (dungeonRoom != null)
@@ -503,7 +503,7 @@ public class RoomLayoutTest
 
     private static RoomComponent? NextDungeonRoom(GameLevel level)
         => level.Rooms
-            .FirstOrDefault(r => (r.Features & RoomFeatures.Exit) != 0)?.Connections.Values
+            .FirstOrDefault(r => (r.FeatureTags & RoomFeatures.Exit) != 0)?.Connections.Values
             .Select(c => c.Connection!)
             .FirstOrDefault(c => c.Orientation == Direction.Down)?.TargetRoomEntity.Room;
 
@@ -531,7 +531,7 @@ public class RoomLayoutTest
             if (components > 1 || exposed.Count > 0)
             {
                 var msg =
-                    $"{room.Level.BranchName}:{room.Level.Depth} room({room.GridX},{room.GridY}) {room.Features} "
+                    $"{room.Level.BranchName}:{room.Level.Depth} room({room.GridX},{room.GridY}) {room.FeatureTags} "
                     + $"components={components} exposedWalkable={exposed.Count}";
                 violations.Add(msg);
                 _output.WriteLine(msg);
@@ -738,10 +738,11 @@ public class RoomLayoutTest
             Map = """
                 #####
                 #...#
-                #..>+
+                #...+
                 #...#
                 #####
                 """,
+            NoRandomDoorways = true,
             CreatureGenerator = new CreatureGenerator { ExpectedInitialCount = 0 },
             ItemGenerator = new ItemGenerator { ExpectedInitialCount = 0 }
         };

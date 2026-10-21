@@ -51,7 +51,7 @@ public class LevelConnection : ICSScriptSerializable
         else
         {
             // A Shortcut room skips one level ahead (Depth + 2); a normal Exit advances by one.
-            var depthDelta = (room.Features & RoomFeatures.Shortcut) != 0 ? 2 : 1;
+            var depthDelta = (room.FeatureTags & RoomFeatures.Shortcut) != 0 ? 2 : 1;
             var sameBranchDepth = sourceLevel.Depth + depthDelta;
             if (sameBranchDepth <= sourceBranch.Length)
             {
@@ -75,7 +75,7 @@ public class LevelConnection : ICSScriptSerializable
         var targetGameLevel = branch.Levels.FirstOrDefault(l => l.Depth == targetDepth);
         // Prefer the target level's entrance room: when the exit (or shortcut) room already
         // sourced a connection to this level, it created that entrance and points at it.
-        var targetRoom = targetGameLevel?.Rooms.FirstOrDefault(r => (r.Features & RoomFeatures.Entrance) != 0)
+        var targetRoom = targetGameLevel?.Rooms.FirstOrDefault(r => (r.FeatureTags & RoomFeatures.Entrance) != 0)
                          ?? targetGameLevel?.Rooms.FirstOrDefault();
         Point? targetCell = null;
         if (targetRoom != null)
@@ -109,7 +109,7 @@ public class LevelConnection : ICSScriptSerializable
             // so mark it now: GetEmptyEntranceRoom reuses this exact room when the level is
             // generated.
             targetRoom = LevelLayout.CreateEmptyRoom(newGameLevel, manager);
-            targetRoom.Features = RoomFeatures.Entrance;
+            targetRoom.FeatureTags = RoomFeatures.Entrance;
         }
 
         return CreateConnection(room, cell, targetRoom.EntityId, targetCell, direction, Primitives.Direction.Down);
@@ -207,9 +207,9 @@ public class LevelConnection : ICSScriptSerializable
         return inverse;
     }
 
-    protected static ConnectionComponent CreateConnection(
+    public static ConnectionComponent CreateConnection(
         RoomComponent room, Point point, int targetRoomId, Point? targetCell,
-        Directionality? cardinality, Direction direction)
+        Directionality? cardinality, Direction direction, bool hidden = false)
     {
         var manager = room.Entity.Manager;
         using var connectionEntityReference = manager.CreateEntity();
@@ -226,6 +226,7 @@ public class LevelConnection : ICSScriptSerializable
         connection.TargetCell = targetCell;
         connection.Directionality = cardinality;
         connection.Orientation = direction;
+        connection.Hidden = hidden;
 
         connectionEntity.Connection = connection;
 

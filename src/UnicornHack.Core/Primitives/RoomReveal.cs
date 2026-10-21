@@ -9,6 +9,5 @@ public enum RoomReveal
     CreatureCount = 1 << 2,
     CreatureDeityAlignment = 1 << 3,
     CreatureTypes = 1 << 4,
-    Items = 1 << 5,
-    Full = Features | CurseDetails | CreatureCount | CreatureDeityAlignment | CreatureTypes | Items
+    Full = Features | CurseDetails | CreatureCount | CreatureDeityAlignment | CreatureTypes
 }

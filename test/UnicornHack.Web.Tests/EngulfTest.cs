@@ -39,7 +39,7 @@ public class EngulfTest
         var room = playerEntity.Position!.RoomEntity.Room!;
         var playerCell = playerEntity.Position!.Cell!.Value;
 
-        var engulfer = CreatureData.GelatinousCube.Instantiate(
+        var engulfer = CreatureData.Sylph.Instantiate(
             room, FindAdjacentWalkableCell(room, playerCell, manager));
         manager.Queue.ProcessQueue(manager);
 
@@ -70,7 +70,7 @@ public class EngulfTest
         var engulfer = EngulfPlayer(manager, playerEntity);
         Assert.NotNull(playerEntity.Position!.Cell);
         Assert.Equal(1, playerEntity.Position.Cell.Value.DistanceTo(engulfer.Position!.Cell!.Value));
-        Assert.True((EffectApplicationSystem.GetAbilityLevel(playerEntity, "engulfed") > 0));
+        Assert.True((AbilityLevelSystem.GetAbilityLevel(playerEntity, "engulfed") > 0));
 
         var state = GameStateManager.GetState(playerEntity, services);
         Assert.NotNull(state.Room);
@@ -113,7 +113,7 @@ public class EngulfTest
         var room = player.Position!.RoomEntity.Room!;
         var playerCell = player.Position!.Cell!.Value;
 
-        var engulfer = CreatureData.GelatinousCube.Instantiate(
+        var engulfer = CreatureData.Sylph.Instantiate(
             room, FindAdjacentWalkableCell(room, playerCell, manager));
         manager.Queue.ProcessQueue(manager);
 
@@ -125,7 +125,7 @@ public class EngulfTest
 
         Assert.NotNull(player.Position!.Cell);
         Assert.Equal(1, player.Position.Cell.Value.DistanceTo(engulfer.Position!.Cell!.Value));
-        Assert.True((EffectApplicationSystem.GetAbilityLevel(player, "engulfed") > 0));
+        Assert.True((AbilityLevelSystem.GetAbilityLevel(player, "engulfed") > 0));
         var engulferId = engulfer.Id;
         var engulferCell = engulfer.Position!.Cell;
         var playerCellBeforeReload = player.Position.Cell;
@@ -137,7 +137,7 @@ public class EngulfTest
         var reloadedPlayer = reloadedManager.FindEntity(persisted.PlayerEntityId);
         Assert.NotNull(reloadedPlayer);
         Assert.Equal(playerCellBeforeReload, reloadedPlayer!.Position!.Cell);
-        Assert.True((EffectApplicationSystem.GetAbilityLevel(reloadedPlayer, "engulfed") > 0));
+        Assert.True((AbilityLevelSystem.GetAbilityLevel(reloadedPlayer, "engulfed") > 0));
 
         var reloadedEngulfer = reloadedManager.EngulferToVictimRelationship.GetEngulfer(reloadedPlayer);
         Assert.NotNull(reloadedEngulfer);

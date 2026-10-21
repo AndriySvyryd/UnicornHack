@@ -56,7 +56,7 @@ public class PlayerRace : Being, ICSScriptSerializable, ILoadable
 
             manager.EffectApplicationSystem.ApplyAbilityWithoutCarrier(AbilityData.Innate, playerEntity);
 
-            manager.EffectApplicationSystem.AddAbilityEffect(
+            manager.AbilityLevelSystem.AddAbilityEffect(
                 playerEntity, defaultRace.GetRaceAbilityTemplate());
 
             return playerEntity;
@@ -66,7 +66,7 @@ public class PlayerRace : Being, ICSScriptSerializable, ILoadable
     public override int GetTemplateId() => Loader.GetId(Name);
 
     protected override Dictionary<int, IReadOnlyList<Effect>> GetRaceLeveledEffects()
-        => (Dictionary<int, IReadOnlyList<Effect>>)Effects;
+        => new(Effects);
 
     public static readonly IndexedCSScriptLoader<string, PlayerRace> Loader =
         new(@"Data\Players\", typeof(PlayerRaceData), race => race.GetRaceAbilityName(),

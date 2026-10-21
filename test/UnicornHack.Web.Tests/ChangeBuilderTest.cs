@@ -13,6 +13,50 @@ namespace UnicornHack;
 
 public class ChangeBuilderTest
 {
+    [Fact]
+    public void Windup_is_included_in_next_action_tick()
+    {
+        var game = TestHelper.CreateGame();
+        var room = TestHelper.BuildRoom(".....\n.....\n.....", game);
+        var player = PlayerRace.InstantiatePlayer("Tester", Sex.Male, room, new Point(2, 1));
+        player.Position!.Heading = Direction.West;
+        var actor = CreatureData.BalorUaNeit.Instantiate(room, new Point(1, 1));
+        var manager = game.Manager;
+        manager.Queue.ProcessQueue(manager);
+        actor.Being!.HitPoints = actor.Being.HitPointMaximum / 2;
+        manager.Queue.ProcessQueue(manager);
+        actor.AI!.NextAction = ActorActionType.Wait;
+        actor.AI.NextActionTarget = null;
+        actor.AI.NextActionTarget2 = null;
+        var listener = WebTestHelper.SetupListeners(manager);
+        var context = new SerializationContext(null, player, game.Services);
+        listener.GetSerializedRoom(room.Entity, context);
+        listener.Reset(manager);
+        var knowledgeId = room.KnownActors.Values.Single(knowledge => knowledge.Knowledge!.KnownEntityId == actor.Id).Id;
+        var ability = manager.AffectableAbilitiesIndex[(actor.Id, "lifted eye")]!.Ability!;
+        var target = player.Position.Cell!.Value;
+        actor.Position!.Heading = Direction.East;
+        actor.AI.NextAction = ActorActionType.UseAbilitySlot;
+        actor.AI.NextActionTarget = ability.Slot;
+        actor.AI.NextActionTarget2 = actor.Position.Cell!.Value.DifferenceTo(target).ToInt32();
+        actor.AI.NextActionTick += ability.Windup;
+        manager.Queue.ProcessQueue(manager);
+
+        var intention = listener.GetSerializedRoom(room.Entity, context)!.Actors![knowledgeId];
+        Assert.NotNull(intention.NextAction);
+        Assert.Contains("lifted eye", intention.NextAction.Name!, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(target.ToInt32(), intention.NextAction.Target);
+        Assert.Equal(ability.TargetingShape, intention.NextAction.TargetingShape);
+        Assert.Equal(actor.AI.NextActionTick, intention.NextActionTick);
+        listener.Reset(manager);
+        actor.Being!.HitPoints--;
+        manager.Queue.ProcessQueue(manager);
+
+        var damaged = listener.GetSerializedRoom(room.Entity, context)!.Actors![knowledgeId];
+        Assert.False(damaged.ChangedProperties.IsPropertyChanged(12));
+        Assert.Equal(ActorActionType.UseAbilitySlot, actor.AI.NextAction);
+    }
+
     private const string TestMap = @"
 .....
 .....
@@ -143,7 +187,7 @@ public class ChangeBuilderTest
 
         var actingPlayer = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(1, 1));
         var observingPlayer = PlayerRace.InstantiatePlayer("Cudley", Sex.Female, room, new Point(3, 1));
-        var creature = CreatureData.HumanWarrior.Instantiate(room, new Point(2, 2));
+        var creature = CreatureData.Manusya.Instantiate(room, new Point(2, 2));
         ItemData.LongSword.Instantiate(actingPlayer);
         ItemData.LongSword.Instantiate(observingPlayer);
         manager.Queue.ProcessQueue(manager);
@@ -489,7 +533,7 @@ public class ChangeBuilderTest
         var manager = game.Manager;
 
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(1, 1));
-        var creature = CreatureData.HumanWarrior.Instantiate(room, new Point(2, 1));
+        var creature = CreatureData.Manusya.Instantiate(room, new Point(2, 1));
         manager.Queue.ProcessQueue(manager);
         var creatureKnowledge = Assert.Single(
             room.KnownActors.Values,
@@ -531,7 +575,7 @@ public class ChangeBuilderTest
         var manager = game.Manager;
 
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(1, 1));
-        CreatureData.HumanWarrior.Instantiate(room, new Point(2, 1));
+        CreatureData.Manusya.Instantiate(room, new Point(2, 1));
         manager.Queue.ProcessQueue(manager);
 
         var listener = WebTestHelper.SetupListeners(manager);
@@ -554,7 +598,7 @@ public class ChangeBuilderTest
         var manager = game.Manager;
 
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(1, 1));
-        CreatureData.HumanWarrior.Instantiate(room, new Point(2, 1));
+        CreatureData.Manusya.Instantiate(room, new Point(2, 1));
         manager.Queue.ProcessQueue(manager);
 
         var listener = WebTestHelper.SetupListeners(manager);
@@ -576,7 +620,7 @@ public class ChangeBuilderTest
         var manager = game.Manager;
 
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(1, 1));
-        CreatureData.HumanWarrior.Instantiate(room, new Point(2, 1));
+        CreatureData.Manusya.Instantiate(room, new Point(2, 1));
         ItemData.LongSword.Instantiate(playerEntity);
         manager.Queue.ProcessQueue(manager);
         var sword = playerEntity.Being!.Items.Single(item => item.Item!.TemplateName == "long sword");
@@ -611,7 +655,7 @@ public class ChangeBuilderTest
         var manager = game.Manager;
 
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(1, 1));
-        CreatureData.HumanWarrior.Instantiate(room, new Point(3, 1));
+        CreatureData.Manusya.Instantiate(room, new Point(3, 1));
         manager.Queue.ProcessQueue(manager);
 
         var listener = WebTestHelper.SetupListeners(manager);
@@ -708,7 +752,7 @@ public class ChangeBuilderTest
         var manager = game.Manager;
         var firstPlayer = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(1, 1));
         var secondPlayer = PlayerRace.InstantiatePlayer("Cudley", Sex.Female, room, new Point(3, 1));
-        CreatureData.HumanWarrior.Instantiate(room, new Point(2, 2));
+        CreatureData.Manusya.Instantiate(room, new Point(2, 2));
         ItemData.FlaskOfHealing.Instantiate(room, new Point(4, 4));
         manager.Queue.ProcessQueue(manager);
 

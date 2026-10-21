@@ -205,6 +205,88 @@ public class ActiveEffectsComponent : GameComponent
     // (dynamic) magnitude, so the graph adds no cost until something registers.
     private Dictionary<ActivePropertyEffect, DynamicMagnitude>? _dynamicMagnitudes;
     private Dictionary<string, List<ActivePropertyEffect>>? _magnitudeDependents;
+    private Dictionary<string, Ability>? _dynamicAbilities;
+    private Dictionary<string, List<Ability>>? _abilityDependents;
+
+    internal bool DynamicAbilitiesInitialized { get; set; }
+
+    public void RegisterDynamicAbility(Ability ability)
+    {
+        if (ability.LevelExpression == null)
+        {
+            return;
+        }
+
+        _dynamicAbilities ??= new(StringComparer.Ordinal);
+        if (_dynamicAbilities.TryGetValue(ability.Name, out var previous))
+        {
+            if (ReferenceEquals(previous, ability))
+            {
+                return;
+            }
+
+            UnregisterDynamicAbility(previous);
+        }
+
+        _dynamicAbilities[ability.Name] = ability;
+        foreach (var input in ability.LevelExpressionInputs)
+        {
+            _abilityDependents ??= new(StringComparer.Ordinal);
+            if (!_abilityDependents.TryGetValue(input, out var dependents))
+            {
+                dependents = [];
+                _abilityDependents[input] = dependents;
+            }
+
+            if (!dependents.Contains(ability))
+            {
+                dependents.Add(ability);
+            }
+        }
+    }
+
+    public void UnregisterDynamicAbility(Ability ability)
+    {
+        if (_dynamicAbilities == null
+            || !_dynamicAbilities.TryGetValue(ability.Name, out var registered)
+            || !ReferenceEquals(registered, ability))
+        {
+            return;
+        }
+
+        foreach (var input in ability.LevelExpressionInputs)
+        {
+            if (_abilityDependents != null
+                && _abilityDependents.TryGetValue(input, out var dependents))
+            {
+                dependents.Remove(ability);
+                if (dependents.Count == 0)
+                {
+                    _abilityDependents.Remove(input);
+                }
+            }
+        }
+
+        _dynamicAbilities.Remove(ability.Name);
+    }
+
+    public IReadOnlyList<Ability> GetDynamicAbilityDependents(string input)
+        => _abilityDependents != null && _abilityDependents.TryGetValue(input, out var dependents)
+            ? dependents
+            : [];
+
+    public bool HasDynamicAbilityDependents(string input)
+        => _abilityDependents != null && _abilityDependents.ContainsKey(input);
+
+    internal IReadOnlyCollection<Ability> GetDynamicAbilities()
+        => _dynamicAbilities is { } abilities ? abilities.Values : [];
+
+    internal void ClearDynamicAbilities()
+    {
+        _dynamicAbilities?.Clear();
+        _abilityDependents?.Clear();
+        DynamicAbilitiesInitialized = false;
+    }
 
     private sealed class DynamicMagnitude(string[] inputProperties, string outputProperty, Func<int> recompute)
     {
@@ -604,6 +686,7 @@ public class ActiveEffectsComponent : GameComponent
         _contributionScratch?.Clear();
         _dynamicMagnitudes?.Clear();
         _magnitudeDependents?.Clear();
+        ClearDynamicAbilities();
 
         base.Clean();
     }

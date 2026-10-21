@@ -1,5 +1,4 @@
-﻿using UnicornHack.Systems.Beings;
-using UnicornHack.Systems.Levels;
+﻿using UnicornHack.Systems.Levels;
 using UnicornHack.Utils.MessagingECS;
 
 // ReSharper disable once CheckNamespace
@@ -82,7 +81,6 @@ public partial class GameManager
         TravelSystem = new TravelSystem();
         queue.Register<TravelMessage>(TravelSystem, TravelMessage.Name, 0);
         queue.Register<TraveledMessage>(TravelSystem, TraveledMessage.Name, 4);
-        queue.Register<DiedMessage>(TravelSystem, DiedMessage.Name, 6);
     }
 
     // The by-cell index key for a position: the (CellX, CellY) point, or NO key when the entity is in a room

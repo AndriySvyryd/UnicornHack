@@ -218,8 +218,7 @@ public class Branch : ILoadable, ICSScriptSerializable
         return branch;
     }
 
-    public static readonly CSScriptLoader<Branch> Loader =
-        new(@"Data\Branches\", typeof(BranchData));
+    public static readonly CSScriptLoader<Branch> Loader = new(@"Data\Branches\", typeof(BranchData));
 
     private static readonly CSScriptSerializer Serializer =
         new PropertyCSScriptSerializer<Branch>(GetPropertyConditions<Branch>());
@@ -242,7 +241,7 @@ public class Branch : ILoadable, ICSScriptSerializable
         { nameof(RoomLayout), (_, v) => v is not UniformRoomLayout || v.GetType() != typeof(UniformRoomLayout) },
         {
             nameof(CreatureGenerator), (_, v)
-                => v is not CreatureGenerator { ExpectedInitialCount: 8 } cg
+                => v is not CreatureGenerator { ExpectedInitialCount: 8, MaximumInitialCount: byte.MaxValue } cg
                     || cg.GetType() != typeof(CreatureGenerator)
         },
         {

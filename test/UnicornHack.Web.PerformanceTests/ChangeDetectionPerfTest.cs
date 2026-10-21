@@ -93,7 +93,7 @@ public class ChangeDetectionPerfTest
                         continue;
                     }
 
-                    CreatureData.HumanWarrior.Instantiate(_room, new Point((byte)x, (byte)y));
+                    CreatureData.Manusya.Instantiate(_room, new Point((byte)x, (byte)y));
                     placed++;
                 }
             }

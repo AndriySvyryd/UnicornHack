@@ -6,31 +6,11 @@ public static partial class CreatureData
     {
         Name = "clay golem",
         SpeciesClass = SpeciesClass.Construct,
-        Abilities = new List<Ability>
-        {
-            new Ability
-            {
-                Name = "clay golem ability #1",
-                Type = AbilityType.MeleeAttack,
-                Activation = ActivationType.Targeted,
-                Trigger = ActivationType.OnMeleeAttack,
-                Range = 1,
-                Action = AbilityAction.Punch,
-                SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                Accuracy = "5+PerceptionModifier()",
-                Cooldown = 100,
-                Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Amount = "160*MightModifier()" } }
-            }
-        },
-        InitialLevel = 11,
-        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 1.0",
-        Sex = Sex.None,
-        Size = 8,
-        Weight = 1500,
+        Material = Material.Mineral,
         MovementDelay = 71,
         TurningDelay = 71,
-        Material = Material.Mineral,
+        Size = 8,
+        Weight = 1500,
         PerceptionBonus = -4,
         MightBonus = -4,
         SpeedBonus = -4,
@@ -45,6 +25,29 @@ public static partial class CreatureData
         LowerExtremities = ExtremityType.Fingers,
         RespirationType = RespirationType.None,
         Mindless = true,
-        NonAnimal = true
+        NonAnimal = true,
+        Abilities = new List<Ability>
+        {
+            new Ability
+            {
+                Name = "earthen fist",
+                Type = AbilityType.MeleeAttack,
+                Activation = ActivationType.Targeted,
+                Trigger = ActivationType.OnMeleeAttack,
+                Range = 1,
+                Action = AbilityAction.Punch,
+                SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                Accuracy = "5+PerceptionModifier()",
+                Cooldown = 100,
+                Delay = "100*SpeedModifier()",
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "160*MightModifier()" } }
+            }
+        },
+        EnglishDescription = "A heavy human-shaped figure molded from dull, earthen clay. Thumb marks and shallow cracks cover its surface; the face is little more than a few pressed hollows.",
+        InitialLevel = 11,
+        GenerationWeight = "0",
+        GenerationFlags = CreatureGenerationFlags.NonGenocidable | CreatureGenerationFlags.NonPolymorphable,
+        Behavior = AIBehavior.NonRecruitable,
+        Sex = Sex.None
     };
 }

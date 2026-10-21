@@ -18,7 +18,6 @@ public static partial class ItemData
             }
         },
         Type = ItemType.Potion,
-        Material = Material.Glass,
-        Weight = 1
+        Material = Material.Glass
     };
 }

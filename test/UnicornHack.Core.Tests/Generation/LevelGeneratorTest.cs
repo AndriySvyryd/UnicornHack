@@ -9,6 +9,96 @@ public class LevelGeneratorTest
 {
     private static readonly IReadOnlyDictionary<string, int> EmptyTagInstances = new Dictionary<string, int>();
 
+    [Fact]
+    public void Production_boss_allocation_obeys_cadence_uniqueness_and_equal_eligible_final_weights()
+    {
+        for (uint seed = 1; seed <= 32; seed++)
+        {
+            var game = TestHelper.CreateGame(seed);
+            var branch = BranchData.RuinedStronghold.Instantiate(game);
+            var selected = new HashSet<string>();
+            for (byte depth = 1; depth <= 3; depth++)
+            {
+                var level = LevelGenerator.CreateEmpty(branch, depth, seed, game.Manager);
+                var features = RoomFeatures.Boss | RoomFeatures.Exit;
+                if (depth == 3)
+                {
+                    var balor = DefiningMapFragmentData.BalorHall.GetWeight(level, features);
+                    var rubezahl = DefiningMapFragmentData.RubezahlHall.GetWeight(level, features);
+                    Assert.True(balor > 0);
+                    Assert.Equal(balor, rubezahl);
+                }
+
+                var fragment = LevelGenerator.PickFragmentForRoom(level, features);
+                var name = Assert.Single(fragment.Creatures!.Values,
+                    candidate => game.Services.Data.Creatures.Get(candidate).IsBoss);
+                var creature = game.Services.Data.Creatures.Get(name);
+                Assert.True(selected.Add(name));
+                Assert.Equal("0", creature.GenerationWeight);
+                Assert.True(creature.GenerationFlags.HasFlag(depth < 3
+                    ? CreatureGenerationFlags.LevelBoss
+                    : CreatureGenerationFlags.BranchBoss));
+                if (depth == 3)
+                {
+                    Assert.Contains(name, new[] { "Balor ua Neit", "Rubezahl" });
+                }
+
+                var room = LevelLayout.CreateEmptyRoom(level, game.Manager);
+                LevelLayout.AllocateTerrain(room, 25, 16, MapFeature.RockFloor);
+                Assert.True(CreatureGenerator.TrySpawnExact(room, new Point(12, 8), name));
+                game.Manager.Queue.ProcessQueue(game.Manager);
+                Assert.Equal(1, game.GenerationStats.CreatureInstancesByName[name]);
+                Assert.False(creature.CanPlaceInstance(level));
+            }
+
+            Assert.Equal(3, selected.Count);
+        }
+    }
+
+    [Theory]
+    [InlineData(RoomFeatures.Normal)]
+    [InlineData(RoomFeatures.Boss | RoomFeatures.Exit)]
+    public void All_defining_fragments_use_the_same_weighted_selection_path(RoomFeatures features)
+    {
+        var game = TestHelper.CreateGame();
+        var branch = new Branch { Name = "test shared fragment selection", Length = 1 }.Instantiate(game);
+        var level = LevelGenerator.CreateEmpty(branch, 1, 1, game.Manager);
+        var loader = ((TestDataProvider)game.Services.Data).DefiningMapFragments;
+        loader.IncludeProduction = false;
+        var first = new DefiningMapFragment
+        {
+            Name = "first defining room",
+            GenerationWeight = "1",
+            Tags = features.HasFlag(RoomFeatures.Boss) ? ["boss"] : []
+        };
+        var second = new DefiningMapFragment
+        {
+            Name = "second defining room",
+            GenerationWeight = "0",
+            Tags = features.HasFlag(RoomFeatures.Boss) ? ["boss"] : []
+        };
+        var excluded = new DefiningMapFragment
+        {
+            Name = "ineligible defining room",
+            GenerationWeight = "Infinity",
+            Tags = features.HasFlag(RoomFeatures.Boss) ? [] : ["boss"]
+        };
+        loader.Add(first);
+        loader.Add(second);
+        loader.Add(excluded);
+
+        Assert.Same(first, LevelGenerator.PickFragmentForRoom(level, features));
+        first.GenerationWeight = "0";
+        second.GenerationWeight = "1";
+        Assert.Same(second, LevelGenerator.PickFragmentForRoom(level, features));
+        Assert.Null(first.Creatures);
+        Assert.Null(second.Creatures);
+        Assert.Equal(1, level.GenerationStats.FragmentInstancesByName[first.SourceName]);
+        Assert.Equal(1, level.GenerationStats.FragmentInstancesByName[second.SourceName]);
+        Assert.Equal(1, game.GenerationStats.FragmentInstancesByName[first.SourceName]);
+        Assert.Equal(1, game.GenerationStats.FragmentInstancesByName[second.SourceName]);
+    }
+
     /// <summary>
     ///     Regression: with an initial seed of 0, every generated level had the same
     ///     layout because the xorshift RNG is degenerate at state 0 and never advances.
@@ -24,7 +114,7 @@ public class LevelGeneratorTest
     {
         var game = TestHelper.CreateGame(seed);
         var manager = game.Manager;
-        var dungeon = BranchData.Dungeon.Instantiate(game);
+        var dungeon = BranchData.RuinedStronghold.Instantiate(game);
 
         var firstLevel = LevelGenerator.CreateEmpty(dungeon, depth: 1, seed, manager);
         LevelGenerator.EnsureGenerated(firstLevel);
@@ -61,8 +151,8 @@ public class LevelGeneratorTest
         var manager = game.Manager;
 
         var surfaceBranch = BranchData.Surface.Instantiate(game);
-        BranchData.Entrance.Instantiate(game);
-        BranchData.Dungeon.Instantiate(game);
+        BranchData.OuterWards.Instantiate(game);
+        BranchData.RuinedStronghold.Instantiate(game);
 
         var surfaceLevel = LevelGenerator.CreateEmpty(surfaceBranch, depth: 1, seed, manager);
         LevelGenerator.EnsureGenerated(surfaceLevel);
@@ -80,14 +170,13 @@ public class LevelGeneratorTest
             Assert.Equal(0, manager.Queue.QueuedCount);
 
             room = room.Level.Rooms
-                .FirstOrDefault(r => (r.Features & RoomFeatures.Exit) != 0)?.Connections.Values
+                .FirstOrDefault(r => (r.FeatureTags & RoomFeatures.Exit) != 0)?.Connections.Values
                 .Select(c => c.Connection!)
                 .FirstOrDefault(c => c.Orientation == Direction.Down)?.TargetRoomEntity.Room;
         }
 
-        // Must have descended well past the ~3-level point where the queue used to overflow.
-        Assert.True(levelsGenerated >= 5,
-            $"Seed {seed}: only descended {levelsGenerated} levels; expected at least 5.");
+        Assert.Equal(BranchData.OuterWards.Length + BranchData.RuinedStronghold.Length, levelsGenerated);
+        Assert.Null(room);
     }
 
     private static byte[] SnapshotTerrain(RoomComponent level)
@@ -124,13 +213,13 @@ public class LevelGeneratorTest
     public void Picker_increments_FragmentSelectionAttempts()
     {
         var game = TestHelper.CreateGame(seed: 1u);
-        var dungeon = BranchData.Dungeon.Instantiate(game);
+        var dungeon = BranchData.RuinedStronghold.Instantiate(game);
         var level = LevelGenerator.CreateEmpty(dungeon, depth: 1, seed: 1u, game.Manager);
 
         var stats = level.GenerationStats;
         var before = stats.FragmentSelectionAttempts;
 
-        LevelGenerator.PickFragmentForRoom(level, RoomFeatures.Normal, stats);
+        LevelGenerator.PickFragmentForRoom(level, RoomFeatures.Normal);
 
         Assert.Equal(before + 1, stats.FragmentSelectionAttempts);
     }
@@ -139,15 +228,15 @@ public class LevelGeneratorTest
     public void Picker_returns_a_fragment_with_positive_weight_for_dungeon_branch()
     {
         var game = TestHelper.CreateGame(seed: 1u);
-        var dungeon = BranchData.Dungeon.Instantiate(game);
+        var dungeon = BranchData.RuinedStronghold.Instantiate(game);
         var level = LevelGenerator.CreateEmpty(dungeon, depth: 1, seed: 1u, game.Manager);
 
-        var picked = LevelGenerator.PickFragmentForRoom(level, RoomFeatures.Normal, level.GenerationStats);
+        var picked = LevelGenerator.PickFragmentForRoom(level, RoomFeatures.Normal);
 
         var weight = picked.GetWeight(level.BranchName, level.Depth, RoomFeatures.Normal, 0, EmptyTagInstances);
         Assert.True(weight > 0,
             $"Picked fragment '{picked.Name}' has non-positive weight {weight} for dungeon branch.");
-        Assert.Same(DefiningMapFragmentData.DungeonRoom, picked);
+        Assert.Same(DefiningMapFragmentData.RegularRoom, picked);
     }
 
     [Fact]
@@ -175,7 +264,7 @@ public class LevelGeneratorTest
         var testProvider = (TestDataProvider)game.Services.Data;
         testProvider.DefiningMapFragments.Add(injectedFragment);
 
-        var picked = LevelGenerator.PickFragmentForRoom(level, RoomFeatures.Normal, level.GenerationStats);
+        var picked = LevelGenerator.PickFragmentForRoom(level, RoomFeatures.Normal);
 
         Assert.Same(injectedFragment, picked);
     }
@@ -216,8 +305,8 @@ public class LevelGeneratorTest
         testProvider.DefiningMapFragments.Add(sourceFragment);
         testProvider.DefiningMapFragments.Add(variantFragment);
 
-        LevelGenerator.PickFragmentForRoom(level, RoomFeatures.Normal, level.GenerationStats);
-        LevelGenerator.PickFragmentForRoom(level, RoomFeatures.Normal, level.GenerationStats);
+        LevelGenerator.PickFragmentForRoom(level, RoomFeatures.Normal);
+        LevelGenerator.PickFragmentForRoom(level, RoomFeatures.Normal);
 
         // Either pick aggregates onto the shared SourceName.
         var aggregated = level.GenerationStats.FragmentInstancesByName.GetValueOrDefault("synthetic-source");
@@ -251,8 +340,8 @@ public class LevelGeneratorTest
         var testProvider = (TestDataProvider)game.Services.Data;
         testProvider.DefiningMapFragments.Add(fragment);
 
-        LevelGenerator.PickFragmentForRoom(level, RoomFeatures.Normal, level.GenerationStats);
-        LevelGenerator.PickFragmentForRoom(level, RoomFeatures.Normal, level.GenerationStats);
+        LevelGenerator.PickFragmentForRoom(level, RoomFeatures.Normal);
+        LevelGenerator.PickFragmentForRoom(level, RoomFeatures.Normal);
 
         Assert.Equal(2, game.GenerationStats.FragmentInstancesByName.GetValueOrDefault("global-count-fragment"));
         Assert.Equal(2, game.GenerationStats.FragmentInstancesByTag.GetValueOrDefault("scenic"));
@@ -409,13 +498,13 @@ public class LevelGeneratorTest
         Assert.NotNull(generated);
 
         // The exit node was authored Exit | Shortcut; the sanitize drops the shortcut bit.
-        var exitRoom = generated!.Rooms.Single(r => (r.Features & RoomFeatures.Exit) != 0);
-        Assert.True((exitRoom.Features & RoomFeatures.Shortcut) == 0,
+        var exitRoom = generated!.Rooms.Single(r => (r.FeatureTags & RoomFeatures.Exit) != 0);
+        Assert.True((exitRoom.FeatureTags & RoomFeatures.Shortcut) == 0,
             "Exit | Shortcut must collapse to Exit.");
 
         // The standalone shortcut room keeps the feature (and isn't entrance/exit).
-        var shortcutRoom = Assert.Single(generated.Rooms, r => (r.Features & RoomFeatures.Shortcut) != 0);
-        Assert.True((shortcutRoom.Features & (RoomFeatures.Entrance | RoomFeatures.Exit)) == 0);
+        var shortcutRoom = Assert.Single(generated.Rooms, r => (r.FeatureTags & RoomFeatures.Shortcut) != 0);
+        Assert.True((shortcutRoom.FeatureTags & (RoomFeatures.Entrance | RoomFeatures.Exit)) == 0);
     }
 
     private static List<RoomGraphNode> ShortestDirectedPath(

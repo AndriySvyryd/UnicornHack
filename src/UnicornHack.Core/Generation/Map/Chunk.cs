@@ -18,7 +18,7 @@ public class Chunk
         IReadOnlySet<Point>? perimeterPoints,
         RoomParameters roomParameters,
         IReadOnlyList<(Point Point, RoomFeatures? Feature)>? featurePoints = null,
-        IReadOnlyList<Point>? creaturePoints = null,
+        IReadOnlyList<(Point Point, string? CreatureName)>? creaturePoints = null,
         IReadOnlyList<Point>? trapPoints = null)
     {
         ArgumentNullException.ThrowIfNull(roomParameters);
@@ -31,7 +31,7 @@ public class Chunk
         InsidePoints = insidePoints ?? new HashSet<Point>();
         PerimeterPoints = perimeterPoints ?? new HashSet<Point>();
         FeaturePoints = featurePoints ?? Array.Empty<(Point, RoomFeatures?)>();
-        CreaturePoints = creaturePoints ?? Array.Empty<Point>();
+        CreaturePoints = creaturePoints ?? [];
         TrapPoints = trapPoints ?? Array.Empty<Point>();
 
         DebugAssertPointsInRoom();
@@ -131,11 +131,10 @@ public class Chunk
     }
 
     /// <summary>
-    ///     Cells whose payload glyph matched <see cref="MapFragment.CreatureWildcardGlyph" />,
-    ///     or that an annotation pass bound to a specific creature. The creature generator
-    ///     picks a difficulty-appropriate creature for each unannotated cell at spawn time.
+    ///     Authored creature positions. A null name denotes a wildcard whose creature is
+    ///     selected by weight at spawn time; otherwise the named template is spawned.
     /// </summary>
-    public IReadOnlyList<Point> CreaturePoints
+    public IReadOnlyList<(Point Point, string? CreatureName)> CreaturePoints
     {
         get;
     }

@@ -6,48 +6,6 @@ public static partial class CreatureData
     {
         Name = "draugr",
         SpeciesClass = SpeciesClass.Undead,
-        Abilities = new List<Ability>
-        {
-            new Ability
-            {
-                Name = "draugr ability #1",
-                Activation = ActivationType.OnMeleeAttack,
-                Action = AbilityAction.Modifier,
-                Effects = new List<Effect> { new PhysicalDamage { Amount = "20*MightModifier()" } }
-            },
-            new Ability
-            {
-                Name = "draugr ability #2",
-                Type = AbilityType.MeleeAttack,
-                Activation = ActivationType.Targeted,
-                Trigger = ActivationType.OnMeleeAttack,
-                Range = 1,
-                Action = AbilityAction.Punch,
-                SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                Accuracy = "5+PerceptionModifier()",
-                Cooldown = 100,
-                Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage() }
-            },
-            new Ability
-            {
-                Name = "draugr ability #3",
-                Type = AbilityType.MeleeAttack,
-                Activation = ActivationType.Targeted,
-                Trigger = ActivationType.OnMeleeAttack,
-                Range = 1,
-                Action = AbilityAction.Claw,
-                SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                Accuracy = "5+PerceptionModifier()",
-                Cooldown = 100,
-                Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new DrainLife { Amount = "2*MightModifier()" } }
-            }
-        },
-        InitialLevel = 3,
-        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 2",
-        Behavior = AIBehavior.Stalking | AIBehavior.MagicUser,
-        Noise = ActorNoiseType.Howl,
         Weight = 1200,
         PerceptionBonus = -8,
         MightBonus = -8,
@@ -62,6 +20,36 @@ public static partial class CreatureData
         UpperExtremities = ExtremityType.GraspingFingers,
         LowerExtremities = ExtremityType.Fingers,
         RespirationType = RespirationType.None,
-        Infravision = true
+        Infravision = true,
+        Abilities = new List<Ability>
+        {
+            new Ability
+            {
+                Name = "grave strength",
+                Activation = ActivationType.OnMeleeAttack,
+                Action = AbilityAction.Modifier,
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "20*MightModifier()" } }
+            },
+            new Ability
+            {
+                Name = "mound-keeper fist",
+                Type = AbilityType.MeleeAttack,
+                Activation = ActivationType.Targeted,
+                Trigger = ActivationType.OnMeleeAttack,
+                Range = 1,
+                Action = AbilityAction.Punch,
+                SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                Accuracy = "5+PerceptionModifier()",
+                Cooldown = 100,
+                Delay = "100*SpeedModifier()",
+                Effects = new List<Effect> { new PhysicalDamage() }
+            }
+        },
+        EnglishDescription = "A stiff, heavy-bodied corpse with dark, leathery skin stretched over a swollen frame. Faded burial cloth clings to its shoulders, and earth fills the creases of its rigid hands.",
+        InitialLevel = 3,
+        GenerationWeight = "0",
+        GenerationFlags = CreatureGenerationFlags.NonPolymorphable,
+        Behavior = AIBehavior.Stalking,
+        Noise = ActorNoiseType.Howl
     };
 }

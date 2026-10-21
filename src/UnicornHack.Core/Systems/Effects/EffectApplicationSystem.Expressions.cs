@@ -3,15 +3,18 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using UnicornHack.Systems.Beings;
+using UnicornHack.Systems.Abilities;
 
 namespace UnicornHack.Systems.Effects;
 
-// Evaluation of an effect's amount/duration expressions: compiling the authored expression strings into
+// Evaluation of effect amount/duration and ability level expressions: compiling authored expression strings into
 // delegates, invoking them against the effect, activator and target, the Being-property variables and
 // stat-modifier functions the expressions may use, and the dependency mapping that lets a stat-derived
 // magnitude live-track its activator inputs.
 public partial class EffectApplicationSystem
 {
+    internal const string LevelDeathsInput = "$levelDeaths";
+
     private static readonly ParameterExpression EffectParameter =
         Expression.Parameter(typeof(GameEntity), name: "effect");
 
@@ -21,32 +24,30 @@ public partial class EffectApplicationSystem
     private static readonly ParameterExpression TargetParameter =
         Expression.Parameter(typeof(GameEntity), name: "target");
 
-    private static readonly ParameterExpression AbilityLevelParameter =
+    private static readonly ParameterExpression StatusLevelParameter =
         Expression.Parameter(typeof(int), name: "level");
 
-    private static readonly ParameterExpression AbilityOwnerParameter =
-        Expression.Parameter(typeof(GameEntity), name: "owner");
+    private static readonly ParameterExpression OwnerParameter = Expression.Parameter(typeof(GameEntity), "owner");
 
     private static readonly EffectExpressionVisitor _translator =
         new([EffectParameter, ActivatorParameter, TargetParameter]);
 
     private static readonly EffectExpressionVisitor _statusAbilityDurationTranslator =
-        new([EffectParameter, ActivatorParameter, TargetParameter, AbilityLevelParameter]);
+        new([EffectParameter, ActivatorParameter, TargetParameter, StatusLevelParameter]);
 
     private static readonly ConcurrentDictionary<string, Lazy<AmountExpression>> AmountExpressions =
         new(StringComparer.Ordinal);
 
-    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
-    private static readonly Type BeingComponentType = typeof(BeingComponent);
-
     private static readonly PropertyInfo GameEntityBeingProperty = typeof(GameEntity)
         .GetProperty(nameof(GameEntity.Being))!;
 
-    private static readonly IReadOnlyDictionary<string, PropertyInfo> BeingProperties =
-        BeingComponentType
-            .GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
-            .Where(property => property.GetMethod != null)
-            .ToDictionary(property => property.Name, StringComparer.OrdinalIgnoreCase);
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
+    private static readonly Type BeingComponentType = typeof(BeingComponent);
+
+    private static readonly IReadOnlyDictionary<string, PropertyInfo> BeingProperties = BeingComponentType
+        .GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
+        .Where(property => property.GetMethod != null)
+        .ToDictionary(property => property.Name, StringComparer.OrdinalIgnoreCase);
 
     private static readonly MethodInfo _requirementsModifierMethod = typeof(EffectApplicationSystem)
         .GetMethod(nameof(GetRequirementsModifier), BindingFlags.NonPublic | BindingFlags.Static)!;
@@ -63,25 +64,26 @@ public partial class EffectApplicationSystem
     private static readonly MethodInfo _speedModifierMethod = typeof(EffectApplicationSystem)
         .GetMethod(nameof(GetSpeedModifier), BindingFlags.NonPublic | BindingFlags.Static)!;
 
-    internal static (Func<GameEntity, int> Function, IReadOnlyList<string> Dependencies)
-        CreateLevelExpression(
-        string expression, string abilityName)
+    private static readonly MethodInfo _levelDeathsMethod = typeof(EffectApplicationSystem)
+        .GetMethod(nameof(GetLevelDeaths), BindingFlags.NonPublic | BindingFlags.Static)!;
+
+    private static int GetLevelDeaths(GameEntity owner)
+        => owner.Position!.RoomEntity.Room!.Level.Stats.DeathCount;
+
+    public static (Func<GameEntity, int> Function, IReadOnlyList<string> Dependencies) CreateLevelExpression(
+        string expression, string abilityName, Action<string, IReadOnlyList<Expression>>? invocationValidator = null)
     {
         try
         {
-            var translator = new UnicornExpressionVisitor([AbilityOwnerParameter]);
-            var tree = translator.TranslateExpression<Func<GameEntity, int>, int>(
-                expression, convertResult: false);
-            var dependencies = new ExpressionDependencyVisitor();
+            var translator = new LevelExpressionVisitor(invocationValidator);
+            var tree = translator.TranslateExpression<Func<GameEntity, int>, int>(expression, convertResult: false);
+            var dependencies = new ExpressionDependencyVisitor(OwnerParameter);
             dependencies.Visit(tree.Body);
-            return (
-                tree.Compile(preferInterpretation: !RuntimeFeature.IsDynamicCodeSupported),
-                dependencies.Dependencies);
+            return (tree.Compile(preferInterpretation: !RuntimeFeature.IsDynamicCodeSupported), dependencies.Dependencies);
         }
-        catch (Exception e)
+        catch (Exception exception)
         {
-            throw new InvalidOperationException(
-                $"Error while parsing the LevelExpression for {abilityName}", e);
+            throw new InvalidOperationException($"Error while parsing the LevelExpression for {abilityName}", exception);
         }
     }
 
@@ -289,7 +291,7 @@ public partial class EffectApplicationSystem
                 Func<GameEntity, GameEntity, GameEntity?, float>, float>(expression);
         }
 
-        var dependencies = new ExpressionDependencyVisitor();
+        var dependencies = new ExpressionDependencyVisitor(ActivatorParameter);
         dependencies.Visit(tree.Body);
         return new AmountExpression(
             tree,
@@ -309,7 +311,7 @@ public partial class EffectApplicationSystem
         public string[] InputProperties { get; } = inputProperties;
     }
 
-    private sealed class ExpressionDependencyVisitor : ExpressionVisitor
+    private sealed class ExpressionDependencyVisitor(ParameterExpression inputOwner) : ExpressionVisitor
     {
         public List<string> Dependencies { get; } = [];
 
@@ -319,7 +321,7 @@ public partial class EffectApplicationSystem
                 && BeingProperties.ContainsKey(property.Name)
                 && node.Expression is MemberExpression { Member: PropertyInfo beingProperty, Expression: var owner }
                 && beingProperty == GameEntityBeingProperty
-                && owner == ActivatorParameter)
+                && owner == inputOwner)
             {
                 Add(property.Name);
             }
@@ -329,6 +331,11 @@ public partial class EffectApplicationSystem
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
+            if (node.Method == _levelDeathsMethod)
+            {
+                Add(LevelDeathsInput);
+            }
+
             if (node.Method == UnicornExpressionVisitor.AbilityLevelMethod
                 && node.Arguments[1] is ConstantExpression { Value: string abilityName })
             {
@@ -367,6 +374,25 @@ public partial class EffectApplicationSystem
         => Expression.Property(
             Expression.Property(entity, GameEntityBeingProperty),
             property);
+
+    private sealed class LevelExpressionVisitor(Action<string, IReadOnlyList<Expression>>? invocationValidator)
+        : UnicornExpressionVisitor([OwnerParameter], invocationValidator)
+    {
+        public override Expression VisitVariableExpression(UnicornExpressionParser.VariableExpressionContext context)
+        {
+            if (string.Equals(context.Variable.Text, "levelDeaths", StringComparison.OrdinalIgnoreCase))
+            {
+                return Expression.Call(_levelDeathsMethod, OwnerParameter);
+            }
+
+            if (!BeingProperties.TryGetValue(context.Variable.Text, out var property))
+            {
+                return base.VisitVariableExpression(context);
+            }
+
+            return CreateBeingPropertyAccess(OwnerParameter, property);
+        }
+    }
 
     private class EffectExpressionVisitor : UnicornExpressionVisitor
     {
@@ -528,5 +554,7 @@ public partial class EffectApplicationSystem
                 }
             }
         }
+
+        AbilityLevelSystem.RebuildDynamicAbilities(targetEntity, targetEntity.Manager);
     }
 }

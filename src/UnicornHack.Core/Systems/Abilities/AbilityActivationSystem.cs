@@ -1,4 +1,4 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
 using System.Linq.Expressions;
 using System.Reflection;
 using UnicornHack.Systems.Actors;
@@ -62,7 +62,7 @@ public class AbilityActivationSystem :
             return ability.EnergyCost;
         }
 
-        var mutedLevel = EffectApplicationSystem.GetAbilityLevel(actor, AbilityData.Muted.Name);
+        var mutedLevel = AbilityLevelSystem.GetAbilityLevel(actor, AbilityData.Muted.Name);
         return mutedLevel >= 1 && ability.Type.IsSpell()
                || mutedLevel >= 2 && IsVerbalAbility(ability)
              || mutedLevel >= 2 && ability.Type == AbilityType.Miracle
@@ -245,7 +245,7 @@ public class AbilityActivationSystem :
             }
 
             if (IsAttack(ability)
-                && EffectApplicationSystem.GetAbilityLevel(activator, AbilityData.Engulfed.Name) >= 2
+                && AbilityLevelSystem.GetAbilityLevel(activator, AbilityData.Engulfed.Name) >= 2
                 && manager.EngulferToVictimRelationship.GetEngulfer(activator) is { } engulfer)
             {
                 // Engulfed: any attack strikes the engulfer, whatever it was aimed at.
@@ -253,7 +253,7 @@ public class AbilityActivationSystem :
                 targetEffectsMessage.TargetCell = null;
             }
 
-            var tauntedLevel = EffectApplicationSystem.GetAbilityLevel(activator, AbilityData.Taunted.Name);
+            var tauntedLevel = AbilityLevelSystem.GetAbilityLevel(activator, AbilityData.Taunted.Name);
             if (IsAttack(ability)
                 && tauntedLevel >= 2
                 && FindStatusSource(activator, EffectType.Taunt, manager)
@@ -369,6 +369,7 @@ public class AbilityActivationSystem :
         selfEffectsMessage.AbilityEntity = activateMessage.AbilityEntity;
         selfEffectsMessage.ActivatorEntity = activateMessage.ActivatorEntity;
         selfEffectsMessage.TargetEntity = activateMessage.ActivatorEntity;
+        selfEffectsMessage.TargetCell = targetEffectsMessage.TargetCell ?? targetEffectsMessage.TargetEntity?.Position?.Cell;
         selfEffectsMessage.Outcome = ApplicationOutcome.Success;
         selfEffectsMessage.EffectsToApply = [];
 
@@ -842,7 +843,7 @@ public class AbilityActivationSystem :
                                 effectTarget.ActiveEffects!, effectTarget,
                                 instance => instance.SourceAbilityEntityId == message.Entity.Id,
                                 manager);
-                            manager.EffectApplicationSystem.RemoveAbilityComponentEffects(
+                            manager.AbilityLevelSystem.RemoveAbilityComponentEffects(
                                 effectTarget, message.Entity.Id, manager);
                         }
                     }
@@ -976,7 +977,12 @@ public class AbilityActivationSystem :
         var activator = activationMessage.ActivatorEntity;
         var manager = activator.Manager;
         var targets = manager.GameEntityByteListArrayPool.Rent();
-        var ability = activationMessage.AbilityEntity.Ability!;
+        var ability = activationMessage.AbilityEntity.Ability;
+        if (ability == null)
+        {
+            return targets;
+        }
+
         var activatorPosition = activator.Position;
         if (activationMessage.TargetEntity != null
             && (ability.Activation != ActivationType.Targeted
@@ -1112,27 +1118,60 @@ public class AbilityActivationSystem :
             case TargetingShape.Cone:
             {
                 var targets = manager.PointByteListArrayPool.Rent();
-                if (targetShapeSize != 1)
+                if (targetShapeSize is < 1 or > 4)
                 {
                     throw new NotSupportedException(
                         $"TargetingShape {targetingShape} with size {targetShapeSize} not supported");
                 }
 
-                if (range != 1)
+                var forward = targetVector.GetUnit();
+                var minX = Math.Max(0, originCell.X - range);
+                var maxX = Math.Min(room.Width - 1, originCell.X + range);
+                var minY = Math.Max(0, originCell.Y - range);
+                var maxY = Math.Min(room.Height - 1, originCell.Y + range);
+                for (var y = minY; y <= maxY; y++)
                 {
-                    throw new NotSupportedException(
-                        $"TargetingShape {targetingShape} with range {range} not supported");
-                }
+                    for (var x = minX; x <= maxX; x++)
+                    {
+                        var horizontal = x - originCell.X;
+                        var vertical = y - originCell.Y;
+                        if (horizontal == 0 && vertical == 0)
+                        {
+                            continue;
+                        }
 
-                var direction = targetVector.AsDirection();
-                var firstNeighbor = targetCell.Translate(direction.Rotate(1).AsVector());
-                var secondNeighbor = targetCell.Translate(direction.Rotate(-1).AsVector());
+                        var projection = horizontal * forward.X + vertical * forward.Y;
+                        var cross = horizontal * forward.Y - vertical * forward.X;
+                        var included = targetShapeSize switch
+                        {
+                            1 => projection > 0 && Math.Abs(cross) <= projection,
+                            2 => projection >= 0,
+                            3 => projection >= 0 || Math.Abs(cross) >= -projection,
+                            _ => true
+                        };
+                        if (!included)
+                        {
+                            continue;
+                        }
 
-                if (range == 1 && targetShapeSize == 1)
-                {
-                    targets.Add((targetCell, BeveledVisibilityCalculator.MaxVisibility));
-                    targets.Add((firstNeighbor, BeveledVisibilityCalculator.MaxVisibility));
-                    targets.Add((secondNeighbor, BeveledVisibilityCalculator.MaxVisibility));
+                        var cell = new Point((byte)x, (byte)y);
+                        var visibleCells = manager.SensorySystem.GetLOS(originCell, cell, room);
+                        byte exposure = 0;
+                        foreach (var visible in visibleCells)
+                        {
+                            if (visible.Item1 == cell)
+                            {
+                                exposure = Math.Max(exposure, visible.Item2);
+                            }
+                        }
+
+                        ((List<(Point, byte)>)visibleCells).Clear();
+                        manager.PointByteListArrayPool.Return((List<(Point, byte)>)visibleCells);
+                        if (exposure != 0)
+                        {
+                            targets.Add((cell, exposure));
+                        }
+                    }
                 }
 
                 return targets;
@@ -1284,7 +1323,7 @@ public class AbilityActivationSystem :
             attackRating = attackRating * exposure.Value / BeveledVisibilityCalculator.MaxVisibility;
         }
 
-        if (EffectApplicationSystem.GetAbilityLevel(activatorEntity, AbilityData.Frightened.Name) > 0
+        if (AbilityLevelSystem.GetAbilityLevel(activatorEntity, AbilityData.Frightened.Name) > 0
             && IsFearSource(activatorEntity, targetEntity))
         {
             // Fear makes it hard to land a solid blow on the very thing you dread.
@@ -1408,7 +1447,7 @@ public class AbilityActivationSystem :
             || capturedActivator.ActiveEffects == null)
         {
             DeactivateInnerAbilities(message.Effects, capturedActivator, manager);
-            manager.EffectApplicationSystem.RemoveAbilityComponentEffects(
+            manager.AbilityLevelSystem.RemoveAbilityComponentEffects(
                 capturedActivator, message.AbilityEntity.Id, manager);
             return MessageProcessingResult.ContinueProcessing;
         }
@@ -1449,7 +1488,7 @@ public class AbilityActivationSystem :
 
         // Abilities this ability granted are recorded as ActiveComponentEffect directives on the target
         // (the activator, who is the recipient for a continuous self-grant), so tear them down here by their source ability
-        manager.EffectApplicationSystem.RemoveAbilityComponentEffects(
+        manager.AbilityLevelSystem.RemoveAbilityComponentEffects(
             activatorEntity, sourceAbilityId, manager);
     }
 

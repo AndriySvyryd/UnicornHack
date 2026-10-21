@@ -6,73 +6,10 @@ public static partial class CreatureData
     {
         Name = "green wurm",
         SpeciesClass = SpeciesClass.Reptile,
-        Abilities = new List<Ability>
-        {
-            new Ability
-            {
-                Name = "green wurm ability #1",
-                Type = AbilityType.RangedAttack,
-                Activation = ActivationType.Targeted,
-                Trigger = ActivationType.OnRangedAttack,
-                Range = 20,
-                Action = AbilityAction.Breath,
-                SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                Accuracy = "5+PerceptionModifier()",
-                Cooldown = 100,
-                Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new ToxinDamage { Duration = EffectDuration.UntilTimeout, Amount = "140*FocusModifier()" } }
-            },
-            new Ability
-            {
-                Name = "green wurm ability #2",
-                Type = AbilityType.MeleeAttack,
-                Activation = ActivationType.Targeted,
-                Trigger = ActivationType.OnMeleeAttack,
-                Range = 1,
-                Action = AbilityAction.Bite,
-                SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                Accuracy = "5+PerceptionModifier()",
-                Cooldown = 100,
-                Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Amount = "90*MightModifier()" } }
-            },
-            new Ability
-            {
-                Name = "green wurm ability #3",
-                Type = AbilityType.MeleeAttack,
-                Activation = ActivationType.Targeted,
-                Trigger = ActivationType.OnMeleeAttack,
-                Range = 1,
-                Action = AbilityAction.Claw,
-                SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                Accuracy = "5+PerceptionModifier()",
-                Cooldown = 100,
-                Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Amount = "50*MightModifier()" } }
-            },
-            new Ability
-            {
-                Name = "green wurm ability #4",
-                Type = AbilityType.MeleeAttack,
-                Activation = ActivationType.Targeted,
-                Trigger = ActivationType.OnMeleeAttack,
-                Range = 1,
-                Action = AbilityAction.Claw,
-                SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                Accuracy = "5+PerceptionModifier()",
-                Cooldown = 100,
-                Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Amount = "50*MightModifier()" } }
-            }
-        },
-        InitialLevel = 15,
-        GenerationWeight = "$branch == 'entrance' ? 0 : 2",
-        Behavior = AIBehavior.Mountable,
-        Noise = ActorNoiseType.Roar,
-        Size = 32,
-        Weight = 4500,
         MovementDelay = 33,
         TurningDelay = 33,
+        Size = 32,
+        Weight = 4500,
         PerceptionBonus = -2,
         MightBonus = -2,
         SpeedBonus = -2,
@@ -86,6 +23,70 @@ public static partial class CreatureData
         LocomotionType = LocomotionType.Walking,
         SlotCapacity = 1,
         Infravision = true,
-        InvisibilityDetection = true
+        InvisibilityDetection = true,
+        Abilities = new List<Ability>
+        {
+            new Ability
+            {
+                Name = "venom breath",
+                Type = AbilityType.RangedAttack,
+                Activation = ActivationType.Targeted,
+                Trigger = ActivationType.OnRangedAttack,
+                Range = 20,
+                Action = AbilityAction.Breath,
+                SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                Accuracy = "5+PerceptionModifier()",
+                Cooldown = 100,
+                Delay = "100*SpeedModifier()",
+                Effects = new List<Effect> { new ToxinDamage { Duration = EffectDuration.UntilTimeout, Amount = "140*FocusModifier()" } }
+            },
+            new Ability
+            {
+                Name = "crushing bite",
+                Type = AbilityType.MeleeAttack,
+                Activation = ActivationType.Targeted,
+                Trigger = ActivationType.OnMeleeAttack,
+                Range = 1,
+                Action = AbilityAction.Bite,
+                SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                Accuracy = "5+PerceptionModifier()",
+                Cooldown = 100,
+                Delay = "100*SpeedModifier()",
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "90*MightModifier()" } }
+            },
+            new Ability
+            {
+                Name = "left claw",
+                Type = AbilityType.MeleeAttack,
+                Activation = ActivationType.Targeted,
+                Trigger = ActivationType.OnMeleeAttack,
+                Range = 1,
+                Action = AbilityAction.Claw,
+                SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                Accuracy = "5+PerceptionModifier()",
+                Cooldown = 100,
+                Delay = "100*SpeedModifier()",
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "50*MightModifier()" } }
+            },
+            new Ability
+            {
+                Name = "right claw",
+                Type = AbilityType.MeleeAttack,
+                Activation = ActivationType.Targeted,
+                Trigger = ActivationType.OnMeleeAttack,
+                Range = 1,
+                Action = AbilityAction.Claw,
+                SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                Accuracy = "5+PerceptionModifier()",
+                Cooldown = 100,
+                Delay = "100*SpeedModifier()",
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "50*MightModifier()" } }
+            }
+        },
+        EnglishDescription = "A long-bodied reptile covered in overlapping green scales, darker along its ridged back. Clawed legs brace its low body, and a thick tail curves behind its narrow, angular head.",
+        InitialLevel = 15,
+        GenerationWeight = "$branch == 'ruined stronghold' && $depth == 3 ? 2 : 0",
+        Behavior = AIBehavior.Mountable,
+        Noise = ActorNoiseType.Roar
     };
 }

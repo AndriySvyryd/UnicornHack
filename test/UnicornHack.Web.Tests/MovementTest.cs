@@ -333,7 +333,7 @@ public class MovementTest
 
         // A creature adjacent to the player (so it is perceived and a knowledge entity is
         // created), which stays behind on level 1 when the player descends.
-        CreatureData.HumanWarrior.Instantiate(level1, new Point(2, 1));
+        CreatureData.Manusya.Instantiate(level1, new Point(2, 1));
         manager.Queue.ProcessQueue(manager);
 
         // Level 2 holds a matching upward connection at (1,1).
@@ -388,7 +388,7 @@ public class MovementTest
             "Dudley", Sex.Male, observedRoom, new Point(1, 1));
         manager.Queue.ProcessQueue(manager);
 
-        var actorEntity = CreatureData.HumanWarrior.Instantiate(observedRoom, new Point(2, 1));
+        var actorEntity = CreatureData.Manusya.Instantiate(observedRoom, new Point(2, 1));
         manager.Queue.ProcessQueue(manager);
         using var knowledgeReference = manager.CreateEntity();
         var knowledgeEntity = knowledgeReference.Referenced;

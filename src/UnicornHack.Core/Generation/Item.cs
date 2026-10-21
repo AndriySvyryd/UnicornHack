@@ -1,4 +1,3 @@
-using System.Linq.Expressions;
 using CSharpScriptSerialization;
 using UnicornHack.Data.Items;
 using UnicornHack.Systems.Abilities;
@@ -394,43 +393,16 @@ public class Item : ICSScriptSerializable, ILoadable
 
     protected static readonly string DefaultGenerationWeight = "1.0";
 
-    protected static readonly ParameterExpression BranchParameter =
-        Expression.Parameter(typeof(string), name: "branch");
-
-    protected static readonly ParameterExpression DepthParameter =
-        Expression.Parameter(typeof(int), name: "depth");
-
-    protected static readonly ParameterExpression InstancesParameter =
-        Expression.Parameter(typeof(int), name: "instances");
-
-    private static readonly UnicornExpressionVisitor _translator =
-        new([BranchParameter, DepthParameter, InstancesParameter]);
-
     public static Func<string, int, int, float> CreateWeightFunction(string expression)
-        => _translator.Translate<Func<string, int, int, float>, float>(expression);
+        => UnicornExpressionVisitor.CreateGenerationWeightFunction(expression);
 
     public float GetWeight(RoomComponent room)
     {
-        if (_weightFunction == null)
-        {
-            try
-            {
-                _weightFunction = CreateWeightFunction(GenerationWeight ?? DefaultGenerationWeight);
-            }
-            catch (Exception e)
-            {
-                throw new InvalidOperationException("Error while parsing the GenerationWeight for " + Name, e);
-            }
-        }
-
-        try
-        {
-            return _weightFunction(room.Level.Branch.Name, room.Level.Depth, 0);
-        }
-        catch (Exception e)
-        {
-            throw new InvalidOperationException("Error while evaluating the Weight for " + Name, e);
-        }
+        var count = room.Game.GenerationStats.ItemInstancesByName.GetValueOrDefault(Name);
+        return count != 0 && Name.Length > 0 && char.IsUpper(Name[0])
+            ? 0
+            : UnicornExpressionVisitor.EvaluateGenerationWeight(
+                ref _weightFunction, GenerationWeight ?? DefaultGenerationWeight, Name, room.Level.Branch.Name, room.Level.Depth, count);
     }
 
     public static readonly GroupedCSScriptLoader<ItemGroup, Item> Loader =

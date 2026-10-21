@@ -21,5 +21,7 @@ public enum EffectDuration
     UntilNextRoom = 4,
 
     /// <summary>The effect expires when the target enters a room on a different level.</summary>
-    UntilNextLevel = 5
+    UntilNextLevel = 5,
+
+    UntilNextBranch = 6
 }

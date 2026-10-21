@@ -1,4 +1,3 @@
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 using UnicornHack.Data;
@@ -7,6 +6,7 @@ using UnicornHack.Data.Creatures;
 using UnicornHack.Data.Items;
 using UnicornHack.Generation;
 using UnicornHack.Generation.Effects;
+using UnicornHack.Generation.Map;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
@@ -21,6 +21,142 @@ namespace UnicornHack.Persistence;
 
 public class EffectPersistenceTest
 {
+    [Fact]
+    public void Non_decreasing_boss_phase_survives_healing_and_reload_but_can_be_removed()
+    {
+        Assert.SkipUnless(PersistedGame.IsLocalDbAvailable, "SQL Server LocalDB is not available in this environment.");
+        using var persisted = PersistedGame.CreateAndSave();
+        var player = persisted.PlayerEntity;
+        var manager = player.Manager;
+        var room = player.Position!.RoomEntity.Room!;
+        var cell = manager.TravelSystem.FindCell(room, manager.TravelSystem.IsActorFreeCell)!.Value;
+        var boss = CreatureData.BalorUaNeit.Instantiate(room, cell);
+        manager.Queue.ProcessQueue(manager);
+        var bossId = boss.Id;
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(boss, "Balor's eye cycle"));
+        boss.Being!.HitPoints = boss.Being.HitPointMaximum / 2;
+        manager.Queue.ProcessQueue(manager);
+        boss.Being.HitPoints = boss.Being.HitPointMaximum;
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(boss, "Balor's eye cycle"));
+        persisted.Context.SaveChanges();
+
+        persisted.Reload();
+
+        manager = persisted.Game.Manager;
+        boss = manager.FindEntity(bossId)!;
+        Assert.Equal(boss.Being!.HitPointMaximum, boss.Being.HitPoints);
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(boss, "Balor's eye cycle"));
+        Assert.NotNull(manager.AffectableAbilitiesIndex[(bossId, "lifted eye")]);
+        Assert.Null(manager.AffectableAbilitiesIndex[(bossId, "king's blow")]);
+
+        var record = Assert.Single(boss.ActiveEffects!.ComponentEffects.GetValues("Balor's eye cycle"));
+        Assert.NotEqual(0, record.SourceAbilityEntityId);
+        AbilityLevelSystem.DetachComponentCarrier(record, boss, manager);
+        manager.Queue.ProcessQueue(manager);
+        AbilityLevelSystem.RebuildDynamicAbilities(boss, manager);
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(0, AbilityLevelSystem.GetAbilityLevel(boss, "Balor's eye cycle"));
+        Assert.Null(manager.AffectableAbilitiesIndex[(bossId, "lifted eye")]);
+        Assert.Empty(boss.ActiveEffects.ComponentEffects.GetValues("Balor's eye cycle"));
+    }
+
+    [Theory]
+    [InlineData(2)]
+    [InlineData(4)]
+    [InlineData(6)]
+    [InlineData(8)]
+    public void Ankou_rebuilds_leveled_grants_after_deaths_while_its_room_is_unloaded(int deathCount)
+    {
+        Assert.SkipUnless(PersistedGame.IsLocalDbAvailable, "SQL Server LocalDB is not available in this environment.");
+        using var persisted = PersistedGame.CreateAndSave();
+        var manager = persisted.Game.Manager;
+        var playerRoom = persisted.PlayerEntity.Position!.RoomEntity.Room!;
+        var remote = LevelLayout.CreateEmptyRoom(playerRoom.Level, manager);
+        LevelLayout.AllocateTerrain(remote, 3, 1, MapFeature.StoneFloor);
+        var ankou = CreatureData.Ankou.Instantiate(remote, new Point(0, 0));
+        manager.Queue.ProcessQueue(manager);
+        var actorId = ankou.Id;
+        var roomId = remote.EntityId;
+        var playerRoomId = playerRoom.EntityId;
+        var initialArmor = ankou.Being!.Armor;
+        var attack = manager.AffectableAbilitiesIndex[(actorId, "reverse scythe")]!.Ability!;
+        var initialDamage = manager.EffectApplicationSystem.GetAmount(Assert.Single(attack.Effects).Effect!, ankou, ankou);
+        persisted.Context.SaveChanges();
+
+        persisted.ReloadRooms([playerRoomId]);
+
+        manager = persisted.Game.Manager;
+        playerRoom = persisted.PlayerEntity.Position!.RoomEntity.Room!;
+        Assert.Null(manager.FindEntity(actorId));
+        for (var deaths = 0; deaths < deathCount; deaths++)
+        {
+            var cell = manager.TravelSystem.FindCell(playerRoom, manager.TravelSystem.IsActorFreeCell)!.Value;
+            var victim = CreatureData.Boggart.Instantiate(playerRoom, cell);
+            manager.Queue.ProcessQueue(manager);
+            victim.Being!.HitPoints = 0;
+            manager.Queue.ProcessQueue(manager);
+        }
+
+        Assert.Null(manager.FindEntity(actorId));
+        Assert.Equal(deathCount, playerRoom.Level.Stats.DeathCount);
+        persisted.Context.SaveChanges();
+        persisted.ReloadRooms([playerRoomId]);
+
+        manager = persisted.Game.Manager;
+        persisted.Context.LoadRooms([roomId]);
+        manager.Queue.ProcessQueue(manager);
+        ankou = manager.FindEntity(actorId)!;
+        attack = manager.AffectableAbilitiesIndex[(actorId, deathCount < 4 ? "reverse scythe" : "extended reverse scythe")]!.Ability!;
+        Assert.Equal(deathCount < 4 ? 1 : 2, attack.Range);
+        Assert.Equal(initialArmor + (deathCount >= 6 ? 2 : 0), ankou.Being!.Armor);
+        Assert.Equal(initialDamage + 2 * Math.Min(3, deathCount / 2),
+            manager.EffectApplicationSystem.GetAmount(Assert.Single(attack.Effects).Effect!, ankou, ankou));
+        Assert.Equal(1 + Math.Min(3, deathCount / 2), AbilityLevelSystem.GetAbilityLevel(ankou, "Ankou trophies"));
+        Assert.Equal(deathCount >= 6, manager.AffectableAbilitiesIndex[(actorId, "trophy armor")] != null);
+    }
+
+    [Fact]
+    public void Level_death_expressions_read_saved_totals_after_reload_without_observer_triggers()
+    {
+        Assert.SkipUnless(PersistedGame.IsLocalDbAvailable, "SQL Server LocalDB is not available in this environment.");
+        using var persisted = PersistedGame.CreateAndSave();
+        var manager = persisted.Game.Manager;
+        var room = persisted.PlayerEntity.Position!.RoomEntity.Room!;
+        var initialDeaths = room.Level.Stats.DeathCount;
+        var initialGameDeaths = persisted.Game.Stats.DeathCount;
+        var cell = manager.TravelSystem.FindCell(room, manager.TravelSystem.IsActorFreeCell)!.Value;
+        var victim = CreatureData.Boggart.Instantiate(room, cell);
+        manager.Queue.ProcessQueue(manager);
+        victim.Being!.HitPoints = 0;
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(initialDeaths + 1, room.Level.Stats.DeathCount);
+        Assert.Equal(initialGameDeaths + 1, persisted.Game.Stats.DeathCount);
+        persisted.Context.SaveChanges();
+
+        persisted.Reload();
+
+        var player = persisted.PlayerEntity;
+        room = player.Position!.RoomEntity.Room!;
+        manager = persisted.Game.Manager;
+        var expression = EffectApplicationSystem.CreateLevelExpression("$levelDeaths", "test saved deaths").Function;
+        Assert.Equal(initialDeaths + 1, room.Level.Stats.DeathCount);
+        Assert.Equal(initialGameDeaths + 1, persisted.Game.Stats.DeathCount);
+        Assert.Equal(initialDeaths + 1, expression(player));
+        cell = manager.TravelSystem.FindCell(room, manager.TravelSystem.IsActorFreeCell)!.Value;
+        victim = CreatureData.Boggart.Instantiate(room, cell);
+        manager.Queue.ProcessQueue(manager);
+        victim.Being!.HitPoints = 0;
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(initialDeaths + 2, expression(player));
+        persisted.Context.SaveChanges();
+
+        persisted.Reload();
+
+        Assert.Equal(initialDeaths + 2, expression(persisted.PlayerEntity));
+        Assert.Equal(initialGameDeaths + 2, persisted.Game.Stats.DeathCount);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -221,7 +357,7 @@ public class EffectPersistenceTest
         using var persisted = PersistedGame.CreateAndSave();
         var player = persisted.PlayerEntity;
         var manager = player.Manager;
-        manager.EffectApplicationSystem.AddAbilityEffect(player, AbilityData.Acrobatics);
+        manager.AbilityLevelSystem.AddAbilityEffect(player, AbilityData.Acrobatics);
         manager.Queue.ProcessQueue(manager);
         var ability = new Ability
         {
@@ -336,8 +472,8 @@ public class EffectPersistenceTest
         using var persisted = PersistedGame.CreateAndSave();
         var player = persisted.PlayerEntity;
         var manager = player.Manager;
-        manager.EffectApplicationSystem.AddAbilityEffect(player, AbilityData.WaterSourcery);
-        manager.EffectApplicationSystem.AddAbilityEffect(player, AbilityData.WaterSourcery);
+        manager.AbilityLevelSystem.AddAbilityEffect(player, AbilityData.WaterSourcery);
+        manager.AbilityLevelSystem.AddAbilityEffect(player, AbilityData.WaterSourcery);
         manager.Queue.ProcessQueue(manager);
         persisted.Context.SaveChanges();
 
@@ -359,7 +495,7 @@ public class EffectPersistenceTest
     }
 
     [Fact]
-    public void Expression_and_unconditional_grants_combine_with_a_decrease_after_reload()
+    public void Expression_grants_remain_authoritative_and_reject_manual_level_changes_after_reload()
     {
         Assert.SkipUnless(
             PersistedGame.IsLocalDbAvailable, "SQL Server LocalDB is not available in this environment.");
@@ -367,12 +503,10 @@ public class EffectPersistenceTest
         using var persisted = PersistedGame.CreateAndSave();
         var player = persisted.PlayerEntity;
         var manager = player.Manager;
-        manager.EffectApplicationSystem.AddAbilityEffect(player, AbilityData.WaterSourcery);
+        manager.AbilityLevelSystem.AddAbilityEffect(player, AbilityData.WaterSourcery);
         manager.Queue.ProcessQueue(manager);
-        manager.EffectApplicationSystem.AddAbilityEffect(
-            player, AbilityData.IceShard, sourceAbilityEntityId: 1000);
-        var decrease = TestHelper.ApplyAbilityLevelDecrease(
-            player, abilityName: AbilityData.IceShard.Name);
+        Assert.Throws<InvalidOperationException>(() => manager.AbilityLevelSystem.AddAbilityEffect(
+            player, AbilityData.IceShard, sourceAbilityEntityId: 1000));
         Assert.Equal(1, manager.AffectableAbilitiesIndex[
             (player.Id, AbilityData.IceShard.Name)]!.Ability!.Level);
         persisted.Context.SaveChanges();
@@ -382,26 +516,31 @@ public class EffectPersistenceTest
         player = persisted.PlayerEntity;
         manager = player.Manager;
         var records = player.ActiveEffects!.ComponentEffects.GetValues(AbilityData.IceShard.Name);
-        Assert.Equal(2, records.Count(record => record.EffectType == EffectType.AddAbility));
-        Assert.Single(records, TestHelper.IsLevelExpressionGrant);
-        Assert.Contains(records, record => record is
-        {
-            EffectType: EffectType.AddAbility,
-            ConditionValue: null,
-            Level: 1
-        });
-        Assert.Contains(decrease.InstanceId, player.ActiveEffects.ComponentEffects
-            .Where(record => record.EffectType == EffectType.DecreaseAbilityLevel)
-            .Select(record => record.InstanceId));
+        Assert.Single(records);
         Assert.Equal(1, manager.AffectableAbilitiesIndex[
             (player.Id, AbilityData.IceShard.Name)]!.Ability!.Level);
 
-        manager.EffectApplicationSystem.AddAbilityEffect(player, AbilityData.WaterSourcery);
+        Assert.Throws<InvalidOperationException>(() => manager.AbilityLevelSystem.AddAbilityEffect(
+            player, AbilityData.IceShard, sourceAbilityEntityId: 1000));
+        Assert.Throws<InvalidOperationException>(() => TestHelper.ApplyAbilityLevelDecrease(
+            player, abilityName: AbilityData.IceShard.Name));
+        Assert.DoesNotContain(records, record => record.EffectType == EffectType.DecreaseAbilityLevel);
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(player, AbilityData.IceShard.Name));
+
+        manager.AbilityLevelSystem.AddAbilityEffect(player, AbilityData.WaterSourcery);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(2, manager.AffectableAbilitiesIndex[
+        Assert.Equal(AbilityData.IceShard.MaxLevel, manager.AffectableAbilitiesIndex[
             (player.Id, AbilityData.IceShard.Name)]!.Ability!.Level);
-        Assert.Equal(2, Assert.Single(records, TestHelper.IsLevelExpressionGrant).Level);
+        Assert.Equal(AbilityData.IceShard.MaxLevel, Assert.Single(records).Level);
+        persisted.Context.SaveChanges();
+
+        persisted.Reload();
+
+        player = persisted.PlayerEntity;
+        Assert.Equal(AbilityData.IceShard.MaxLevel, AbilityLevelSystem.GetAbilityLevel(player, AbilityData.IceShard.Name));
+        Assert.Equal(AbilityData.IceShard.MaxLevel, Assert.Single(
+            player.ActiveEffects!.ComponentEffects.GetValues(AbilityData.IceShard.Name)).Level);
     }
 
     [Fact]
@@ -419,7 +558,7 @@ public class EffectPersistenceTest
             EffectType.AddAbility, AbilityData.Stunned.Name);
         var firstInstanceId = firstRecord.InstanceId;
         var secondInstanceId = secondRecord.InstanceId;
-        manager.EffectApplicationSystem.RelevelAbility(AbilityData.Stunned.Name, player, manager);
+        manager.AbilityLevelSystem.RelevelAbility(AbilityData.Stunned.Name, player, manager);
         manager.Queue.ProcessQueue(manager);
         persisted.Context.SaveChanges();
 
@@ -427,7 +566,7 @@ public class EffectPersistenceTest
 
         player = persisted.PlayerEntity;
         manager = player.Manager;
-        manager.EffectApplicationSystem.RelevelAbility(AbilityData.Stunned.Name, player, manager);
+        manager.AbilityLevelSystem.RelevelAbility(AbilityData.Stunned.Name, player, manager);
         manager.Queue.ProcessQueue(manager);
 
         var records = player.ActiveEffects!.ComponentEffects.GetValues(AbilityData.Stunned.Name);
@@ -453,9 +592,9 @@ public class EffectPersistenceTest
         var player = persisted.PlayerEntity;
         var manager = player.Manager;
         var race = manager.Game.Services.Data.PlayerRaces.Get("ogre");
-        manager.EffectApplicationSystem.AddAbilityEffect(
+        manager.AbilityLevelSystem.AddAbilityEffect(
             player, race.GetRaceAbilityTemplate());
-        manager.EffectApplicationSystem.AddAbilityEffect(
+        manager.AbilityLevelSystem.AddAbilityEffect(
             player, race.GetRaceAbilityTemplate());
         manager.Queue.ProcessQueue(manager);
         persisted.Context.SaveChanges();
@@ -477,26 +616,14 @@ public class EffectPersistenceTest
     }
 
     [Fact]
-    public void Stale_test_database_schema_is_recreated_automatically()
+    public void Fresh_test_database_contains_the_current_feature_and_reward_schema()
     {
         Assert.SkipUnless(
             PersistedGame.IsLocalDbAvailable, "SQL Server LocalDB is not available in this environment.");
 
-        using (PersistedGame.CreateAndSave())
-        {
-        }
-
-        using (var connection = new SqlConnection(
-                   @"Server=(localdb)\MSSQLLocalDB;Database=UnicornHackTest_EffectPersistenceTest;Integrated Security=True;Connect Timeout=60;"))
-        {
-            connection.Open();
-            using var command = connection.CreateCommand();
-            command.CommandText = "ALTER TABLE [EffectComponents] DROP COLUMN [SecondaryAmount]";
-            command.ExecuteNonQuery();
-        }
-
-        using var recreated = PersistedGame.CreateAndSave();
-        Assert.NotNull(recreated.PlayerEntity);
+        using var persisted = PersistedGame.CreateAndSave();
+        Assert.NotNull(persisted.PlayerEntity);
+        Assert.Empty(persisted.Context.FeatureComponents.Include(feature => feature.Rewards).ToList());
     }
 
     [Fact]
@@ -809,7 +936,7 @@ public class EffectPersistenceTest
         const int duration = 100;
 
         manager.EffectApplicationSystem.ApplyPolymorph(
-            CreatureData.Gnome, player, duration, manager);
+            CreatureData.Rat, player, duration, manager);
         manager.Queue.ProcessQueue(manager);
         var formSpecies = being.Species;
         Assert.NotEqual(ownSpecies, formSpecies);
@@ -863,12 +990,12 @@ public class EffectPersistenceTest
             EffectApplicationContext.CreateStatus(
                 effectType, player, 2 * EffectApplicationSystem.BuildUpThreshold, sourceAbility.Id));
         manager.Queue.ProcessQueue(manager);
-        Assert.True(EffectApplicationSystem.GetAbilityLevel(player, abilityName) > 0);
+        Assert.True(AbilityLevelSystem.GetAbilityLevel(player, abilityName) > 0);
 
         manager.EffectApplicationSystem.RemoveMatchingPropertyEffects(
             player.ActiveEffects!, player,
             instance => instance.SourceAbilityEntityId == sourceAbility.Id, manager);
-        Assert.Equal(0, EffectApplicationSystem.GetAbilityLevel(player, abilityName));
+        Assert.Equal(0, AbilityLevelSystem.GetAbilityLevel(player, abilityName));
         Assert.DoesNotContain(
             player.ActiveEffects!.ComponentEffects,
             effect => effect.TargetName == abilityName);
@@ -879,7 +1006,7 @@ public class EffectPersistenceTest
 
         player = persisted.PlayerEntity;
         manager = persisted.Game.Manager;
-        Assert.Equal(0, EffectApplicationSystem.GetAbilityLevel(player, abilityName));
+        Assert.Equal(0, AbilityLevelSystem.GetAbilityLevel(player, abilityName));
         Assert.DoesNotContain(
             player.ActiveEffects!.ComponentEffects,
             effect => effect.TargetName == abilityName);
@@ -907,7 +1034,7 @@ public class EffectPersistenceTest
         }
 
         Assert.True(
-            EffectApplicationSystem.GetAbilityLevel(player, "stunned") > 0,
+            AbilityLevelSystem.GetAbilityLevel(player, "stunned") > 0,
             "Expected the accumulated stun to be in force before saving.");
         persisted.Context.SaveChanges();
 
@@ -915,7 +1042,7 @@ public class EffectPersistenceTest
 
         var reloadedPlayer = persisted.PlayerEntity;
         Assert.True(
-            EffectApplicationSystem.GetAbilityLevel(reloadedPlayer, "stunned") > 0,
+            AbilityLevelSystem.GetAbilityLevel(reloadedPlayer, "stunned") > 0,
             "The stun condition should reconstruct from the persisted build-up accumulator after a reload.");
     }
 
@@ -1003,7 +1130,7 @@ public class EffectPersistenceTest
         var room = player.Position!.RoomEntity.Room!;
         var playerCell = player.Position!.Cell!.Value;
 
-        var engulfer = CreatureData.GelatinousCube.Instantiate(
+        var engulfer = CreatureData.Sylph.Instantiate(
             room, FindAdjacentWalkableCell(room, playerCell, manager));
         manager.Queue.ProcessQueue(manager);
 
@@ -1015,7 +1142,7 @@ public class EffectPersistenceTest
 
         Assert.NotNull(player.Position!.Cell);
         Assert.Equal(1, player.Position.Cell.Value.DistanceTo(engulfer.Position!.Cell!.Value));
-        Assert.True(EffectApplicationSystem.GetAbilityLevel(player, "engulfed") > 0);
+        Assert.True(AbilityLevelSystem.GetAbilityLevel(player, "engulfed") > 0);
         var engulferId = engulfer.Id;
         var engulferCell = engulfer.Position!.Cell;
         var playerCellBeforeReload = player.Position.Cell;
@@ -1027,7 +1154,7 @@ public class EffectPersistenceTest
         var reloadedPlayer = reloadedManager.FindEntity(persisted.PlayerEntityId);
         Assert.NotNull(reloadedPlayer);
         Assert.Equal(playerCellBeforeReload, reloadedPlayer!.Position!.Cell);
-        Assert.True(EffectApplicationSystem.GetAbilityLevel(reloadedPlayer, "engulfed") > 0);
+        Assert.True(AbilityLevelSystem.GetAbilityLevel(reloadedPlayer, "engulfed") > 0);
 
         var reloadedEngulfer = reloadedManager.EngulferToVictimRelationship.GetEngulfer(reloadedPlayer);
         Assert.NotNull(reloadedEngulfer);

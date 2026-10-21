@@ -31,8 +31,8 @@ public class FullPipelineTopologyTest
             var manager = game.Manager;
             var branch = new Branch
             {
-                Name = BranchData.Dungeon.Name,
-                Length = BranchData.Dungeon.Length,
+                Name = BranchData.RuinedStronghold.Name,
+                Length = BranchData.RuinedStronghold.Length,
                 Layout = layout
             };
             ((TestDataProvider)game.Services.Data).Branches.Add(branch);

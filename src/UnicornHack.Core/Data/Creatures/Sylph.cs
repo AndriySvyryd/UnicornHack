@@ -6,41 +6,11 @@ public static partial class CreatureData
     {
         Name = "sylph",
         SpeciesClass = SpeciesClass.Extraplanar,
-        Abilities = new List<Ability>
-        {
-            new Ability
-            {
-                Name = "sylph ability #1",
-                Type = AbilityType.MeleeAttack,
-                Activation = ActivationType.Targeted,
-                Trigger = ActivationType.OnMeleeAttack,
-                Range = 1,
-                Action = AbilityAction.Touch,
-                SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                Accuracy = "5+PerceptionModifier()",
-                Cooldown = 100,
-                Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new Engulf { Amount = "400" } }
-            },
-            new Ability
-            {
-                Name = "sylph ability #2",
-                Activation = ActivationType.Targeted,
-                Trigger = ActivationType.OnMeleeAttack,
-                Range = 1,
-                Action = AbilityAction.Digestion,
-                Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new Deafen() }
-            }
-        },
-        InitialLevel = 8,
-        GenerationWeight = "$branch == 'entrance' ? 0 : 2",
-        Sex = Sex.None,
-        Size = 16,
-        Weight = 0,
+        Material = Material.Air,
         MovementDelay = -67,
         TurningDelay = -67,
-        Material = Material.Air,
+        Size = 16,
+        Weight = 0,
         PerceptionBonus = -5,
         MightBonus = -6,
         SpeedBonus = -5,
@@ -57,6 +27,37 @@ public static partial class CreatureData
         EyeCount = 0,
         VisibilityLevel = 0,
         Mindless = true,
-        NonAnimal = true
+        NonAnimal = true,
+        Abilities = new List<Ability>
+        {
+            new Ability
+            {
+                Name = "enveloping gust",
+                Type = AbilityType.MeleeAttack,
+                Activation = ActivationType.Targeted,
+                Trigger = ActivationType.OnMeleeAttack,
+                Range = 1,
+                Action = AbilityAction.Touch,
+                SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                Accuracy = "5+PerceptionModifier()",
+                Cooldown = 100,
+                Delay = "100*SpeedModifier()",
+                Effects = new List<Effect> { new Engulf { Amount = "400" } }
+            },
+            new Ability
+            {
+                Name = "deafening gale",
+                Activation = ActivationType.Targeted,
+                Trigger = ActivationType.OnMeleeAttack,
+                Range = 1,
+                Action = AbilityAction.Digestion,
+                Delay = "100*SpeedModifier()",
+                Effects = new List<Effect> { new Deafen() }
+            }
+        },
+        EnglishDescription = "A twisting column of translucent air, outlined by fine spirals of dust and pale vapor. Its wispy edges stretch and fold without settling into a face or limbs.",
+        InitialLevel = 8,
+        GenerationWeight = "$branch == 'ruined stronghold' && $depth == 2 ? 2 : 0",
+        Sex = Sex.None
     };
 }

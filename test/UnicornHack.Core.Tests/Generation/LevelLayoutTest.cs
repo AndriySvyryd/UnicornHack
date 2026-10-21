@@ -33,7 +33,7 @@ public class LevelLayoutTest
     {
         var game = TestHelper.CreateGame(seed: 1u);
         var manager = game.Manager;
-        var dungeon = BranchData.Dungeon.Instantiate(game);
+        var dungeon = BranchData.RuinedStronghold.Instantiate(game);
         var level = LevelGenerator.CreateEmpty(dungeon, depth: 1, seed: 1u, manager);
 
         var room = LevelLayout.CreateEmptyRoom(level, manager);
@@ -54,7 +54,7 @@ public class LevelLayoutTest
     {
         var game = TestHelper.CreateGame(seed: 1u);
         var manager = game.Manager;
-        var dungeon = BranchData.Dungeon.Instantiate(game);
+        var dungeon = BranchData.RuinedStronghold.Instantiate(game);
         var level = LevelGenerator.CreateEmpty(dungeon, depth: 1, seed: 1u, manager);
         var room = LevelLayout.CreateEmptyRoom(level, manager);
 
@@ -110,7 +110,7 @@ public class LevelLayoutTest
     {
         var game = TestHelper.CreateGame(seed: 1u);
         var manager = game.Manager;
-        var dungeon = BranchData.Dungeon.Instantiate(game);
+        var dungeon = BranchData.RuinedStronghold.Instantiate(game);
         var level = LevelGenerator.CreateEmpty(dungeon, depth: 1, seed: 1u, manager);
         var room = LevelLayout.CreateEmptyRoom(level, manager);
         var roomEntity = room.Entity;
@@ -677,8 +677,8 @@ public class LevelLayoutTest
             var manager = game.Manager;
             var branch = new Branch
             {
-                Name = BranchData.Dungeon.Name,
-                Length = BranchData.Dungeon.Length,
+                Name = BranchData.RuinedStronghold.Name,
+                Length = BranchData.RuinedStronghold.Length,
                 Layout = layout
             };
             ((TestDataProvider)game.Services.Data).Branches.Add(branch);
@@ -842,7 +842,7 @@ public class LevelLayoutTest
         foreach (var room in level.Rooms)
         {
             Assert.True(HasSimplePathThrough(room.EntityId, entrance, exit, adjacency),
-                $"Seed {seed}: room {room.EntityId} ({room.GridX},{room.GridY}, {room.Features}) "
+                $"Seed {seed}: room {room.EntityId} ({room.GridX},{room.GridY}, {room.FeatureTags}) "
                 + "has no simple entrance→exit path through it.");
         }
     }
@@ -882,7 +882,7 @@ public class LevelLayoutTest
             foreach (var room in level.Rooms)
             {
                 Assert.True(HasSimplePathThrough(room.EntityId, entrance, exit, adjacency),
-                    $"Seed {seed}: room {room.EntityId} ({room.GridX},{room.GridY}, {room.Features}) "
+                    $"Seed {seed}: room {room.EntityId} ({room.GridX},{room.GridY}, {room.FeatureTags}) "
                     + "has no simple entrance→exit path through it.");
             }
         }
@@ -899,8 +899,8 @@ public class LevelLayoutTest
         var manager = game.Manager;
 
         var surfaceBranch = BranchData.Surface.Instantiate(game);
-        BranchData.Entrance.Instantiate(game);
-        BranchData.Dungeon.Instantiate(game);
+        BranchData.OuterWards.Instantiate(game);
+        BranchData.RuinedStronghold.Instantiate(game);
 
         var surfaceLevel = LevelGenerator.CreateEmpty(surfaceBranch, depth: 1, seed: 1u, manager);
         LevelGenerator.EnsureGenerated(surfaceLevel);
@@ -914,7 +914,7 @@ public class LevelLayoutTest
         foreach (var room in level.Rooms)
         {
             Assert.True(HasSimplePathThrough(room.EntityId, entrance, exit, adjacency),
-                $"Entrance room {room.EntityId} ({room.GridX},{room.GridY}, {room.Features}) "
+                $"Entrance room {room.EntityId} ({room.GridX},{room.GridY}, {room.FeatureTags}) "
                 + "has no simple entrance→exit path through it.");
         }
     }
@@ -940,8 +940,8 @@ public class LevelLayoutTest
             }
         }
 
-        var entrance = level.Rooms.Single(r => (r.Features & RoomFeatures.Entrance) != 0).EntityId;
-        var exit = level.Rooms.Single(r => (r.Features & RoomFeatures.Exit) != 0).EntityId;
+        var entrance = level.Rooms.Single(r => (r.FeatureTags & RoomFeatures.Entrance) != 0).EntityId;
+        var exit = level.Rooms.Single(r => (r.FeatureTags & RoomFeatures.Exit) != 0).EntityId;
         return (adjacency, entrance, exit);
     }
 
@@ -997,7 +997,7 @@ public class LevelLayoutTest
     {
         var game = TestHelper.CreateGame(seed);
         var manager = game.Manager;
-        var dungeon = BranchData.Dungeon.Instantiate(game);
+        var dungeon = BranchData.RuinedStronghold.Instantiate(game);
 
         for (var attempt = 0; attempt < 20; attempt++)
         {

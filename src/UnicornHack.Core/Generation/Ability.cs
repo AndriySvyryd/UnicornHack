@@ -28,7 +28,7 @@ public class Ability : ILoadable, ICSScriptSerializable
     }
 
     /// <summary>
-    ///     Computes a level granted by the owner's other abilities. A non-positive result grants nothing.
+    ///     Computes a level from the owner's abilities or level statistics. A non-positive result grants nothing.
     /// </summary>
     public string? LevelExpression
     {
@@ -37,17 +37,28 @@ public class Ability : ILoadable, ICSScriptSerializable
         {
             _levelExpression = value;
             _levelFunction = null;
+            LevelExpressionInputs = [];
         }
     }
 
     public IReadOnlyList<Ability> LevelExpressionDependents => _levelExpressionDependents ?? [];
 
-    internal void SetLevelFunction(Func<GameEntity, int> function) => _levelFunction = function;
+    public IReadOnlyList<string> LevelExpressionInputs { get; private set; } = [];
+
+    public bool NonDecreasingLevel { get; set; }
+
+    internal void SetLevelFunction(Func<GameEntity, int> function, IReadOnlyList<string> inputs)
+    {
+        _levelFunction = function;
+        LevelExpressionInputs = inputs;
+    }
 
     public int GetExpressionLevel(GameEntity owner)
+        => AbilityLevelSystem.GetExpressionLevel(owner, this);
+
+    internal int EvaluateLevelExpression(GameEntity owner)
         => _levelFunction?.Invoke(owner)
-           ?? throw new InvalidOperationException(
-               $"The level expression for '{Name}' has not been prepared.");
+           ?? throw new InvalidOperationException($"The level expression for '{Name}' has not been prepared.");
 
     internal void ClearLevelExpressionDependents() => _levelExpressionDependents?.Clear();
 
@@ -72,7 +83,7 @@ public class Ability : ILoadable, ICSScriptSerializable
         return false;
     }
 
-    internal static Ability? FindTemplate(GameManager manager, string abilityName, bool item)
+    internal static Ability? FindTemplate(GameManager manager, string abilityName, bool item, GameEntity? owner = null)
     {
         var data = manager.Game.Services.Data;
         if (item)
@@ -83,11 +94,31 @@ public class Ability : ILoadable, ICSScriptSerializable
         }
 
         TryGetLeveledTemplateName(abilityName, out var templateName, out _);
-        return data.Abilities.Find(templateName)
-               ?? data.PlayerRaces
-                   .FindByIndex(templateName)?.GetRaceAbilityTemplate()
-               ?? data.Creatures
-                   .FindByIndex(templateName)?.GetRaceAbilityTemplate();
+        var template = data.Abilities.Find(templateName);
+        if (template == null)
+        {
+            template = owner?.AI != null
+                    ? data.Creatures.FindByIndex(templateName)?.GetRaceAbilityTemplate()
+                    : data.PlayerRaces.FindByIndex(templateName)?.GetRaceAbilityTemplate();
+        }
+
+        if (template != null)
+        {
+            return template;
+        }
+
+        for (var creature = owner == null ? null : Creature.GetTemplate(owner);
+             creature != null;
+             creature = creature.BaseBeing)
+        {
+            template = creature.Abilities.FirstOrDefault(ability => ability.Name == templateName);
+            if (template != null)
+            {
+                return template;
+            }
+        }
+
+        return null;
     }
 
     public virtual int MaxLevel => 1;
@@ -205,6 +236,9 @@ public class Ability : ILoadable, ICSScriptSerializable
         set;
     }
 
+    /// <summary>Extra ticks before ability resolves.</summary>
+    public int Windup { get; set; }
+
     public int EnergyPointCost
     {
         get;
@@ -242,6 +276,7 @@ public class Ability : ILoadable, ICSScriptSerializable
         ability.MinHeadingDeviation = MinHeadingDeviation;
         ability.MaxHeadingDeviation = MaxHeadingDeviation;
         ability.Range = Range;
+        ability.Windup = Windup;
         ability.TargetingShapeSize = TargetingShapeSize;
         ability.TargetingShape = TargetingShape;
         ability.Action = Action;
@@ -336,6 +371,8 @@ public class Ability : ILoadable, ICSScriptSerializable
         { nameof(Name), (_, v) => v != default },
         { nameof(Type), (_, v) => (AbilityType)v! != default },
         { nameof(LevelExpression), (_, v) => v != default },
+        { nameof(NonDecreasingLevel), (_, v) => (bool)v! },
+        { nameof(Windup), (_, v) => (int)v! != 0 },
         { nameof(Cost), (_, v) => (int)v! != default },
         { nameof(Activation), (o, v) => (ActivationType)v! != GetDefaultActivation(o.Type) },
         { nameof(ActivationCondition), (_, v) => v != default },

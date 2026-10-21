@@ -19,7 +19,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom("..");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var baseSpeed = npc.Being!.Speed;
@@ -40,7 +40,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var baseSpeed = npc.Being!.Speed;
@@ -49,7 +49,7 @@ public class StatusAbilityTest
         ApplyStatus(npc, EffectType.Slow, duration: 100, manager, amount: 300);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(3, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Slowed.Name));
+        Assert.Equal(3, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Slowed.Name));
         Assert.Equal(baseSpeed - 6, npc.Being.Speed);
         Assert.Equal(baseCooldownFactor + 100, npc.Being.CooldownFactor);
         Assert.Equal(0, npc.ActiveEffects!.Accumulators[EffectType.Slow].Value);
@@ -60,7 +60,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var ability = npc.ActiveEffects!.Abilities.First().Ability!;
@@ -74,7 +74,7 @@ public class StatusAbilityTest
         Assert.Equal(currentTick + 102, ability.CooldownTick);
         Assert.Equal(102, ability.CooldownXpLeft);
 
-        manager.EffectApplicationSystem.RemoveAbility(
+        manager.AbilityLevelSystem.RemoveAbility(
             npc, AbilityData.Slowed.Name, manager);
         manager.Queue.ProcessQueue(manager);
 
@@ -88,7 +88,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var baseSpeed = npc.Being!.Speed;
@@ -101,7 +101,7 @@ public class StatusAbilityTest
         ApplyStatus(npc, EffectType.Slow, duration: 100, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Slowed.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Slowed.Name));
         var records = npc.ActiveEffects!.ComponentEffects
             .Where(effect => effect.TargetName == AbilityData.Slowed.Name)
             .ToList();
@@ -278,7 +278,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var baseVisibility = npc.Being!.Visibility;
@@ -287,7 +287,7 @@ public class StatusAbilityTest
         ApplyDamageOverTimeEffect(npc, EffectType.FireDamage, ratePerAction: 100, duration: 1, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Burning.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Burning.Name));
         Assert.Equal(baseVisibility + 50, npc.Being.Visibility);
         Assert.Equal(baseFireResistance, npc.Being.FireResistance);
 
@@ -297,7 +297,7 @@ public class StatusAbilityTest
 
         Assert.Equal(baseVisibility + 50, npc.Being.Visibility);
         Assert.True(npc.Being.HasEffectOrAccumulator(EffectType.Wet));
-        Assert.Equal(0, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Wetted.Name));
+        Assert.Equal(0, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Wetted.Name));
 
         var burningEffect = Assert.Single(
             npc.ActiveEffects!.PropertyEffects,
@@ -307,7 +307,7 @@ public class StatusAbilityTest
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(baseVisibility, npc.Being.Visibility);
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Wetted.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Wetted.Name));
     }
 
     [Fact]
@@ -315,7 +315,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var baseVisibility = npc.Being!.Visibility;
@@ -375,7 +375,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         // Half stun resistance: a single hit only builds up halfway, so it doesn't take hold.
@@ -387,13 +387,13 @@ public class StatusAbilityTest
         manager.Queue.ProcessQueue(manager);
 
         Assert.True(npc.Being!.HasEffectOrAccumulator(EffectType.Stun));
-        Assert.False(EffectApplicationSystem.GetAbilityLevel(npc, "stunned") > 0);
+        Assert.False(AbilityLevelSystem.GetAbilityLevel(npc, "stunned") > 0);
 
         // A second hit pushes the build-up over the threshold and the stun takes hold.
         ApplyStatus(npc, EffectType.Stun, duration: 100, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.True(EffectApplicationSystem.GetAbilityLevel(npc, "stunned") > 0);
+        Assert.True(AbilityLevelSystem.GetAbilityLevel(npc, "stunned") > 0);
     }
 
     [Fact]
@@ -401,13 +401,13 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         ApplyStatus(npc, EffectType.Stun, duration: 100, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.True(EffectApplicationSystem.GetAbilityLevel(npc, "stunned") > 0);
+        Assert.True(AbilityLevelSystem.GetAbilityLevel(npc, "stunned") > 0);
     }
 
     [Fact]
@@ -415,7 +415,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         ApplyStatus(npc, EffectType.Stun, duration: 100, manager, amount: 250);
@@ -428,7 +428,7 @@ public class StatusAbilityTest
             .ToList();
         Assert.Equal(2, records.Count);
         Assert.All(records, record => Assert.Equal(1, record.Level));
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Stunned.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Stunned.Name));
         Assert.Equal(50, npc.Being!.UnableToActPercent);
         Assert.Equal(50, npc.ActiveEffects.Accumulators[EffectType.Stun].Value);
         var levelTwoExpiration = records[1].ExpirationTarget;
@@ -444,7 +444,7 @@ public class StatusAbilityTest
             .ToList();
         Assert.Equal(3, records.Count);
         Assert.All(records, record => Assert.Equal(1, record.Level));
-        Assert.Equal(3, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Stunned.Name));
+        Assert.Equal(3, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Stunned.Name));
         Assert.Equal(100, npc.Being!.UnableToActPercent);
         Assert.Equal(0, npc.ActiveEffects.Accumulators[EffectType.Stun].Value);
         Assert.True(records[2].ExpirationTarget > levelTwoExpiration);
@@ -461,7 +461,7 @@ public class StatusAbilityTest
             .OrderBy(effect => effect.InstanceId)
             .ToList();
         Assert.Equal(4, records.Count);
-        Assert.Equal(4, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Stunned.Name));
+        Assert.Equal(4, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Stunned.Name));
         Assert.Equal(0, npc.ActiveEffects.Accumulators[EffectType.Stun].Value);
         Assert.All(records, record => Assert.True(record.ExpirationTarget > maximumExpiration));
     }
@@ -471,7 +471,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var startTick = manager.Game.CurrentTick;
@@ -493,7 +493,7 @@ public class StatusAbilityTest
         manager.EffectApplicationSystem.RealizeBuildUps(
             npc, TimeSystem.DefaultActionDelay, manager);
         Assert.False(npc.ActiveEffects.Accumulators.ContainsKey(EffectType.Stun));
-        Assert.True(EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Stunned.Name) > 0);
+        Assert.True(AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Stunned.Name) > 0);
 
         npc.AI!.PreviousActionTick = startTick;
         npc.AI.NextActionTick = startTick + TimeSystem.DefaultActionDelay;
@@ -506,7 +506,7 @@ public class StatusAbilityTest
         Assert.DoesNotContain(
             npc.ActiveEffects.ComponentEffects,
             effect => effect.TargetName == AbilityData.Stunned.Name);
-        Assert.False(EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Stunned.Name) > 0);
+        Assert.False(AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Stunned.Name) > 0);
     }
 
     [Theory]
@@ -547,7 +547,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var startTick = manager.Game.CurrentTick;
@@ -570,7 +570,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var baseEvasion = npc.Being!.Evasion;
@@ -578,7 +578,7 @@ public class StatusAbilityTest
         ApplyStatus(npc, EffectType.Bind, duration: 100, manager, amount: 200);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Bound.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Bound.Name));
         Assert.Equal(baseEvasion - 25, npc.Being.Evasion);
     }
 
@@ -611,7 +611,7 @@ public class StatusAbilityTest
 
         ApplyStatus(player, EffectType.Bind, duration: 100, manager, amount: 300);
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(3, EffectApplicationSystem.GetAbilityLevel(player, AbilityData.Bound.Name));
+        Assert.Equal(3, AbilityLevelSystem.GetAbilityLevel(player, AbilityData.Bound.Name));
 
         var bound = manager.AffectableAbilitiesIndex[
             (player.Id, AbilityData.Bound.Name)]!.Ability!;
@@ -628,7 +628,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var baseResistance = npc.Being!.PhysicalStatusResistance;
@@ -637,7 +637,7 @@ public class StatusAbilityTest
         ApplyStatus(npc, EffectType.Paralyze, duration: 100, manager, amount: 100);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Paralyzed.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Paralyzed.Name));
         Assert.Equal(baseResistance - 25, npc.Being.PhysicalStatusResistance);
         Assert.Equal(baseDeflection, npc.Being.Deflection);
     }
@@ -647,7 +647,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var baseEvasion = npc.Being!.Evasion;
@@ -655,7 +655,7 @@ public class StatusAbilityTest
         ApplyStatus(npc, EffectType.Stick, duration: 100, manager, amount: 200);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Stuck.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Stuck.Name));
         Assert.Equal(baseEvasion - 25, npc.Being.Evasion);
     }
 
@@ -664,7 +664,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var startTick = manager.Game.CurrentTick;
@@ -696,7 +696,7 @@ public class StatusAbilityTest
             npc.ActiveEffects.ComponentEffects,
             effect => effect.TargetName == AbilityData.Stunned.Name);
         Assert.Equal(0, npc.ActiveEffects.Accumulators[EffectType.Stun].Value);
-        Assert.Equal(0, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Stunned.Name));
+        Assert.Equal(0, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Stunned.Name));
     }
 
     [Fact]
@@ -704,13 +704,13 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         ApplyStatus(npc, EffectType.Stun, duration: 100, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.True(EffectApplicationSystem.GetAbilityLevel(npc, "stunned") > 0);
+        Assert.True(AbilityLevelSystem.GetAbilityLevel(npc, "stunned") > 0);
 
         // The build-up is tracked by a single accumulator instance that carries no condition binding of
         // its own; the applied effect-less "stunned" status ability imposes the condition.
@@ -727,7 +727,7 @@ public class StatusAbilityTest
     public void Status_buildup_threshold_is_fixed()
     {
         var level = TestHelper.BuildRoom(".");
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         npc.AI!.PreviousActionTick = 100;
         npc.AI.NextActionTick = 350;
 
@@ -747,7 +747,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(10, npc.Being!.Might);
@@ -770,7 +770,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         // Half stun resistance: a single hit builds up to 50, below the threshold, so it doesn't take hold.
@@ -784,7 +784,7 @@ public class StatusAbilityTest
         Assert.Equal(
             50,
             npc.ActiveEffects!.Accumulators[EffectType.Stun].Value);
-        Assert.False(EffectApplicationSystem.GetAbilityLevel(npc, "stunned") > 0);
+        Assert.False(AbilityLevelSystem.GetAbilityLevel(npc, "stunned") > 0);
 
         // Processing without elapsed time neither decays nor removes the pending build-up.
         manager.EffectApplicationSystem.RealizeBuildUps(npc, elapsed: 0, manager);
@@ -810,7 +810,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         ApplyStatus(npc, EffectType.Stun, duration: 100, manager, amount: 250);
@@ -826,7 +826,7 @@ public class StatusAbilityTest
             npc, elapsed: TimeSystem.DefaultActionDelay, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Stunned.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Stunned.Name));
         Assert.Equal(20, npc.ActiveEffects.Accumulators[EffectType.Stun].Value);
         Assert.Equal(expirations, records.Select(record => record.ExpirationTarget));
     }
@@ -840,7 +840,7 @@ public class StatusAbilityTest
 
         TestHelper.ApplyEffect(engulfEffect, engulfer, victim, manager);
         manager.Queue.ProcessQueue(manager);
-        var level = EffectApplicationSystem.GetAbilityLevel(victim, AbilityData.Engulfed.Name);
+        var level = AbilityLevelSystem.GetAbilityLevel(victim, AbilityData.Engulfed.Name);
         if (level != 0)
         {
             Assert.InRange(level, 2, 3);
@@ -854,8 +854,8 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom("...");
         var manager = level.Entity.Manager;
-        var engulfer = CreatureData.GelatinousCube.Instantiate(level, new Point(0, 0));
-        var victim = CreatureData.HumanWarrior.Instantiate(level, new Point(1, 0));
+        var engulfer = CreatureData.Sylph.Instantiate(level, new Point(0, 0));
+        var victim = CreatureData.Manusya.Instantiate(level, new Point(1, 0));
         manager.Queue.ProcessQueue(manager);
 
         var sourceAbilityId = engulfer.ActiveEffects!.Abilities
@@ -869,7 +869,7 @@ public class StatusAbilityTest
 
         ApplyEngulfBuildup(200);
 
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(victim, AbilityData.Engulfed.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(victim, AbilityData.Engulfed.Name));
         Assert.Same(victim, manager.EngulferToVictimRelationship.GetVictim(engulfer));
         Assert.Same(engulfer, manager.EngulferToVictimRelationship.GetEngulfer(victim));
         Assert.Equal(baseHindrance + 25, victim.Being.Hindrance);
@@ -888,14 +888,14 @@ public class StatusAbilityTest
 
         ApplyEngulfBuildup(200);
 
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(victim, AbilityData.Engulfed.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(victim, AbilityData.Engulfed.Name));
         Assert.Equal(0, victim.Being.PrimaryVisionRange);
         Assert.Equal(0, victim.Being.SecondaryVisionRange);
         Assert.Equal(levelOneEvasion, victim.Being.Evasion);
 
         ApplyEngulfBuildup(200);
 
-        Assert.Equal(3, EffectApplicationSystem.GetAbilityLevel(victim, AbilityData.Engulfed.Name));
+        Assert.Equal(3, AbilityLevelSystem.GetAbilityLevel(victim, AbilityData.Engulfed.Name));
         Assert.Equal(levelOneEvasion - 25, victim.Being.Evasion);
 
         void ApplyEngulfBuildup(int amount)
@@ -912,8 +912,8 @@ public class StatusAbilityTest
         var level = TestHelper.BuildRoom("..");
         var manager = level.Entity.Manager;
 
-        var engulfer = CreatureData.GelatinousCube.Instantiate(level, new Point(0, 0));
-        var victim = CreatureData.HumanWarrior.Instantiate(level, new Point(1, 0));
+        var engulfer = CreatureData.Sylph.Instantiate(level, new Point(0, 0));
+        var victim = CreatureData.Manusya.Instantiate(level, new Point(1, 0));
         manager.Queue.ProcessQueue(manager);
 
         Engulf(engulfer, victim, manager);
@@ -938,9 +938,9 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom("...");
         var manager = level.Entity.Manager;
-        var engulfer = CreatureData.GelatinousCube.Instantiate(level, new Point(0, 0));
-        var victim = CreatureData.HumanWarrior.Instantiate(level, new Point(1, 0));
-        var bystander = CreatureData.HumanWarrior.Instantiate(level, new Point(2, 0));
+        var engulfer = CreatureData.Sylph.Instantiate(level, new Point(0, 0));
+        var victim = CreatureData.Manusya.Instantiate(level, new Point(1, 0));
+        var bystander = CreatureData.Manusya.Instantiate(level, new Point(2, 0));
         manager.Queue.ProcessQueue(manager);
         Engulf(engulfer, victim, manager);
 
@@ -979,8 +979,7 @@ public class StatusAbilityTest
         manager.Process(valid);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.True(victim.Being.HasEffectOrAccumulator(EffectType.ToxinDamage));
-        Assert.True(victim.Being.HasEffectOrAccumulator(EffectType.Corrode));
+        Assert.True(victim.Being.HasEffectOrAccumulator(EffectType.Deafen));
     }
 
     [Fact]
@@ -989,21 +988,22 @@ public class StatusAbilityTest
         var level = TestHelper.BuildRoom("...");
         var manager = level.Entity.Manager;
 
-        var engulfer = CreatureData.GelatinousCube.Instantiate(level, new Point(0, 0));
-        var victim = CreatureData.GelatinousCube.Instantiate(level, new Point(1, 0));
-        var bystander = CreatureData.GelatinousCube.Instantiate(level, new Point(2, 0));
+        var engulfer = CreatureData.Sylph.Instantiate(level, new Point(0, 0));
+        var victim = CreatureData.Rat.Instantiate(level, new Point(1, 0));
+        var bystander = CreatureData.Manusya.Instantiate(level, new Point(2, 0));
         manager.Queue.ProcessQueue(manager);
 
         Engulf(engulfer, victim, manager);
         Assert.True(victim.Being!.HasEffectOrAccumulator(EffectType.Engulf));
         Assert.Equal(new Point(1, 0), victim.Position!.Cell);
-        manager.EffectApplicationSystem.UpdateOrAddPropertyModifier(
-            -100, nameof(BeingComponent.ParalyzeResistance), engulfer, manager);
-
-        // A gelatinous cube's touch delivers Paralyze and, being unblockable, lands reliably.
+        // Make the ordinary bite unblockable so this test isolates engulf redirection.
         var attack = victim.ActiveEffects!.Abilities.First(
-            a => a.Ability!.SuccessCondition == AbilitySuccessCondition.UnblockableAttack
-                && a.Ability!.Effects.Any(e => e.Effect!.EffectType == EffectType.Paralyze));
+            a => a.Ability!.Activation == ActivationType.Targeted
+                && a.Ability!.Effects.Any(e => e.Effect!.EffectType == EffectType.PhysicalDamage));
+        attack.Ability!.SuccessCondition = AbilitySuccessCondition.UnblockableAttack;
+        attack.Ability.Slot = 0;
+        var engulferHitPoints = engulfer.Being!.HitPoints;
+        var bystanderHitPoints = bystander.Being!.HitPoints;
 
         // Aiming the strike at a bystander is no longer refused - while engulfed it is redirected onto the
         // engulfer that holds the victim.
@@ -1021,9 +1021,9 @@ public class StatusAbilityTest
         manager.Process(strike);
         manager.Queue.ProcessQueue(manager);
 
-        // The paralyzing blow landed on the engulfer, never on the bystander it was aimed at.
-        Assert.True(engulfer.Being!.HasEffectOrAccumulator(EffectType.Paralyze));
-        Assert.False(bystander.Being!.HasEffectOrAccumulator(EffectType.Paralyze));
+        // The damage landed on the engulfer, never on the bystander it was aimed at.
+        Assert.True(engulfer.Being.HitPoints < engulferHitPoints);
+        Assert.Equal(bystanderHitPoints, bystander.Being.HitPoints);
     }
 
     [Fact]
@@ -1032,8 +1032,8 @@ public class StatusAbilityTest
         var level = TestHelper.BuildRoom("...");
         var manager = level.Entity.Manager;
 
-        var engulfer = CreatureData.GelatinousCube.Instantiate(level, new Point(0, 0));
-        var victim = CreatureData.HumanWarrior.Instantiate(level, new Point(1, 0));
+        var engulfer = CreatureData.Sylph.Instantiate(level, new Point(0, 0));
+        var victim = CreatureData.Manusya.Instantiate(level, new Point(1, 0));
         manager.Queue.ProcessQueue(manager);
 
         var engulferCell = engulfer.Position!.Cell!.Value;
@@ -1052,7 +1052,7 @@ public class StatusAbilityTest
         Assert.DoesNotContain(victim.ActiveEffects!.PropertyEffects,
             effect => effect.EffectType == EffectType.Engulf);
         Assert.True(victim.ActiveEffects.Accumulators.ContainsKey(EffectType.Engulf));
-        Assert.False(EffectApplicationSystem.GetAbilityLevel(victim, AbilityData.Engulfed.Name) > 0);
+        Assert.False(AbilityLevelSystem.GetAbilityLevel(victim, AbilityData.Engulfed.Name) > 0);
         Assert.Null(manager.EngulferToVictimRelationship.GetEngulfer(victim));
         Assert.Null(manager.EngulferToVictimRelationship.GetVictim(engulfer));
         Assert.Equal(victimCell, victim.Position!.Cell);
@@ -1065,8 +1065,8 @@ public class StatusAbilityTest
         var level = TestHelper.BuildRoom("..");
         var manager = level.Entity.Manager;
 
-        var engulfer = CreatureData.GelatinousCube.Instantiate(level, new Point(0, 0));
-        var victim = CreatureData.HumanWarrior.Instantiate(level, new Point(1, 0));
+        var engulfer = CreatureData.Sylph.Instantiate(level, new Point(0, 0));
+        var victim = CreatureData.Manusya.Instantiate(level, new Point(1, 0));
         manager.Queue.ProcessQueue(manager);
 
         // Arm the victim with a dagger before it is swallowed.
@@ -1096,8 +1096,8 @@ public class StatusAbilityTest
         var level = TestHelper.BuildRoom("..");
         var manager = level.Entity.Manager;
 
-        var engulfer = CreatureData.GelatinousCube.Instantiate(level, new Point(0, 0));
-        var victim = CreatureData.HumanWarrior.Instantiate(level, new Point(1, 0));
+        var engulfer = CreatureData.Sylph.Instantiate(level, new Point(0, 0));
+        var victim = CreatureData.Manusya.Instantiate(level, new Point(1, 0));
         manager.Queue.ProcessQueue(manager);
         Assert.NotNull(manager.AbilitySlottingSystem.GetFirstFreeSlot(engulfer));
         var carriedBefore = victim.Being!.Items.Select(i => i.Id).ToHashSet();
@@ -1119,8 +1119,8 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom("..");
         var manager = level.Entity.Manager;
-        var engulfer = CreatureData.GelatinousCube.Instantiate(level, new Point(0, 0));
-        var victim = CreatureData.HumanWarrior.Instantiate(level, new Point(1, 0));
+        var engulfer = CreatureData.Sylph.Instantiate(level, new Point(0, 0));
+        var victim = CreatureData.Manusya.Instantiate(level, new Point(1, 0));
         manager.Queue.ProcessQueue(manager);
         var carriedBefore = victim.Being!.Items.Select(i => i.Id).ToHashSet();
         ItemData.Dagger.Instantiate(victim);
@@ -1148,9 +1148,9 @@ public class StatusAbilityTest
         var level = TestHelper.BuildRoom("...");
         var manager = level.Entity.Manager;
 
-        var engulfer = CreatureData.GelatinousCube.Instantiate(level, new Point(0, 0));
-        var first = CreatureData.HumanWarrior.Instantiate(level, new Point(1, 0));
-        var second = CreatureData.HumanWarrior.Instantiate(level, new Point(2, 0));
+        var engulfer = CreatureData.Sylph.Instantiate(level, new Point(0, 0));
+        var first = CreatureData.Manusya.Instantiate(level, new Point(1, 0));
+        var second = CreatureData.Manusya.Instantiate(level, new Point(2, 0));
         manager.Queue.ProcessQueue(manager);
 
         Engulf(engulfer, first, manager);
@@ -1193,7 +1193,7 @@ public class StatusAbilityTest
         var target = ApplyCreatureAbilityStatus(
             CreatureData.GiantSpider, EffectType.Weaken, manager, level);
 
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(target, AbilityData.Weakened.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(target, AbilityData.Weakened.Name));
         Assert.Equal(9, target.Being!.Might);
     }
 
@@ -1206,38 +1206,25 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
         var baseMight = npc.Being!.Might;
 
         ApplyStatus(npc, EffectType.Weaken, duration: 100, manager, amount: amount);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(expectedReduction, Math.Min(3, EffectApplicationSystem.GetAbilityLevel(
+        Assert.Equal(expectedReduction, Math.Min(3, AbilityLevelSystem.GetAbilityLevel(
             npc, AbilityData.Weakened.Name)));
         Assert.Equal(baseMight - expectedReduction, npc.Being.Might);
     }
 
     [Fact]
-    public void Acid_blobs_splashback_corrodes_armor()
+    public void Koschei_has_a_doom_spell()
     {
         var level = TestHelper.BuildRoom("..");
         var manager = level.Entity.Manager;
 
-        var target = ApplyCreatureAbilityStatus(
-            CreatureData.AcidBlob, EffectType.Corrode, manager, level);
-
-        // The acid damage itself inflicts the lingering Corroded status.
-        Assert.True(target.Being!.HasEffectOrAccumulator(EffectType.Corrode));
-    }
-
-    [Fact]
-    public void Lich_has_a_doom_spell()
-    {
-        var level = TestHelper.BuildRoom("..");
-        var manager = level.Entity.Manager;
-
-        var target = ApplyCreatureAbilityStatus(CreatureData.Lich, EffectType.Doom, manager, level);
+        var target = ApplyCreatureAbilityStatus(CreatureData.Koschei, EffectType.Doom, manager, level);
 
         Assert.True(target.Being!.HasEffectOrAccumulator(EffectType.Doom));
     }
@@ -1247,52 +1234,32 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom("..");
         var manager = level.Entity.Manager;
-        var lich = CreatureData.Lich.Instantiate(level, new Point(0, 0));
-        var skeleton = CreatureData.AnimatedSkeleton.Instantiate(level, new Point(1, 0));
+        var koschei = CreatureData.Koschei.Instantiate(level, new Point(0, 0));
+        var skeleton = CreatureData.Spartos.Instantiate(level, new Point(1, 0));
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(100, skeleton.Being!.DoomResistance);
-
-        var doom = lich.ActiveEffects!.Abilities
+        var doom = koschei.ActiveEffects!.Abilities
             .Single(a => a.Ability!.Effects.Any(e => e.Effect!.EffectType == EffectType.Doom))
             .Ability!.Effects.Single(e => e.Effect!.EffectType == EffectType.Doom);
 
-        TestHelper.ApplyEffect(doom, lich, skeleton, manager);
+        manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
+            100, nameof(BeingComponent.DoomResistance), "test", skeleton);
+        manager.Queue.ProcessQueue(manager);
+
+        TestHelper.ApplyEffect(doom, koschei, skeleton, manager);
         manager.Queue.ProcessQueue(manager);
 
         // Full Doom resistance reduces the buildup to zero, so the status never settles.
-        Assert.False(skeleton.Being.HasEffectOrAccumulator(EffectType.Doom));
+        Assert.False(skeleton.Being!.HasEffectOrAccumulator(EffectType.Doom));
     }
 
     [Fact]
-    public void Mummys_touch_decays()
+    public void Magic_taking_crocodile_builds_overcharge_with_a_magnitude()
     {
         var level = TestHelper.BuildRoom("..");
         var manager = level.Entity.Manager;
 
-        var target = ApplyCreatureAbilityStatus(CreatureData.Mummy, EffectType.Decay, manager, level);
-
-        Assert.True(target.Being!.HasEffectOrAccumulator(EffectType.Decay));
-    }
-
-    [Fact]
-    public void Vampire_enervates()
-    {
-        var level = TestHelper.BuildRoom("..");
-        var manager = level.Entity.Manager;
-
-        var target = ApplyCreatureAbilityStatus(CreatureData.Vampire, EffectType.Enervate, manager, level);
-
-        Assert.True(target.Being!.HasEffectOrAccumulator(EffectType.Enervate));
-    }
-
-    [Fact]
-    public void Disenchanter_builds_overcharge_with_a_magnitude()
-    {
-        var level = TestHelper.BuildRoom("..");
-        var manager = level.Entity.Manager;
-
-        var target = ApplyCreatureAbilityStatus(CreatureData.Disenchanter, EffectType.Overcharge, manager, level);
+        var target = ApplyCreatureAbilityStatus(CreatureData.Sui, EffectType.Overcharge, manager, level);
 
         // The timed source lands immediately, but contributes only after an elapsed victim turn.
         Assert.True(target.Being!.HasEffectOrAccumulator(EffectType.Overcharge));
@@ -1308,32 +1275,6 @@ public class StatusAbilityTest
             target.ActiveEffects!.Accumulators[EffectType.Overcharge].Value > 0);
     }
 
-    [Fact]
-    public void White_dragons_breath_chills()
-    {
-        var level = TestHelper.BuildRoom("..");
-        var manager = level.Entity.Manager;
-
-        var dragon = CreatureData.WhiteDragon.Instantiate(level, new Point(0, 0));
-        var target = CreatureData.HumanWarrior.Instantiate(level, new Point(1, 0));
-        manager.Queue.ProcessQueue(manager);
-
-        // Give the target plenty of health so it survives the icy blast and the chill can be observed.
-        manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
-            1000, nameof(BeingComponent.HitPointMaximum), "test", target);
-        manager.Queue.ProcessQueue(manager);
-
-        var freeze = dragon.ActiveEffects!.Abilities
-            .SelectMany(a => a.Ability!.Effects)
-            .Single(e => e.Effect!.EffectType == EffectType.ColdDamage);
-
-        TestHelper.ApplyEffect(freeze, dragon, target, manager);
-        manager.Queue.ProcessQueue(manager);
-
-        // The frost damage itself inflicts the lingering Chilled status.
-        Assert.True(target.Being!.HasEffectOrAccumulator(EffectType.Chill));
-    }
-
     [Theory]
     [InlineData(EffectType.ShockDamage, EffectType.Paralyze)]
     [InlineData(EffectType.WaterDamage, EffectType.Wet)]
@@ -1344,7 +1285,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         // Plenty of health so the blow doesn't kill the target before the status can be observed.
@@ -1365,7 +1306,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         ApplyInstantDamageEffect(npc, EffectType.ShockDamage, 1, manager);
@@ -1394,7 +1335,7 @@ public class StatusAbilityTest
         ApplyDamageOverTimeEffect(playerEntity, EffectType.BleedDamage, ratePerAction: 100, duration: 1000, manager);
 
         Assert.True(being.HasEffectOrAccumulator(EffectType.BleedDamage));
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(playerEntity, AbilityData.Drained.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(playerEntity, AbilityData.Drained.Name));
         var hpBefore = being.HitPoints;
 
         // On the player's next turn the bleed instance realizes its damage over the elapsed interval.
@@ -1434,50 +1375,20 @@ public class StatusAbilityTest
         var level = TestHelper.BuildRoom("..");
         var manager = level.Entity.Manager;
 
-        var target = ApplyCreatureAbilityStatus(CreatureData.DireWolf, EffectType.BleedDamage, manager, level);
+        var target = ApplyCreatureAbilityStatus(CreatureData.Wolf, EffectType.BleedDamage, manager, level);
 
         Assert.True(target.Being!.HasEffectOrAccumulator(EffectType.BleedDamage));
     }
 
     [Fact]
-    public void Succubus_has_a_silencing_kiss()
+    public void Keteb_meriri_inflicts_noonday_wasting()
     {
         var level = TestHelper.BuildRoom("..");
         var manager = level.Entity.Manager;
 
-        var target = ApplyCreatureAbilityStatus(CreatureData.Succubus, EffectType.Mute, manager, level);
+        var target = ApplyCreatureAbilityStatus(CreatureData.KetebMeriri, EffectType.Wither, manager, level);
 
-        Assert.True(target.Being!.HasEffectOrAccumulator(EffectType.Mute));
-    }
-
-    [Fact]
-    public void Homunculus_bite_applies_dazed_level_two()
-    {
-        var level = TestHelper.BuildRoom("..");
-        var manager = level.Entity.Manager;
-
-        var target = ApplyCreatureAbilityStatus(CreatureData.Homunculus, EffectType.Daze, manager, level);
-
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(target, AbilityData.Dazed.Name));
-    }
-
-    [Fact]
-    public void Ghosts_touch_withers()
-    {
-        Assert.Contains(
-            CreatureData.Ghost.Abilities.SelectMany(ability => ability.Effects ?? []),
-            effect => effect is Wither);
-    }
-
-    [Fact]
-    public void Eyedra_has_a_gaze_that_dazes()
-    {
-        var level = TestHelper.BuildRoom("..");
-        var manager = level.Entity.Manager;
-
-        var target = ApplyCreatureAbilityStatus(CreatureData.Eyedra, EffectType.Daze, manager, level);
-
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(target, AbilityData.Dazed.Name));
+        Assert.True(target.Being!.HasEffectOrAccumulator(EffectType.Wither));
     }
 
     [Fact]
@@ -1485,7 +1396,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var baseSpeed = npc.Being!.Speed;
@@ -1497,7 +1408,7 @@ public class StatusAbilityTest
         manager.Queue.ProcessQueue(manager);
 
         // Movement is hindered, but the raw speed that drives attack/cast timing is untouched.
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Crippled.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Crippled.Name));
         Assert.Equal(baseHindrance + 25, npc.Being.Hindrance);
         Assert.True(npc.Being.Evasion < baseEvasion);
         Assert.Equal(baseSpeed, npc.Being.Speed);
@@ -1514,7 +1425,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var baseSpeed = npc.Being!.Speed;
@@ -1524,7 +1435,7 @@ public class StatusAbilityTest
         ApplyStatus(npc, EffectType.Cripple, duration: 100, manager, amount: 200);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Crippled.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Crippled.Name));
         Assert.Equal(baseHindrance + 50, npc.Being.Hindrance);
         Assert.Equal(baseEvasion - 50, npc.Being.Evasion);
         Assert.Equal(baseSpeed, npc.Being.Speed);
@@ -1535,7 +1446,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var basePerception = npc.Being!.Perception;
@@ -1545,7 +1456,7 @@ public class StatusAbilityTest
         ApplyStatus(npc, EffectType.Daze, duration: 100, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Dazed.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Dazed.Name));
         Assert.Equal(basePerception - 3, npc.Being.Perception);
         Assert.Equal(baseSpeed - 3, npc.Being.Speed);
         // Evasion is derived from the other attributes, so it just has to drop.
@@ -1564,7 +1475,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var basePerception = npc.Being!.Perception;
@@ -1573,7 +1484,7 @@ public class StatusAbilityTest
         ApplyStatus(npc, EffectType.Daze, duration: 100, manager, amount: 200);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Dazed.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Dazed.Name));
         Assert.Equal(basePerception - 5, npc.Being.Perception);
         Assert.Equal(baseSpeed - 5, npc.Being.Speed);
     }
@@ -1583,7 +1494,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var being = npc.Being!;
@@ -1616,7 +1527,7 @@ public class StatusAbilityTest
         ExpireStatusEffects(npc, manager);
 
         Assert.Equal(0, being.ReservedHitPoints);
-        Assert.False(EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Decayed.Name) > 0);
+        Assert.False(AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Decayed.Name) > 0);
         being.HitPoints = maxHealth;
         Assert.Equal(maxHealth, being.HitPoints);
     }
@@ -1626,7 +1537,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var being = npc.Being!;
@@ -1658,7 +1569,7 @@ public class StatusAbilityTest
         ExpireStatusEffects(npc, manager);
 
         Assert.Equal(0, being.ReservedEnergyPoints);
-        Assert.False(EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Enervated.Name) > 0);
+        Assert.False(AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Enervated.Name) > 0);
         being.EnergyPoints = maxEnergy;
         Assert.Equal(maxEnergy, being.EnergyPoints);
     }
@@ -1668,7 +1579,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         EffectTestHelper.ApplyStatus(
@@ -1695,7 +1606,7 @@ public class StatusAbilityTest
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(7, npc.Being.ReservedHitPoints);
-        Assert.True(EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Decayed.Name) > 0);
+        Assert.True(AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Decayed.Name) > 0);
         Assert.Null(record.ExpirationEvent);
         Assert.Null(record.ExpirationTarget);
 
@@ -1704,7 +1615,7 @@ public class StatusAbilityTest
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(0, npc.Being.ReservedHitPoints);
-        Assert.False(EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Decayed.Name) > 0);
+        Assert.False(AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Decayed.Name) > 0);
     }
 
     [Fact]
@@ -1712,7 +1623,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var startTick = manager.Game.CurrentTick;
@@ -1760,13 +1671,13 @@ public class StatusAbilityTest
         Assert.Equal("7", GetStatusAbilityAmount());
         Assert.Null(record.ExpirationEvent);
         Assert.Null(record.ExpirationTarget);
-        Assert.True(EffectApplicationSystem.GetAbilityLevel(npc, abilityName) > 0);
+        Assert.True(AbilityLevelSystem.GetAbilityLevel(npc, abilityName) > 0);
 
         manager.EffectApplicationSystem.RealizeXpExpiringEffects(npc, xp: 51, manager);
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(0, GetReservedAmount());
-        Assert.False(EffectApplicationSystem.GetAbilityLevel(npc, abilityName) > 0);
+        Assert.False(AbilityLevelSystem.GetAbilityLevel(npc, abilityName) > 0);
 
         int GetReservedAmount()
             => effectType == EffectType.Decay
@@ -1814,7 +1725,7 @@ public class StatusAbilityTest
             player, EffectType.BleedDamage, ratePerAction: 100, duration: 1000, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(player, AbilityData.Drained.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(player, AbilityData.Drained.Name));
         Assert.Equal(baseSpeed, being.Speed);
         Assert.Equal(0, being.Regeneration);
         Assert.Equal(0, being.EnergyRegeneration);
@@ -1843,7 +1754,7 @@ public class StatusAbilityTest
             player, EffectType.BleedDamage, ratePerAction: 200, duration: 1000, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(player, AbilityData.Drained.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(player, AbilityData.Drained.Name));
         Assert.Equal(baseSpeed, being.Speed);
         Assert.Equal(baseCooldownFactor + 100, being.CooldownFactor);
     }
@@ -1853,7 +1764,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var baseSpeed = npc.Being!.Speed;
@@ -1865,45 +1776,45 @@ public class StatusAbilityTest
         Assert.Equal(baseSpeed - 2, npc.Being.Speed);
 
         ApplyWard(amount: 100);
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Warded.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Warded.Name));
         Assert.True(npc.Being.HasEffectOrAccumulator(EffectType.Stagger));
         Assert.True(npc.Being.HasEffectOrAccumulator(EffectType.Slow));
-        Assert.Equal(0, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Staggered.Name));
-        Assert.Equal(0, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Slowed.Name));
+        Assert.Equal(0, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Staggered.Name));
+        Assert.Equal(0, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Slowed.Name));
         Assert.Equal(baseSpeed, npc.Being.Speed);
 
         // A later positive level can rise above the active suppression.
         ApplyStatus(npc, EffectType.Stagger, duration: 100, manager, amount: 100);
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Staggered.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Staggered.Name));
 
         ApplyWard(amount: 100);
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Warded.Name));
-        Assert.Equal(0, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Staggered.Name));
-        Assert.Equal(-1, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Slowed.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Warded.Name));
+        Assert.Equal(0, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Staggered.Name));
+        Assert.Equal(-1, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Slowed.Name));
         Assert.Equal(baseSpeed, npc.Being.Speed);
 
         ApplyStatus(npc, EffectType.Slow, duration: 100, manager, amount: 100);
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(0, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Slowed.Name));
+        Assert.Equal(0, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Slowed.Name));
 
         ApplyStatus(npc, EffectType.Chill, duration: 100, manager, amount: 100);
         manager.Queue.ProcessQueue(manager);
         Assert.True(npc.Being.HasEffectOrAccumulator(EffectType.Chill));
-        Assert.Equal(-1, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Chilled.Name));
+        Assert.Equal(-1, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Chilled.Name));
 
         ApplyWard(amount: 100);
-        Assert.Equal(3, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Warded.Name));
+        Assert.Equal(3, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Warded.Name));
         Assert.True(npc.Being.HasEffectOrAccumulator(EffectType.Chill));
-        Assert.Equal(-2, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Chilled.Name));
+        Assert.Equal(-2, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Chilled.Name));
 
         ApplyStatus(npc, EffectType.Chill, duration: 100, manager, amount: 100);
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(-1, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Chilled.Name));
+        Assert.Equal(-1, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Chilled.Name));
 
         void ApplyWard(int amount)
         {
-            manager.EffectApplicationSystem.AddAbilityEffect(npc, AbilityData.Warded);
+            manager.AbilityLevelSystem.AddAbilityEffect(npc, AbilityData.Warded);
             manager.Queue.ProcessQueue(manager);
         }
     }
@@ -1913,30 +1824,30 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
-        manager.EffectApplicationSystem.AddAbilityEffect(npc, AbilityData.Greased, level: 3);
+        manager.AbilityLevelSystem.AddAbilityEffect(npc, AbilityData.Greased, level: 3);
         manager.Queue.ProcessQueue(manager);
 
         ApplyStatus(EffectType.Cancel);
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Canceled.Name));
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Greased.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Canceled.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Greased.Name));
 
         ApplyStatus(EffectType.Cancel);
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Canceled.Name));
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Greased.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Canceled.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Greased.Name));
 
-        manager.EffectApplicationSystem.AddAbilityEffect(npc, AbilityData.Warded);
+        manager.AbilityLevelSystem.AddAbilityEffect(npc, AbilityData.Warded);
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Warded.Name));
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Canceled.Name));
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Greased.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Warded.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Canceled.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Greased.Name));
 
-        manager.EffectApplicationSystem.AddAbilityEffect(npc, AbilityData.Warded);
+        manager.AbilityLevelSystem.AddAbilityEffect(npc, AbilityData.Warded);
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Warded.Name));
-        Assert.Equal(0, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Canceled.Name));
-        Assert.Equal(3, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Greased.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Warded.Name));
+        Assert.Equal(0, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Canceled.Name));
+        Assert.Equal(3, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Greased.Name));
 
         void ApplyStatus(EffectType effectType)
         {
@@ -1953,7 +1864,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
         var being = npc.Being!;
 
@@ -1976,7 +1887,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
         var being = npc.Being!;
 
@@ -1997,7 +1908,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         ApplyStatus(npc, EffectType.Decay, duration: 1000, manager, amount: 5);
@@ -2007,17 +1918,17 @@ public class StatusAbilityTest
         Assert.Equal(5, npc.Being!.ReservedHitPoints);
         Assert.Equal(7, npc.Being.ReservedEnergyPoints);
 
-        var wardedRecord = manager.EffectApplicationSystem.AddAbilityEffect(
+        var wardedRecord = manager.AbilityLevelSystem.AddAbilityEffect(
             npc, AbilityData.Warded, level: 3);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(3, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Warded.Name));
+        Assert.Equal(3, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Warded.Name));
         Assert.True(npc.Being.HasEffectOrAccumulator(EffectType.Decay));
         Assert.True(npc.Being.HasEffectOrAccumulator(EffectType.Enervate));
         Assert.Equal(0, npc.Being.ReservedHitPoints);
         Assert.Equal(0, npc.Being.ReservedEnergyPoints);
 
-        EffectApplicationSystem.DetachComponentCarrier(wardedRecord, npc, manager);
+        AbilityLevelSystem.DetachComponentCarrier(wardedRecord, npc, manager);
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(5, npc.Being.ReservedHitPoints);
@@ -2029,41 +1940,41 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
         var baseAccuracy = npc.Being!.Accuracy;
         var baseQuietness = npc.Being.Quietness;
 
-        manager.EffectApplicationSystem.AddAbilityEffect(npc, AbilityData.Bound);
+        manager.AbilityLevelSystem.AddAbilityEffect(npc, AbilityData.Bound);
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Bound.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Bound.Name));
 
-        manager.EffectApplicationSystem.AddAbilityEffect(npc, AbilityData.Greased);
+        manager.AbilityLevelSystem.AddAbilityEffect(npc, AbilityData.Greased);
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Greased.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Greased.Name));
         Assert.Equal(baseAccuracy, npc.Being.Accuracy);
         Assert.Equal(baseQuietness + 25, npc.Being.Quietness);
-        Assert.Equal(0, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Bound.Name));
+        Assert.Equal(0, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Bound.Name));
 
-        var levelTwoNpc = CreatureData.HumanWarrior.Instantiate(level, new Point(1, 0));
+        var levelTwoNpc = CreatureData.Manusya.Instantiate(level, new Point(1, 0));
         manager.Queue.ProcessQueue(manager);
-        manager.EffectApplicationSystem.AddAbilityEffect(levelTwoNpc, AbilityData.Bound);
-        manager.EffectApplicationSystem.AddAbilityEffect(levelTwoNpc, AbilityData.Greased, level: 2);
+        manager.AbilityLevelSystem.AddAbilityEffect(levelTwoNpc, AbilityData.Bound);
+        manager.AbilityLevelSystem.AddAbilityEffect(levelTwoNpc, AbilityData.Greased, level: 2);
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(levelTwoNpc, AbilityData.Greased.Name));
-        Assert.Equal(-1, EffectApplicationSystem.GetAbilityLevel(levelTwoNpc, AbilityData.Bound.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(levelTwoNpc, AbilityData.Greased.Name));
+        Assert.Equal(-1, AbilityLevelSystem.GetAbilityLevel(levelTwoNpc, AbilityData.Bound.Name));
         Assert.Single(
             levelTwoNpc.ActiveEffects!.ComponentEffects,
             effect => effect is { EffectType: EffectType.AddAbility, TargetName: "bound" });
 
         // Suppression lowers the effective level rather than blocking a later level from being added.
-        manager.EffectApplicationSystem.AddAbilityEffect(levelTwoNpc, AbilityData.Bound);
+        manager.AbilityLevelSystem.AddAbilityEffect(levelTwoNpc, AbilityData.Bound);
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(0, EffectApplicationSystem.GetAbilityLevel(levelTwoNpc, AbilityData.Bound.Name));
+        Assert.Equal(0, AbilityLevelSystem.GetAbilityLevel(levelTwoNpc, AbilityData.Bound.Name));
 
-        manager.EffectApplicationSystem.AddAbilityEffect(levelTwoNpc, AbilityData.Blinded);
+        manager.AbilityLevelSystem.AddAbilityEffect(levelTwoNpc, AbilityData.Blinded);
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(levelTwoNpc, AbilityData.Blinded.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(levelTwoNpc, AbilityData.Blinded.Name));
     }
 
     [Fact]
@@ -2071,13 +1982,13 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         ApplyResourceOverTime(npc, EffectType.FireDamage, ratePerAction: 10, manager);
         manager.Queue.ProcessQueue(manager);
         Assert.True(npc.Being!.HasEffectOrAccumulator(EffectType.FireDamage));
-        var burningLevel = EffectApplicationSystem.GetAbilityLevel(
+        var burningLevel = AbilityLevelSystem.GetAbilityLevel(
             npc, AbilityData.Burning.Name);
         Assert.Equal(0, burningLevel);
 
@@ -2089,7 +2000,7 @@ public class StatusAbilityTest
         Assert.True(npc.Being!.HasEffectOrAccumulator(EffectType.FireDamage));
         Assert.Equal(
             burningLevel - 1,
-            EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Burning.Name));
+            AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Burning.Name));
     }
 
     [Fact]
@@ -2097,7 +2008,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var baseSpeed = npc.Being!.Speed;
@@ -2108,7 +2019,7 @@ public class StatusAbilityTest
         ApplyStatus(npc, EffectType.Chill, duration: 100, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Chilled.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Chilled.Name));
         Assert.Equal(baseSpeed - 2, npc.Being.Speed);
         Assert.Equal(baseCold - 25, npc.Being.ColdResistance);
         Assert.Equal(baseFire + 25, npc.Being.FireResistance);
@@ -2127,7 +2038,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var baseSpeed = npc.Being!.Speed;
@@ -2138,7 +2049,7 @@ public class StatusAbilityTest
         ApplyStatus(npc, EffectType.Chill, duration: 100, manager, amount: 300);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(3, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Chilled.Name));
+        Assert.Equal(3, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Chilled.Name));
         Assert.Equal(baseSpeed - 6, npc.Being.Speed);
         Assert.Equal(baseCold - 75, npc.Being.ColdResistance);
         Assert.Equal(baseFire + 75, npc.Being.FireResistance);
@@ -2150,7 +2061,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var baseFire = npc.Being!.FireResistance;
@@ -2179,7 +2090,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var baseFire = npc.Being!.FireResistance;
@@ -2190,7 +2101,7 @@ public class StatusAbilityTest
         ApplyStatus(npc, EffectType.Wet, duration: 100, manager, amount: 200);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Wetted.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Wetted.Name));
         Assert.Equal(baseFire + 60, npc.Being.FireResistance);
         Assert.Equal(baseElectricity - 60, npc.Being.ElectricityResistance);
         Assert.Equal(baseCold - 60, npc.Being.ColdResistance);
@@ -2202,7 +2113,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.Gargoyle.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Naga.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var baseArmor = npc.Being!.Armor;
@@ -2212,7 +2123,7 @@ public class StatusAbilityTest
         ApplyStatus(npc, EffectType.Corrode, duration: 100, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Corroded.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Corroded.Name));
         Assert.Equal(baseArmor - 2, npc.Being.Armor);
         Assert.Equal(baseDeflection, npc.Being.Deflection);
         Assert.Equal(basePhysicalResistance, npc.Being.PhysicalResistance);
@@ -2227,7 +2138,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.Gargoyle.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Naga.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var baseArmor = npc.Being!.Armor;
@@ -2237,10 +2148,65 @@ public class StatusAbilityTest
         ApplyStatus(npc, EffectType.Corrode, duration: 100, manager, amount: 300);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(4, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Corroded.Name));
-        Assert.Equal(baseArmor - 6, npc.Being.Armor);
+        Assert.Equal(4, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Corroded.Name));
+        Assert.Equal(Math.Max(0, baseArmor - 6), npc.Being.Armor);
         Assert.Equal(baseDeflection - 25, npc.Being.Deflection);
         Assert.Equal(basePhysicalResistance - 25, npc.Being.PhysicalResistance);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void Stable_suppresses_topple_levels_without_discarding_buildup(int level)
+    {
+        var room = TestHelper.BuildRoom(".");
+        var manager = room.Game.Manager;
+        var npc = CreatureData.Manusya.Instantiate(room, new Point(0, 0));
+        manager.AbilityLevelSystem.AddAbilityEffect(npc, AbilityData.Stable, level);
+        manager.Queue.ProcessQueue(manager);
+
+        manager.EffectApplicationSystem.ApplyStatus(EffectApplicationContext.CreateStatus(
+            EffectType.Topple, npc, amount: 1000));
+        manager.Queue.ProcessQueue(manager);
+
+        var suppressedLevel = AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Unstable.Name);
+        Assert.Equal(level, AbilityLevelSystem.GetAbilityLevelReduction(npc, AbilityData.Unstable.Name));
+        Assert.True(npc.Being!.HasEffectOrAccumulator(EffectType.Topple));
+        Assert.Equal(level, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Stable.Name));
+
+        manager.AbilityLevelSystem.RemoveAbility(npc, AbilityData.Stable.Name, manager);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(suppressedLevel + level, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Unstable.Name));
+        Assert.True(AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Unstable.Name) > 0);
+    }
+
+    [Fact]
+    public void Stable_reduces_existing_and_new_unstable_levels_until_removed()
+    {
+        var room = TestHelper.BuildRoom(".");
+        var manager = room.Game.Manager;
+        var npc = CreatureData.Manusya.Instantiate(room, new Point(0, 0));
+        manager.AbilityLevelSystem.AddAbilityEffect(npc, AbilityData.Unstable);
+        manager.AbilityLevelSystem.AddAbilityEffect(npc, AbilityData.Stable);
+        var source = new Ability
+        {
+            Name = "test unstable grant",
+            Activation = ActivationType.Manual,
+            Effects = [new AddAbility { Name = "unstable" }]
+        }.AddToAffectable(npc);
+        manager.Queue.ProcessQueue(manager);
+        var effect = Assert.Single(source.Effects);
+        Assert.Equal(0, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Unstable.Name));
+
+        TestHelper.ApplyEffect(effect, npc, npc, manager);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Unstable.Name));
+        manager.AbilityLevelSystem.RemoveAbility(npc, AbilityData.Stable.Name, manager);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Unstable.Name));
     }
 
     [Fact]
@@ -2248,7 +2214,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var baseAccuracy = npc.Being!.Accuracy;
@@ -2257,7 +2223,7 @@ public class StatusAbilityTest
         ApplyStatus(npc, EffectType.Topple, duration: 100, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Unstable.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Unstable.Name));
         Assert.Equal(baseAccuracy * 3 / 4, npc.Being.Accuracy);
         Assert.Equal(baseEvasion * 3 / 4, npc.Being.Evasion);
 
@@ -2272,7 +2238,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
         var baseAccuracy = npc.Being!.Accuracy;
         var baseEvasion = npc.Being.Evasion;
@@ -2315,24 +2281,12 @@ public class StatusAbilityTest
     }
 
     [Fact]
-    public void Shocking_sphere_builds_unstable_with_a_concussive_burst()
-    {
-        var level = TestHelper.BuildRoom("..");
-        var manager = level.Entity.Manager;
-
-        var target = ApplyCreatureAbilityStatus(
-            CreatureData.ShockingSphere, EffectType.Topple, manager, level);
-
-        Assert.True(target.Being!.HasEffectOrAccumulator(EffectType.Topple));
-    }
-
-    [Fact]
     public void Unstable_does_not_reduce_raw_melee_physical_damage()
     {
         var level = TestHelper.BuildRoom("..");
         var manager = level.Entity.Manager;
         var attacker = CreatureData.Naga.Instantiate(level, new Point(0, 0));
-        var target = CreatureData.HumanWarrior.Instantiate(level, new Point(1, 0));
+        var target = CreatureData.Manusya.Instantiate(level, new Point(1, 0));
         manager.Queue.ProcessQueue(manager);
 
         var bite = attacker.ActiveEffects!.Abilities.Single(a => a.Ability!.Action == AbilityAction.Bite);
@@ -2353,7 +2307,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var baseResistance = npc.Being!.MentalStatusResistance;
@@ -2362,14 +2316,14 @@ public class StatusAbilityTest
             npc, EffectType.Fascinate, EffectTestHelper.GetStatusEffectThreshold(npc), manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Fascinated.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Fascinated.Name));
         Assert.Equal(baseResistance - 25, npc.Being.MentalStatusResistance);
 
         // Damage snaps the fascination, and its debuffs revert with the condition.
         ApplyInstantDamageEffect(npc, EffectType.PhysicalDamage, 1, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.False(EffectApplicationSystem.GetAbilityLevel(npc, "fascinated") > 0);
+        Assert.False(AbilityLevelSystem.GetAbilityLevel(npc, "fascinated") > 0);
         Assert.Equal(baseResistance, npc.Being.MentalStatusResistance);
     }
 
@@ -2378,7 +2332,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var baseResistance = npc.Being!.MentalStatusResistance;
@@ -2387,14 +2341,14 @@ public class StatusAbilityTest
             npc, EffectType.Confuse, EffectTestHelper.GetStatusEffectThreshold(npc), manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Confused.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Confused.Name));
         Assert.Equal(baseResistance - 25, npc.Being.MentalStatusResistance);
 
-        manager.EffectApplicationSystem.RemoveAbility(
+        manager.AbilityLevelSystem.RemoveAbility(
             npc, AbilityData.Confused.Name, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(0, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Confused.Name));
+        Assert.Equal(0, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Confused.Name));
         Assert.Equal(baseResistance, npc.Being.MentalStatusResistance);
     }
 
@@ -2403,7 +2357,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var threshold = EffectTestHelper.GetStatusEffectThreshold(npc);
@@ -2414,14 +2368,14 @@ public class StatusAbilityTest
         manager.Queue.ProcessQueue(manager);
 
         Assert.True(npc.Being.HasEffectOrAccumulator(EffectType.Fascinate));
-        Assert.False(EffectApplicationSystem.GetAbilityLevel(npc, "fascinated") > 0);
+        Assert.False(AbilityLevelSystem.GetAbilityLevel(npc, "fascinated") > 0);
         Assert.Equal(baseResistance, npc.Being.MentalStatusResistance);
 
         // A second gaze reaches level 1.
         ApplyStatus(npc, EffectType.Fascinate, duration: threshold * 3 / 5, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Fascinated.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Fascinated.Name));
         Assert.Equal(baseResistance - 25, npc.Being.MentalStatusResistance);
     }
 
@@ -2442,7 +2396,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var baseHindrance = npc.Being!.Hindrance;
@@ -2450,42 +2404,18 @@ public class StatusAbilityTest
         ApplyStatus(npc, EffectType.Stagger, duration: 100, manager, amount: 100);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Staggered.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Staggered.Name));
         Assert.Equal(baseHindrance + 25, npc.Being.Hindrance);
 
         ApplyStatus(npc, EffectType.Stagger, duration: 100, manager, amount: 100);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Staggered.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Staggered.Name));
         Assert.Equal(baseHindrance + 50, npc.Being.Hindrance);
 
         ExpireStatusEffects(npc, manager);
 
         Assert.Equal(baseHindrance, npc.Being.Hindrance);
-    }
-
-    [Fact]
-    public void Gas_spore_blast_staggers()
-    {
-        var level = TestHelper.BuildRoom("..");
-        var manager = level.Entity.Manager;
-
-        var target = ApplyCreatureAbilityStatus(
-            CreatureData.GasSpore, EffectType.Stagger, manager, level);
-
-        Assert.True(target.Being!.HasEffectOrAccumulator(EffectType.Stagger));
-    }
-
-    [Fact]
-    public void Ghost_has_a_frightening_gaze()
-    {
-        var level = TestHelper.BuildRoom("..");
-        var manager = level.Entity.Manager;
-
-        var target = ApplyCreatureAbilityStatus(
-            CreatureData.Ghost, EffectType.Frighten, manager, level);
-
-        Assert.True(target.Being!.HasEffectOrAccumulator(EffectType.Frighten));
     }
 
     [Fact]
@@ -2505,14 +2435,14 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         Assert.False(npc.Being!.HasEffectOrAccumulator(EffectType.Blind));
 
         ApplyStatus(npc, EffectType.Blind, duration: 100, manager);
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Blinded.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Blinded.Name));
         Assert.True(npc.Being!.HasEffectOrAccumulator(EffectType.Blind));
 
         ExpireStatusEffects(npc, manager);
@@ -2524,7 +2454,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var baseAccuracy = npc.Being!.Accuracy;
@@ -2533,7 +2463,7 @@ public class StatusAbilityTest
         ApplyStatus(npc, EffectType.Blind, duration: 100, manager, amount: 300);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(3, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Blinded.Name));
+        Assert.Equal(3, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Blinded.Name));
         Assert.Equal(baseAccuracy - 50, npc.Being.Accuracy);
         Assert.Equal(baseEvasion - 25, npc.Being.Evasion);
     }
@@ -2554,7 +2484,7 @@ public class StatusAbilityTest
         ApplyDamageOverTimeEffect(player, EffectType.ToxinDamage, ratePerAction: 100, duration: 1000, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(player, AbilityData.Blighted.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(player, AbilityData.Blighted.Name));
         Assert.Equal(0, player.Being.Regeneration);
 
         manager.XPSystem.AddPlayerXP(6, manager);
@@ -2590,7 +2520,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var hitPointsBefore = npc.Being!.HitPoints;
@@ -2618,7 +2548,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var hitPointsBefore = npc.Being!.HitPoints;
@@ -2643,7 +2573,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         npc.Being!.HitPoints = 1;
@@ -2651,7 +2581,7 @@ public class StatusAbilityTest
         ApplyDamageOverTimeEffect(npc, EffectType.ToxinDamage, ratePerAction: 200, duration: 1000, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Blighted.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Blighted.Name));
         Assert.Equal(50, npc.Being!.HealingResistance);
 
         ApplyHeal(npc, amount: 20, manager);
@@ -2672,7 +2602,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
@@ -2689,17 +2619,9 @@ public class StatusAbilityTest
     }
 
     [Theory]
-    [InlineData("animated skeleton", 200)]
-    [InlineData("demilich", 200)]
     [InlineData("draugr", 150)]
-    [InlineData("ghost", 200)]
-    [InlineData("ghoul", 150)]
     [InlineData("lemure", 200)]
-    [InlineData("lich", 200)]
-    [InlineData("mummy", 150)]
-    [InlineData("vampire", 150)]
-    [InlineData("zombie", 150)]
-    public void Undead_have_authored_healing_resistance(string creatureName, int expected)
+    public void Selected_revenants_have_authored_healing_resistance(string creatureName, int expected)
     {
         var level = TestHelper.BuildRoom(".");
         var creature = Creature.Loader.Find(creatureName)!.Instantiate(level, new Point(0, 0));
@@ -2713,7 +2635,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.GnomeWizard.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.BoggartShaman.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
@@ -2725,7 +2647,7 @@ public class StatusAbilityTest
         ApplyDamageOverTimeEffect(npc, EffectType.Wither, ratePerAction: 300, duration: 1000, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Withered.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Withered.Name));
         Assert.Equal(0, npc.Being.EnergyRegeneration);
         Assert.Equal(50, npc.Being.EnergyRestorationResistance);
 
@@ -2741,13 +2663,13 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.GnomeWizard.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.BoggartShaman.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         ApplyDamageOverTimeEffect(npc, EffectType.Wither, ratePerAction: 200, duration: 1000, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Withered.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Withered.Name));
         Assert.Equal(0, npc.Being!.EnergyRegeneration);
         Assert.Equal(0, npc.Being.EnergyRestorationResistance);
     }
@@ -2763,7 +2685,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.GnomeWizard.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.BoggartShaman.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
@@ -2786,7 +2708,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.GnomeWizard.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.BoggartShaman.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
@@ -2802,7 +2724,7 @@ public class StatusAbilityTest
         var abilityName = effectType == EffectType.ToxinDamage
             ? AbilityData.Blighted.Name
             : AbilityData.Withered.Name;
-        Assert.Equal(3, EffectApplicationSystem.GetAbilityLevel(npc, abilityName));
+        Assert.Equal(3, AbilityLevelSystem.GetAbilityLevel(npc, abilityName));
         if (effectType == EffectType.ToxinDamage)
         {
             Assert.Equal(100, npc.Being.HealingResistance);
@@ -2832,7 +2754,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var caster = CreatureData.GnomeWizard.Instantiate(level, new Point(0, 0));
+        var caster = CreatureData.BoggartShaman.Instantiate(level, new Point(0, 0));
         TestHelper.AddSpellAbility(caster);
         manager.Queue.ProcessQueue(manager);
 
@@ -2854,7 +2776,7 @@ public class StatusAbilityTest
 
         ApplyStatus(caster, EffectType.Mute, duration: 100, manager, amount: 100);
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(caster, AbilityData.Muted.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(caster, AbilityData.Muted.Name));
         var muted = manager.AffectableAbilitiesIndex[
             (caster.Id, AbilityData.Muted.Name)]!.Ability!;
         var mutedError = manager.Game.Services.Language.StatusPreventsAbility(
@@ -2863,7 +2785,7 @@ public class StatusAbilityTest
 
         ApplyStatus(caster, EffectType.Mute, duration: 100, manager, amount: 100);
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(caster, AbilityData.Muted.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(caster, AbilityData.Muted.Name));
 
         Assert.Equal(mutedError, TryActivate());
     }
@@ -2873,7 +2795,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(20, npc.Being!.HearingLevel);
@@ -2885,13 +2807,13 @@ public class StatusAbilityTest
 
         ApplyStatus(npc, EffectType.Deafen, duration: 100, manager, amount: 100);
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Deafened.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Deafened.Name));
         Assert.Equal(10, npc.Being.HearingLevel);
         Assert.Equal(50, npc.Being.FollowerCommandFailurePercent);
 
         ApplyStatus(npc, EffectType.Deafen, duration: 100, manager, amount: 100);
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Deafened.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Deafened.Name));
         Assert.Equal(0, npc.Being.HearingLevel);
         Assert.Equal(50, npc.Being.FollowerCommandFailurePercent);
 
@@ -2905,7 +2827,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var caster = CreatureData.GnomeWizard.Instantiate(level, new Point(0, 0));
+        var caster = CreatureData.BoggartShaman.Instantiate(level, new Point(0, 0));
         var spell = new Ability
         {
             Name = "costed test spell",
@@ -2921,7 +2843,7 @@ public class StatusAbilityTest
         ApplyStatus(caster, EffectType.Mute, duration: 100, manager, amount: 100);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(caster, AbilityData.Muted.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(caster, AbilityData.Muted.Name));
         Assert.Equal(20, AbilityActivationSystem.GetEnergyCost(spell.Ability!));
         caster.Being!.EnergyPoints = caster.Being.EnergyPointMaximum;
         var energyBefore = caster.Being!.EnergyPoints;
@@ -2937,7 +2859,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var caster = CreatureData.GnomeWizard.Instantiate(level, new Point(0, 0));
+        var caster = CreatureData.BoggartShaman.Instantiate(level, new Point(0, 0));
         var scream = new Ability
         {
             Name = "costed test scream",
@@ -2971,7 +2893,7 @@ public class StatusAbilityTest
 
         ApplyStatus(caster, EffectType.Mute, duration: 100, manager, amount: 100);
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(caster, AbilityData.Muted.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(caster, AbilityData.Muted.Name));
         Assert.Equal(10, AbilityActivationSystem.GetEnergyCost(scream.Ability!));
         Assert.Equal(10, AbilityActivationSystem.GetEnergyCost(miracle.Ability!));
         Assert.True(caster.Being!.CanUseComplexFollowerCommands);
@@ -2981,7 +2903,7 @@ public class StatusAbilityTest
 
         ApplyStatus(caster, EffectType.Mute, duration: 100, manager, amount: 100);
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(caster, AbilityData.Muted.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(caster, AbilityData.Muted.Name));
         Assert.Equal(20, AbilityActivationSystem.GetEnergyCost(scream.Ability!));
         Assert.Equal(20, AbilityActivationSystem.GetEnergyCost(miracle.Ability!));
         Assert.False(caster.Being!.CanUseComplexFollowerCommands);
@@ -2991,7 +2913,7 @@ public class StatusAbilityTest
 
         ApplyStatus(caster, EffectType.Mute, duration: 100, manager, amount: 100);
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(3, EffectApplicationSystem.GetAbilityLevel(caster, AbilityData.Muted.Name));
+        Assert.Equal(3, AbilityLevelSystem.GetAbilityLevel(caster, AbilityData.Muted.Name));
         Assert.Equal(20, AbilityActivationSystem.GetEnergyCost(scream.Ability!));
         Assert.Equal(20, AbilityActivationSystem.GetEnergyCost(miracle.Ability!));
         Assert.False(caster.Being!.CanUseComplexFollowerCommands);
@@ -3009,7 +2931,7 @@ public class StatusAbilityTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var caster = CreatureData.GnomeWizard.Instantiate(level, new Point(0, 0));
+        var caster = CreatureData.BoggartShaman.Instantiate(level, new Point(0, 0));
         TestHelper.AddSpellAbility(caster);
         manager.Queue.ProcessQueue(manager);
 
@@ -3030,7 +2952,7 @@ public class StatusAbilityTest
 
         ApplyStatus(caster, EffectType.Daze, duration: 100, manager, amount: 100);
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(caster, AbilityData.Dazed.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(caster, AbilityData.Dazed.Name));
         var dazed = manager.AffectableAbilitiesIndex[
             (caster.Id, AbilityData.Dazed.Name)]!.Ability!;
         var complexAbilityError = manager.Game.Services.Language.StatusPreventsAbility(
@@ -3039,7 +2961,7 @@ public class StatusAbilityTest
 
         ApplyStatus(caster, EffectType.Daze, duration: 100, manager, amount: 100);
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(caster, AbilityData.Dazed.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(caster, AbilityData.Dazed.Name));
 
         Assert.Equal(complexAbilityError, TryActivate());
     }
@@ -3050,7 +2972,7 @@ public class StatusAbilityTest
         var level = TestHelper.BuildRoom("..");
         var manager = level.Entity.Manager;
         var attacker = CreatureData.Naga.Instantiate(level, new Point(0, 0));
-        var target = CreatureData.HumanWarrior.Instantiate(level, new Point(1, 0));
+        var target = CreatureData.Manusya.Instantiate(level, new Point(1, 0));
         manager.Queue.ProcessQueue(manager);
 
         var bite = attacker.ActiveEffects!.Abilities.Single(
@@ -3070,7 +2992,7 @@ public class StatusAbilityTest
 
         ApplyStatus(attacker, EffectType.Daze, duration: 100, manager, amount: 150);
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(attacker, AbilityData.Dazed.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(attacker, AbilityData.Dazed.Name));
         var dazed = manager.AffectableAbilitiesIndex[
             (attacker.Id, AbilityData.Dazed.Name)]!.Ability!;
         var nonDefaultAbilityError = manager.Game.Services.Language.StatusPreventsAbility(
@@ -3079,7 +3001,7 @@ public class StatusAbilityTest
 
         ApplyStatus(attacker, EffectType.Daze, duration: 100, manager, amount: 75);
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(3, EffectApplicationSystem.GetAbilityLevel(attacker, AbilityData.Dazed.Name));
+        Assert.Equal(3, AbilityLevelSystem.GetAbilityLevel(attacker, AbilityData.Dazed.Name));
 
         Assert.Equal(nonDefaultAbilityError, TryActivate(bite));
         bite.Ability.Type = AbilityType.DefaultMeleeAttack;
@@ -3155,7 +3077,7 @@ public class StatusAbilityTest
         Creature attacker, EffectType status, GameManager manager, RoomComponent level)
     {
         var attackerEntity = attacker.Instantiate(level, new Point(0, 0));
-        var target = CreatureData.HumanWarrior.Instantiate(level, new Point(1, 0));
+        var target = CreatureData.Manusya.Instantiate(level, new Point(1, 0));
         manager.Queue.ProcessQueue(manager);
 
         var ability = attackerEntity.ActiveEffects!.Abilities.Single(

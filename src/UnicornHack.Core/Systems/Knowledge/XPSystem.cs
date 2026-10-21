@@ -24,11 +24,7 @@ public class XPSystem :
     {
         if (!message.BeingEntity.HasComponent(EntityComponent.Player))
         {
-            var xp = message.BeingEntity.Being!.ExperiencePoints;
-            if (xp == 0)
-            {
-                xp = 100 + message.BeingEntity.Being.Races.Sum(race => race.Ability!.Level) * 10;
-            }
+            var xp = CalculateKillExperience(message.BeingEntity);
 
             if (xp > 0)
             {
@@ -39,15 +35,21 @@ public class XPSystem :
         return MessageProcessingResult.ContinueProcessing;
     }
 
+    public static int CalculateKillExperience(GameEntity entity)
+        => entity.Player != null || entity.Being is not { } being ? 0 : Math.Max(0, being.ExperiencePoints);
+
     public void AddPlayerXP(int xp, GameManager manager)
     {
         foreach (var playerEntity in manager.Players)
         {
             AddXP(playerEntity, xp, manager);
-            manager.EffectApplicationSystem.RealizeXpExpiringEffects(playerEntity, xp, manager);
+            if (xp > 0)
+            {
+                manager.EffectApplicationSystem.RealizeXpExpiringEffects(playerEntity, xp, manager);
+            }
         }
 
-        if (!manager.XPCooldownEntities.Any())
+        if (xp <= 0 || !manager.XPCooldownEntities.Any())
         {
             return;
         }

@@ -6,6 +6,11 @@ public static partial class PlayerRaceData
     {
         Name = "human",
         SpeciesClass = SpeciesClass.Humanoid,
+        Size = 6,
+        TorsoType = TorsoType.Humanoid,
+        UpperExtremities = ExtremityType.GraspingFingers,
+        LowerExtremities = ExtremityType.Fingers,
+        Infravisible = true,
         Effects = new Dictionary<int, IReadOnlyList<Effect>>
         {
             {
@@ -25,11 +30,6 @@ public static partial class PlayerRaceData
                     }
                 }
             }
-        },
-        Size = 6,
-        TorsoType = TorsoType.Humanoid,
-        UpperExtremities = ExtremityType.GraspingFingers,
-        LowerExtremities = ExtremityType.Fingers,
-        Infravisible = true
+        }
     };
 }

@@ -1,3 +1,5 @@
+using UnicornHack.Systems.Abilities;
+
 namespace UnicornHack.Systems.Effects;
 
 // Storage and lifecycle operations for related to change property effects.
@@ -17,7 +19,8 @@ public partial class EffectApplicationSystem
             && effect.Duration is EffectDuration.UntilTimeout
                 or EffectDuration.UntilXPGained
                 or EffectDuration.UntilNextRoom
-                or EffectDuration.UntilNextLevel)
+                or EffectDuration.UntilNextLevel
+                or EffectDuration.UntilNextBranch)
         {
             var targetEntity = context.TargetEntity!;
             var activeEffects = targetEntity.ActiveEffects!;
@@ -392,5 +395,23 @@ public partial class EffectApplicationSystem
         RaiseResolvedPropertyChange(property, entity, manager);
 
         return instance;
+    }
+
+    public static IEnumerable<AbilityComponent> GetAbilitiesAffectingProperty(
+        GameEntity targetEntity, string propertyName, AbilityType? abilityType = null)
+    {
+        var propertyEffects = targetEntity.ActiveEffects!.PropertyEffects.GetValues(propertyName);
+        for (var i = 0; i < propertyEffects.Count; i++)
+        {
+            var propertyEffect = propertyEffects[i];
+            if (propertyEffect.SourceAbilityEntityId is not { } sourceAbilityId
+                || targetEntity.Manager.FindEntity(sourceAbilityId)?.Ability is not { } ability
+                || abilityType != null && ability.Type != abilityType)
+            {
+                continue;
+            }
+
+            yield return ability;
+        }
     }
 }

@@ -22,6 +22,47 @@ public class LoggingSystemTest
 .....";
 
     [Theory]
+    [InlineData(399, 1, "You cast a spell at the boggart. He is unaffected.")]
+    [InlineData(400, 2, "You cast a spell at the boggart.")]
+    public void Force_based_push_logs_when_the_actor_resists(int force, byte expectedX, string expectedMessage)
+    {
+        var room = TestHelper.BuildRoom("....");
+        var player = PlayerRace.InstantiatePlayer("Tester", Sex.Male, room, new Point(0, 0));
+        player.Position!.Heading = Direction.East;
+        var target = CreatureData.Boggart.Instantiate(room, new Point(1, 0));
+        target.Being!.Sex = Sex.Male;
+        var manager = player.Manager;
+        manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
+            100 - target.Being.ToppleResistance, nameof(BeingComponent.ToppleResistance), "test topple resistance", target);
+        var ability = new Ability
+        {
+            Name = "test force movement",
+            Type = AbilityType.RangedAttack,
+            Activation = ActivationType.Targeted,
+            Trigger = ActivationType.OnRangedAttack,
+            Range = 5,
+            Action = AbilityAction.Spell,
+            SuccessCondition = AbilitySuccessCondition.Always,
+            Effects = [new Push { Amount = force.ToString(System.Globalization.CultureInfo.InvariantCulture) }]
+        }.AddToAffectable(player);
+        manager.Queue.ProcessQueue(manager);
+        player.Player!.LogEntries.Clear();
+        var setSlot = SetAbilitySlotMessage.Create(player, manager);
+        setSlot.AbilityEntity = ability.Entity;
+        setSlot.Slot = 2;
+        manager.Enqueue(setSlot);
+        var activation = ActivateAbilityMessage.Create(manager);
+        activation.AbilityEntity = ability.Entity;
+        activation.ActivatorEntity = player;
+        activation.TargetEntity = target;
+        manager.Enqueue(activation);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(new Point(expectedX, 0), target.Position!.Cell);
+        AssertLog(player, expectedMessage);
+    }
+
+    [Theory]
     [InlineData(AbilityType.MeleeAttack, AbilityAction.Punch, "You punch the air.")]
     [InlineData(AbilityType.RangedAttack, AbilityAction.Shoot, "You shoot at the air.")]
     public void Player_attack_against_empty_space_is_logged(
@@ -98,8 +139,8 @@ public class LoggingSystemTest
 ...
 ...
 ...");
-        var wizard = CreatureData.WizardOfYendor.Instantiate(level, new Point(0, 0));
-        TestHelper.AddSpellAbility(wizard);
+        var keteb = CreatureData.KetebMeriri.Instantiate(level, new Point(0, 0));
+        TestHelper.AddSpellAbility(keteb);
 
         var undine = CreatureData.Undine.Instantiate(level, new Point(0, 1));
 
@@ -128,57 +169,63 @@ public class LoggingSystemTest
         playerEntity.Player!.LogEntries.Clear();
         player2Entity.Player!.LogEntries.Clear();
 
-        var wizardPunch = wizard.ActiveEffects!.Abilities
+        var ketebPunch = keteb.ActiveEffects!.Abilities
             .Single(a => a.Ability!.Action == AbilityAction.Punch);
+        ketebPunch.Ability!.Slot ??= 9;
 
         var activateMessage = ActivateAbilityMessage.Create(manager);
-        activateMessage.AbilityEntity = wizardPunch;
-        activateMessage.ActivatorEntity = wizard;
+        activateMessage.AbilityEntity = ketebPunch;
+        activateMessage.ActivatorEntity = keteb;
         activateMessage.TargetEntity = undine;
 
         var stats = manager.AbilityActivationSystem.GetAttackStats(activateMessage);
         manager.ReturnMessage(activateMessage);
 
-        Assert.Equal(97, stats.SubAttacks
+        Assert.Equal(39, stats.SubAttacks
             .Aggregate(0,
-                (sum, a) => sum + manager.EffectApplicationSystem.GetExpectedDamage(a.Effects, wizard, undine)));
+                (sum, a) => sum + manager.EffectApplicationSystem.GetExpectedDamage(a.Effects, keteb, undine)));
 
-        Verify(wizard, undine, playerEntity, player2Entity,
-            wizardPunch, success: true,
-            "The Wizard of Yendor punches the undine. (<damage 9='97'>97</damage> pts.)",
-            "The Wizard of Yendor punches something.",
+        Verify(keteb, undine, playerEntity, player2Entity,
+            ketebPunch, success: true,
+            "The Keteb Meriri punches the undine. (<damage 9='39'>39</damage> pts.)",
+            "The Keteb Meriri punches something.",
             manager);
 
-        Verify(wizard, undine, playerEntity, player2Entity,
-            wizardPunch, success: false,
-            "The Wizard of Yendor tries to punch the undine, but misses.",
-            "The Wizard of Yendor tries to punch something, but misses.",
+        Verify(keteb, undine, playerEntity, player2Entity,
+            ketebPunch, success: false,
+            "The Keteb Meriri tries to punch the undine, but misses.",
+            "The Keteb Meriri tries to punch something, but misses.",
             manager);
 
-        Verify(playerEntity, wizard, playerEntity, player2Entity,
+        manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
+            1000, nameof(BeingComponent.HitPointMaximum), "test health", keteb);
+        manager.Queue.ProcessQueue(manager);
+        keteb.Being!.HitPoints = keteb.Being.HitPointMaximum;
+        Verify(playerEntity, keteb, playerEntity, player2Entity,
             playerEntity.Being.SlottedAbilities[AbilitySlottingSystem.DefaultMeleeAttackSlot], success: false,
-            "You slash the Wizard of Yendor. (<damage 9='90'>90</damage> pts.)",
-            "Dudley slashes the Wizard of Yendor. (<damage 9='90'>90</damage> pts.)",
+            "You slash the Keteb Meriri. (<damage 9='98'>98</damage> pts.)",
+            "Dudley slashes the Keteb Meriri. (<damage 9='98'>98</damage> pts.)",
             manager);
 
-        Verify(playerEntity, wizard, playerEntity, player2Entity,
+        Verify(playerEntity, keteb, playerEntity, player2Entity,
             playerEntity.Being.SlottedAbilities[AbilitySlottingSystem.DefaultMeleeAttackSlot], success: true,
-            "You try to slash the Wizard of Yendor, but miss.",
-            "Dudley tries to slash the Wizard of Yendor, but misses.",
+            "You try to slash the Keteb Meriri, but miss.",
+            "Dudley tries to slash the Keteb Meriri, but misses.",
             manager);
 
-        var wizardSpell = wizard.ActiveEffects!.Abilities
-            .Single(a => a.Ability!.Action == AbilityAction.Spell);
-        Verify(wizard, playerEntity, playerEntity, player2Entity,
-            wizardSpell, success: true,
-            "The Wizard of Yendor casts a spell at you! You are unaffected.",
-            "The Wizard of Yendor casts a spell at Dudley. He is unaffected.",
+        var testSpell = keteb.ActiveEffects!.Abilities
+            .Single(a => a.Ability!.Name == "test spell");
+        testSpell.Ability!.Slot ??= 8;
+        Verify(keteb, playerEntity, playerEntity, player2Entity,
+            testSpell, success: true,
+            "The Keteb Meriri casts a spell at you! You are unaffected.",
+            "The Keteb Meriri casts a spell at Dudley. He is unaffected.",
             manager);
 
-        Verify(wizard, playerEntity, playerEntity, player2Entity,
-            wizardSpell, success: false,
-            "The Wizard of Yendor tries to cast a spell at you, but misses.",
-            "The Wizard of Yendor tries to cast a spell at Dudley, but misses.",
+        Verify(keteb, playerEntity, playerEntity, player2Entity,
+            testSpell, success: false,
+            "The Keteb Meriri tries to cast a spell at you, but misses.",
+            "The Keteb Meriri tries to cast a spell at Dudley, but misses.",
             manager);
 
         VerifyCreatureAttack(
@@ -188,7 +235,7 @@ public class LoggingSystemTest
             "The firefly sets you on fire.",
             "The firefly sets Dudley on fire.");
         VerifyCreatureAttack(
-            CreatureData.Undine, "undine ability #1", success: true,
+            CreatureData.Undine, "forceful strike", success: true,
             "The undine punches you! [<damage 9='238'>238</damage> pts.]",
             "The undine punches Dudley. (<damage 9='238'>238</damage> pts.)");
         VerifyCreatureAttack(
@@ -196,21 +243,13 @@ public class LoggingSystemTest
             "The giant spider tries to spit at you, but misses.",
             "The giant spider tries to spit at Dudley, but misses.");
         VerifyCreatureAttack(
-            CreatureData.Anaconda, "anaconda ability #2", success: true,
+            CreatureData.Anaconda, "crushing embrace", success: true,
             "The anaconda squeezes you! [<damage 9='70'>70</damage> pts.]",
             "The anaconda squeezes Dudley. (<damage 9='70'>70</damage> pts.)");
         VerifyCreatureAttack(
-            CreatureData.Antlar, "antlar ability #1", success: true,
-            "The antlar claws you! [<damage 9='98'>98</damage> pts.]",
-            "The antlar claws Dudley. (<damage 9='98'>98</damage> pts.)");
-        VerifyCreatureAttack(
-            CreatureData.CentaurWarrior, "centaur warrior ability #2", success: true,
-            "The centaur warrior kicks you! [<damage 9='56'>56</damage> pts.]",
-            "The centaur warrior kicks Dudley. (<damage 9='56'>56</damage> pts.)");
-        VerifyCreatureAttack(
-            CreatureData.MyconidSentry, "myconid sentry ability #1", success: false,
-            "The myconid sentry tries to scream at you, but misses.",
-            "The myconid sentry tries to scream at Dudley, but misses.");
+            CreatureData.Kentauros, "rear kick", success: true,
+            "The kentauros kicks you! [<damage 9='56'>56</damage> pts.]",
+            "The kentauros kicks Dudley. (<damage 9='56'>56</damage> pts.)");
 
         VerifyRangedWeaponAttack(
             ItemData.Shortbow, EquipmentSlot.GraspBothRanged,
@@ -226,7 +265,7 @@ public class LoggingSystemTest
         var game = TestHelper.CreateGame(seed: 1u);
         game.Options.RevealRooms = true;
         var room = TestHelper.BuildRoom(".....", game);
-        var attacker = CreatureData.RedDragon.Instantiate(room, new Point(0, 0));
+        var attacker = CreatureData.Rakshasa.Instantiate(room, new Point(0, 0));
         var interceptor = CreatureData.Firefly.Instantiate(room, new Point(2, 0));
         var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(4, 0));
         player.Position!.Heading = Direction.East;
@@ -241,11 +280,11 @@ public class LoggingSystemTest
         var playerHitPoints = player.Being!.HitPoints;
         player.Player!.LogEntries.Clear();
 
-        var breath = attacker.ActiveEffects!.Abilities.Single(
-            ability => ability.Ability!.Name == "red dragon ability #1");
-        breath.Ability!.Slot ??= 9;
+        var shot = attacker.ActiveEffects!.Abilities.Single(
+            ability => ability.Ability!.Name == "aimed shot");
+        shot.Ability!.Slot ??= 9;
         var activation = ActivateAbilityMessage.Create(manager);
-        activation.AbilityEntity = breath;
+        activation.AbilityEntity = shot;
         activation.ActivatorEntity = attacker;
         activation.TargetEntity = player;
         activation.TargetCell = player.Position.Cell;
@@ -257,7 +296,7 @@ public class LoggingSystemTest
         Assert.Equal(playerHitPoints, player.Being.HitPoints);
         Assert.Contains(
             player.Player.LogEntries,
-            entry => entry.Message.Contains("red dragon", StringComparison.OrdinalIgnoreCase)
+            entry => entry.Message.Contains("rakshasa", StringComparison.OrdinalIgnoreCase)
                      && entry.Message.Contains("firefly", StringComparison.OrdinalIgnoreCase));
     }
 
@@ -458,7 +497,7 @@ public class LoggingSystemTest
     public void DeathEvent()
     {
         var level = TestHelper.BuildRoom();
-        var blob = CreatureData.AcidBlob.Instantiate(level, new Point(0, 1));
+        var blob = CreatureData.Manusya.Instantiate(level, new Point(0, 1));
         var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 2));
         player.Position!.Heading = Direction.North;
         var manager = level.Entity.Manager;
@@ -469,7 +508,7 @@ public class LoggingSystemTest
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(
-            ["The acid blob dies."],
+            ["The manusya dies."],
             player.Player.LogEntries.Select(entry => entry.Message));
 
         player.Player.LogEntries.Clear();
@@ -486,7 +525,7 @@ public class LoggingSystemTest
     {
         var level = TestHelper.BuildRoom("..");
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
-        var blob = CreatureData.AcidBlob.Instantiate(level, new Point(1, 0));
+        var blob = CreatureData.Manusya.Instantiate(level, new Point(1, 0));
         var manager = playerEntity.Manager;
         manager.Queue.ProcessQueue(manager);
         playerEntity.Player!.LogEntries.Clear();
@@ -496,7 +535,7 @@ public class LoggingSystemTest
             EffectType.Stun, playerEntity, amount: 200));
         manager.Queue.ProcessQueue(manager);
 
-        Assert.True(EffectApplicationSystem.GetAbilityLevel(playerEntity, "stunned") > 0);
+        Assert.True(AbilityLevelSystem.GetAbilityLevel(playerEntity, "stunned") > 0);
         var message = Assert.Single(playerEntity.Player.LogEntries).Message;
         Assert.Equal(
             "You are <tooltip id='stunned#1' category='4'>stunned</tooltip>!",
@@ -509,17 +548,17 @@ public class LoggingSystemTest
 
         AssertLog(
             playerEntity,
-            "The acid blob is <tooltip id='stunned#1' category='4'>stunned</tooltip>.");
+            "The manusya is <tooltip id='stunned#1' category='4'>stunned</tooltip>.");
     }
 
     [Fact]
     public void Lingering_attack_effect_is_not_logged_when_neither_participant_is_identified()
     {
         var level = TestHelper.BuildRoom("...");
-        var attacker = CreatureData.AcidBlob.Instantiate(level, new Point(0, 0));
+        var attacker = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         var player = PlayerRace.InstantiatePlayer(
             "Dudley", Sex.Male, level, new Point(1, 0));
-        var victim = CreatureData.AcidBlob.Instantiate(level, new Point(2, 0));
+        var victim = CreatureData.Manusya.Instantiate(level, new Point(2, 0));
         var manager = player.Manager;
         manager.Queue.ProcessQueue(manager);
         manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
@@ -628,7 +667,7 @@ public class LoggingSystemTest
     {
         var level = TestHelper.BuildRoom("..");
         var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
-        var blob = CreatureData.AcidBlob.Instantiate(level, new Point(1, 0));
+        var blob = CreatureData.Manusya.Instantiate(level, new Point(1, 0));
         var manager = player.Manager;
         manager.Queue.ProcessQueue(manager);
 
@@ -642,7 +681,7 @@ public class LoggingSystemTest
             blob, TimeSystem.DefaultActionDelay);
         manager.Queue.ProcessQueue(manager);
 
-        AssertLog(player, "The acid blob takes <damage 3='7'>7</damage> damage.");
+        AssertLog(player, "The manusya takes <damage 3='7'>7</damage> damage.");
     }
 
     [Fact]
@@ -776,7 +815,7 @@ public class LoggingSystemTest
     {
         var level = TestHelper.BuildRoom("..");
         var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
-        var blob = CreatureData.AcidBlob.Instantiate(level, new Point(1, 0));
+        var blob = CreatureData.Manusya.Instantiate(level, new Point(1, 0));
         var manager = player.Manager;
         Assert.True(ItemData.FlaskOfHealing.Instantiate(blob));
         manager.Queue.ProcessQueue(manager);
@@ -787,7 +826,7 @@ public class LoggingSystemTest
         TestHelper.ActivateItemAbility(flask, "Drink", blob, manager);
         manager.Queue.ProcessQueue(manager);
 
-        AssertLog(player, "The acid blob drinks from a flask of healing.");
+        AssertLog(player, "The manusya drinks from a flask of healing.");
     }
 
     [Fact]
@@ -897,7 +936,7 @@ public class LoggingSystemTest
 
         // A second, separate room (different level/branch) where an NPC picks up an item.
         var otherRoom = TestHelper.BuildRoom(PickupMap, game, depth: 1);
-        var npc = CreatureData.HumanWarrior.Instantiate(otherRoom, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(otherRoom, new Point(0, 0));
         ItemData.GoldCoin.Instantiate(otherRoom, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
@@ -928,7 +967,7 @@ public class LoggingSystemTest
         var manager = playerEntity.Manager;
         manager.Queue.ProcessQueue(manager);
 
-        var npc = CreatureData.AcidBlob.Instantiate(room, new Point(2, 1));
+        var npc = CreatureData.Manusya.Instantiate(room, new Point(2, 1));
         ItemData.GoldCoin.Instantiate(room, new Point(2, 1), quantity: 11);
         manager.Queue.ProcessQueue(manager);
 
@@ -945,7 +984,7 @@ public class LoggingSystemTest
         manager.Enqueue(moveMessage);
         manager.Queue.ProcessQueue(manager);
 
-        AssertLog(playerEntity, "The acid blob picks up 11 gold coins.");
+        AssertLog(playerEntity, "The manusya picks up 11 gold coins.");
 
         moveMessage = MoveItemMessage.Create(manager);
         moveMessage.ItemEntity = goldEntity;
@@ -954,7 +993,7 @@ public class LoggingSystemTest
         manager.Enqueue(moveMessage);
         manager.Queue.ProcessQueue(manager);
 
-        AssertLog(playerEntity, "The acid blob drops 11 gold coins.");
+        AssertLog(playerEntity, "The manusya drops 11 gold coins.");
     }
 
     [Fact]

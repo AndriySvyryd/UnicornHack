@@ -141,7 +141,7 @@ public class KnowledgeSystemTest
         var room = TestHelper.BuildRoom(".....", game);
         var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(0, 0));
         player.Position!.Heading = Direction.West;
-        var attacker = CreatureData.HumanWarrior.Instantiate(room, new Point(4, 0));
+        var attacker = CreatureData.Manusya.Instantiate(room, new Point(4, 0));
         var manager = game.Manager;
         manager.Queue.ProcessQueue(manager);
 

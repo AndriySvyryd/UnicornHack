@@ -14,6 +14,7 @@ public class Game : NotificationEntity
     private SimpleRandom _random = null!;
     private GameOptions _options = new();
     private GenerationStats? _generationStats;
+    private GameStats? _stats;
 
     public int Id
     {
@@ -78,6 +79,12 @@ public class Game : NotificationEntity
     {
         get => _generationStats ??= new GenerationStats();
         set => SetWithNotify(value, ref _generationStats);
+    }
+
+    public GameStats Stats
+    {
+        get => _stats ??= new GameStats();
+        set => SetWithNotify(value, ref _stats);
     }
 
     // Unmapped properties

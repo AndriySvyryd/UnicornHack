@@ -1,3 +1,5 @@
+using UnicornHack.Systems.Abilities;
+using UnicornHack.Data.Abilities;
 using UnicornHack.Data.Creatures;
 using UnicornHack.Data.Players;
 using UnicornHack.Services;
@@ -9,6 +11,240 @@ namespace UnicornHack.Systems.Actors;
 public class PlayerChoiceSystemTest
 {
     [Fact]
+    public void Feature_positions_update_the_room_index_without_entering_item_or_actor_collections()
+    {
+        var room = TestHelper.BuildRoom("...");
+        var manager = room.Entity.Manager;
+        var reward = PlayerChoiceSystem.CreateRewardFeature(room, new Point(1, 0), "Test reward", ["Patient Vigor"]);
+        var entity = room.Features[new Point(1, 0)];
+        var component = entity.Feature!;
+
+        entity.Position!.Cell = new Point(2, 0);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.False(room.Features.ContainsKey(new Point(1, 0)));
+        Assert.Same(entity, room.Features[new Point(2, 0)]);
+        Assert.Empty(room.Items);
+        Assert.Empty(room.Actors);
+        Assert.Same(reward, Assert.Single(component.Rewards));
+        entity.Position = null;
+        manager.Queue.ProcessQueue(manager);
+        Assert.Empty(room.Features);
+        Assert.Empty(component.Rewards);
+    }
+
+    [Fact]
+    public void Removing_a_feature_prevents_presenting_its_rewards()
+    {
+        var room = TestHelper.BuildRoom("..");
+        var player = PlayerRace.InstantiatePlayer("Tester", Sex.Male, room, new Point(0, 0));
+        var manager = player.Manager;
+        manager.Queue.ProcessQueue(manager);
+        PlayerChoiceSystem.CreateRewardFeature(room, new Point(1, 0), "Test reward", ["Patient Vigor"]);
+        room.Features[new Point(1, 0)].Position = null;
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.False(manager.PlayerChoiceSystem.TryPresentReward(player, room, new Point(1, 0)));
+        Assert.Null(player.Player!.PendingChoice);
+    }
+
+    [Fact]
+    public void Rewards_in_another_room_are_not_presented()
+    {
+        var room = TestHelper.BuildRoom("..");
+        var otherRoom = TestHelper.BuildRoom("..", room.Game);
+        var player = PlayerRace.InstantiatePlayer("Tester", Sex.Male, room, new Point(0, 0));
+        var manager = player.Manager;
+        manager.Queue.ProcessQueue(manager);
+        var reward = PlayerChoiceSystem.CreateRewardFeature(room, new Point(1, 0), "Test reward", ["Patient Vigor"]);
+        var feature = room.Features[new Point(1, 0)];
+        feature.Position!.RoomEntity = otherRoom.Entity;
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Same(reward, Assert.Single(feature.Feature!.Rewards));
+        Assert.False(manager.PlayerChoiceSystem.TryPresentReward(player, otherRoom, new Point(1, 0)));
+        Assert.Null(player.Player!.PendingChoice);
+        Assert.Null(reward.ClaimantEntityId);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Race_rewards_filter_owned_races_before_presenting_options(bool hasAvailableRace)
+    {
+        var room = TestHelper.BuildRoom("..");
+        var player = PlayerRace.InstantiatePlayer("Tester", Sex.Male, room, new Point(0, 0));
+        var manager = player.Manager;
+        manager.Queue.ProcessQueue(manager);
+        PlayerChoiceSystem.CreateRewardFeature(room, new Point(1, 0), "Test races",
+            hasAvailableRace ? [PlayerRaceData.Human.Name, PlayerRaceData.Elf.Name] : [PlayerRaceData.Human.Name],
+            rewardType: RewardType.Race);
+
+        Assert.Equal(hasAvailableRace, manager.PlayerChoiceSystem.TryPresentReward(player, room, new Point(1, 0)));
+        if (!hasAvailableRace)
+        {
+            Assert.Null(player.Player!.PendingChoice);
+            return;
+        }
+
+        Assert.Equal([PlayerRaceData.Elf.Name], player.Player!.PendingChoice!.PendingChoiceOptions);
+        Assert.Equal(RewardType.Race, manager.PlayerChoiceSystem.GetPresentation(player)!.Choice);
+        Assert.True(manager.PlayerChoiceSystem.Select(player, 0, manager).IsAccepted);
+        Assert.True(manager.PlayerChoiceSystem.Select(player, 0, manager).IsAccepted);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Contains(PlayerRaceData.Elf.GetRaceAbilityName(), AbilityLevelSystem.GetPlayerRaceAbilityNames(player));
+    }
+
+    [Fact]
+    public void Removing_a_room_releases_its_features_and_owned_rewards()
+    {
+        var room = TestHelper.BuildRoom("..");
+        var manager = room.Entity.Manager;
+        var reward = PlayerChoiceSystem.CreateRewardFeature(room, new Point(1, 0), "Test reward", ["Patient Vigor"]);
+        var component = room.Features[new Point(1, 0)].Feature!;
+
+        room.Entity.Room = null;
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Null(manager.FindEntity(reward.Id));
+        Assert.Empty(component.Rewards);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Item_rewards_require_a_valid_destination_before_presentation(bool hasFloorDestination)
+    {
+        var room = TestHelper.BuildRoom("..");
+        var player = PlayerRace.InstantiatePlayer("Tester", Sex.Male, room, new Point(0, 0));
+        var manager = player.Manager;
+        PlayerChoiceSystem.CreateRewardFeature(room, new Point(1, 0), "Test item", ["dagger"], rewardType: RewardType.Item);
+        manager.AbilityLevelSystem.AddAbilityEffect(player, AbilityData.Stuck);
+        manager.Queue.ProcessQueue(manager);
+        if (!hasFloorDestination)
+        {
+            TerrainSystem.SetTerrain(MapFeature.RockWall, new Point(0, 0), room);
+        }
+
+        Assert.Equal(hasFloorDestination, manager.PlayerChoiceSystem.TryPresentReward(player, room, new Point(1, 0)));
+        Assert.Empty(player.Being!.Items);
+        Assert.Empty(room.Items);
+        if (!hasFloorDestination)
+        {
+            Assert.Null(player.Player!.PendingChoice);
+            return;
+        }
+
+        Assert.True(manager.PlayerChoiceSystem.Select(player, 0, manager).IsAccepted);
+        Assert.True(manager.PlayerChoiceSystem.Select(player, 0, manager).IsAccepted);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal("dagger", Assert.Single(room.Items).Value.Item!.TemplateName);
+        Assert.Empty(player.Being.Items);
+    }
+
+    [Theory]
+    [InlineData(RewardType.Item)]
+    [InlineData(RewardType.Race)]
+    public void Claiming_an_item_or_race_removes_every_reward_from_the_feature(RewardType rewardType)
+    {
+        var room = TestHelper.BuildRoom("..");
+        var player = PlayerRace.InstantiatePlayer("Tester", Sex.Male, room, new Point(0, 0));
+        var manager = player.Manager;
+        manager.Queue.ProcessQueue(manager);
+        var name = rewardType == RewardType.Item
+            ? "dagger"
+            : player.Game.Services.Data.PlayerRaces.GetAll()
+                .First(race => race.GetRaceAbilityName() != PlayerRaceData.Human.GetRaceAbilityName()).Name;
+        var reward = PlayerChoiceSystem.CreateRewardFeature(
+            room, new Point(1, 0), "Test reward", [name], rewardType: rewardType);
+        var feature = room.Features[new Point(1, 0)].Feature!;
+        feature.Rewards.Add(new Reward { Id = reward.Id + 1, Names = ["Patient Vigor"] });
+        Assert.True(manager.PlayerChoiceSystem.TryPresentReward(player, room, new Point(1, 0)));
+        Assert.Equal(rewardType, player.Player!.PendingChoice!.ChoiceType);
+        Assert.Equal(rewardType, manager.PlayerChoiceSystem.GetPresentation(player)!.Choice);
+        Assert.Null(manager.PlayerChoiceSystem.GetPresentation(player)!.Notice);
+        Assert.Empty(player.Being!.Items);
+        Assert.Empty(room.Items);
+        Assert.True(manager.PlayerChoiceSystem.Select(player, 0, manager).IsAccepted);
+        Assert.Equal("Confirm", player.Player.PendingChoice!.PendingChoiceAction);
+        Assert.Equal(rewardType, player.Player.PendingChoice.ChoiceType);
+
+        Assert.True(manager.PlayerChoiceSystem.Select(player, 0, manager).IsAccepted);
+        manager.Queue.ProcessQueue(manager);
+
+        if (rewardType == RewardType.Item)
+        {
+            Assert.Contains(player.Being!.Items, item => item.Item!.TemplateName == name);
+        }
+        else
+        {
+            var race = player.Game.Services.Data.PlayerRaces.Get(name);
+            Assert.Contains(race.GetRaceAbilityName(), AbilityLevelSystem.GetPlayerRaceAbilityNames(player));
+        }
+
+        Assert.Empty(feature.Rewards);
+        Assert.Null(player.Player.PendingChoice);
+        Assert.Equal(MapFeature.InactiveSmallFountain, room.Terrain[room.PointToIndex![1, 0]]);
+        Assert.False(manager.PlayerChoiceSystem.TryPresentReward(player, room, new Point(1, 0)));
+    }
+
+    [Theory]
+    [InlineData("Furrow's Reserve", 10, 0, 0)]
+    [InlineData("Patient Vigor", 0, 10, 0)]
+    [InlineData("Hive-Sense", 0, 0, 1)]
+    public void Reward_preview_is_free_and_one_confirmed_claim_grants_a_branch_bound_boon(
+        string boonName, int hitPoints, int energyPoints, int roomPerceptionRange)
+    {
+        var room = TestHelper.BuildRoom("..");
+        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(0, 0));
+        var manager = player.Manager;
+        manager.Queue.ProcessQueue(manager);
+        var reward = PlayerChoiceSystem.CreateRewardFeature(room, new Point(1, 0), "Produce", [boonName]);
+        var feature = Assert.Single(room.Features).Value;
+        Assert.Same(reward, Assert.Single(feature.Feature!.Rewards));
+        Assert.Equal(feature.Id, reward.Id);
+        Assert.Null(feature.Being);
+        Assert.Null(feature.Item);
+        Assert.Equal(new Point(1, 0), feature.Position!.Cell);
+        var initialHp = player.Being!.HitPointMaximum;
+        var initialEp = player.Being.EnergyPointMaximum;
+        var initialPerception = player.Being.Perception;
+        var initialRoomPerceptionRange = player.Being.RoomPerceptionRange;
+
+        Assert.True(manager.PlayerChoiceSystem.TryPresentReward(player, room, new Point(1, 0)));
+        Assert.Equal(0, manager.PlayerChoiceSystem.Select(player, 0, manager).Delay);
+        Assert.Null(reward.ClaimantEntityId);
+        Assert.Equal(0, player.Game.CurrentTick);
+        var result = manager.PlayerChoiceSystem.Select(player, 0, manager);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.True(result.IsAccepted);
+        Assert.True(result.Delay > 0);
+        Assert.Equal(player.Id, reward.ClaimantEntityId);
+        Assert.Empty(feature.Feature!.Rewards);
+        Assert.Equal(MapFeature.InactiveSmallFountain, room.Terrain[room.PointToIndex![1, 0]]);
+        Assert.Equal(initialHp + hitPoints, player.Being.HitPointMaximum);
+        Assert.Equal(initialEp + energyPoints, player.Being.EnergyPointMaximum);
+        Assert.Equal(initialPerception, player.Being.Perception);
+        Assert.Equal(initialRoomPerceptionRange + roomPerceptionRange, player.Being.RoomPerceptionRange);
+        Assert.False(manager.PlayerChoiceSystem.Select(player, 0, manager).IsAccepted);
+        Assert.False(manager.PlayerChoiceSystem.TryPresentReward(player, room, new Point(1, 0)));
+
+        manager.EffectApplicationSystem.ExpireTransitionEffects(player, true, manager);
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(initialHp + hitPoints, player.Being.HitPointMaximum);
+        Assert.Equal(initialRoomPerceptionRange + roomPerceptionRange, player.Being.RoomPerceptionRange);
+        manager.EffectApplicationSystem.ExpireTransitionEffects(player, true, manager, branchChanged: true);
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(initialHp, player.Being.HitPointMaximum);
+        Assert.Equal(initialEp, player.Being.EnergyPointMaximum);
+        Assert.Equal(initialPerception, player.Being.Perception);
+        Assert.Equal(initialRoomPerceptionRange, player.Being.RoomPerceptionRange);
+    }
+
+    [Fact]
     public void Bumping_a_race_pedestal_opens_the_menu_without_advancing_time()
     {
         var (playerEntity, room, pedestalCell) = Setup();
@@ -16,10 +252,13 @@ public class PlayerChoiceSystemTest
 
         BumpPedestal(playerEntity);
 
-        Assert.Equal(PlayerChoiceSystem.RaceChoice, player.PendingChoice!.ChoiceType);
+        Assert.Equal(RewardType.RacePedestal, player.PendingChoice!.ChoiceType);
         Assert.Null(player.PendingChoice.PendingChoiceAction);
-        Assert.Empty(player.PendingChoice.PendingChoiceOptions);
+        Assert.Equal(
+            [PlayerChoiceSystem.AddAction, PlayerChoiceSystem.RemoveAction, PlayerChoiceSystem.DestroyAction],
+            player.PendingChoice.PendingChoiceOptions);
         var presentation = playerEntity.Manager.PlayerChoiceSystem.GetPresentation(playerEntity)!;
+        Assert.Equal(RewardType.RacePedestal, presentation.Choice);
         Assert.Equal("Race pedestal", presentation.Title);
         Assert.Equal(
             [
@@ -48,7 +287,7 @@ public class PlayerChoiceSystemTest
         TestHelper.PerformTurn(playerEntity, playerEntity.Manager);
 
         Assert.Equal(
-            PlayerChoiceSystem.RaceChoice,
+            RewardType.RacePedestal,
             playerEntity.Player.PendingChoice!.ChoiceType);
         Assert.Equal(new Point(0, 0), playerEntity.Position!.Cell);
         Assert.Equal(0, playerEntity.Player.NextActionTick);
@@ -86,7 +325,7 @@ public class PlayerChoiceSystemTest
             race => (race.Ability!.Template?.Name ?? race.Ability.Name)
                     == playerEntity.Game.Services.Data.PlayerRaces.Get(selectedRace).GetRaceAbilityName());
         Assert.Equal(MapFeature.InactiveRacePedestal, GetTerrain(room, pedestalCell));
-        Assert.True(room.Features.HasFlag(RoomFeatures.RacePedestal));
+        Assert.True(room.FeatureTags.HasFlag(RoomFeatures.RacePedestal));
         Assert.Equal(
             [$"You gain the {RaceRef(selectedRace)} race."],
             playerEntity.Player.LogEntries.Select(entry => entry.Message));
@@ -259,7 +498,7 @@ public class PlayerChoiceSystemTest
                     == playerEntity.Game.Services.Data.PlayerRaces
                         .Get(replacementName).GetRaceAbilityName());
         Assert.Equal(MapFeature.InactiveRacePedestal, GetTerrain(room, pedestalCell));
-        Assert.True(room.Features.HasFlag(RoomFeatures.RacePedestal));
+        Assert.True(room.FeatureTags.HasFlag(RoomFeatures.RacePedestal));
     }
 
     [Fact]
@@ -337,12 +576,12 @@ public class PlayerChoiceSystemTest
         };
         ((TestDataProvider)playerEntity.Game.Services.Data).PlayerRaces.Add(fifthRace);
 
-        playerEntity.Manager.EffectApplicationSystem.AddAbilityEffect(
+        playerEntity.Manager.AbilityLevelSystem.AddAbilityEffect(
             playerEntity, fifthRace.GetRaceAbilityTemplate());
         playerEntity.Manager.Queue.ProcessQueue(playerEntity.Manager);
         Assert.Equal(5, playerEntity.Being!.Races.Count);
 
-        playerEntity.Manager.EffectApplicationSystem.AddAbilityEffect(
+        playerEntity.Manager.AbilityLevelSystem.AddAbilityEffect(
             playerEntity, PlayerRaceData.Human.GetRaceAbilityTemplate());
         Assert.Equal(5, playerEntity.Being.Races.Count);
     }
@@ -358,7 +597,7 @@ public class PlayerChoiceSystemTest
         var northPedestal = new Point(1, 0);
         TerrainSystem.SetTerrain(MapFeature.RacePedestal, eastPedestal, room);
         TerrainSystem.SetTerrain(MapFeature.RacePedestal, northPedestal, room);
-        room.Features |= RoomFeatures.RacePedestal;
+        room.FeatureTags |= RoomFeatures.RacePedestal;
         var playerEntity = PlayerRace.InstantiatePlayer(
             "Dudley", Sex.Male, room, new Point(1, 1));
         playerEntity.Manager.Queue.ProcessQueue(playerEntity.Manager);
@@ -371,7 +610,7 @@ public class PlayerChoiceSystemTest
 
         Assert.Equal(MapFeature.InactiveRacePedestal, GetTerrain(room, eastPedestal));
         Assert.Equal(MapFeature.RacePedestal, GetTerrain(room, northPedestal));
-        Assert.True(room.Features.HasFlag(RoomFeatures.RacePedestal));
+        Assert.True(room.FeatureTags.HasFlag(RoomFeatures.RacePedestal));
     }
 
     private static (GameEntity Player, RoomComponent Room, Point PedestalCell) Setup()
@@ -379,7 +618,7 @@ public class PlayerChoiceSystemTest
         var room = TestHelper.BuildRoom("..");
         var pedestalCell = new Point(1, 0);
         TerrainSystem.SetTerrain(MapFeature.RacePedestal, pedestalCell, room);
-        room.Features |= RoomFeatures.RacePedestal;
+        room.FeatureTags |= RoomFeatures.RacePedestal;
         var player = PlayerRace.InstantiatePlayer(
             "Dudley", Sex.Male, room, new Point(0, 0));
         player.Manager.Queue.ProcessQueue(player.Manager);
@@ -389,7 +628,7 @@ public class PlayerChoiceSystemTest
     private static void AddRace(
         GameEntity playerEntity, PlayerRace race, int sourceAbilityId = 0)
     {
-        playerEntity.Manager.EffectApplicationSystem.AddAbilityEffect(
+        playerEntity.Manager.AbilityLevelSystem.AddAbilityEffect(
             playerEntity, race.GetRaceAbilityTemplate(),
             sourceAbilityEntityId: sourceAbilityId);
         playerEntity.Manager.Queue.ProcessQueue(playerEntity.Manager);

@@ -11,6 +11,195 @@ namespace UnicornHack.Systems.Items;
 
 public class ItemUsageSystemTest
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Item_abilities_require_equipping_only_for_equippable_items_and_can_be_reused(bool equippable)
+    {
+        var room = TestHelper.BuildRoom(".");
+        var player = PlayerRace.InstantiatePlayer("Tester", Sex.Male, room, new Point(0, 0));
+        var manager = player.Manager;
+        var template = new Item
+        {
+            Name = "test reusable item",
+            BaseName = equippable ? ItemData.MailArmor.Name : ItemData.FlaskOfHealing.Name,
+            Abilities = [new Ability
+            {
+                Name = "test reusable ability",
+                Activation = ActivationType.Manual,
+                Delay = "100",
+                Effects = [new Heal { Amount = "1" }]
+            }]
+        };
+        ((TestDataProvider)player.Game.Services.Data).Items.Add(template);
+        Assert.True(template.Instantiate(player));
+        manager.Queue.ProcessQueue(manager);
+        var item = player.Being!.Items.Single(candidate => candidate.Item!.TemplateName == template.Name);
+        var ability = item.ActiveEffects!.Abilities.Single(candidate => candidate.Ability!.Name == "test reusable ability");
+        var activation = ActivateAbilityMessage.Create(manager);
+        activation.ActivatorEntity = player;
+        activation.TargetEntity = player;
+        activation.AbilityEntity = ability;
+        Assert.Equal(!equippable, manager.AbilityActivationSystem.CanActivateAbility(activation) == null);
+
+        if (equippable)
+        {
+            var equip = EquipItemMessage.Create(manager);
+            equip.ActorEntity = player;
+            equip.ItemEntity = item;
+            equip.Slot = EquipmentSlot.Torso;
+            manager.Enqueue(equip);
+            manager.Queue.ProcessQueue(manager);
+        }
+
+        Assert.Null(manager.AbilityActivationSystem.CanActivateAbility(activation));
+        manager.Enqueue(activation);
+        manager.Queue.ProcessQueue(manager);
+
+        activation = ActivateAbilityMessage.Create(manager);
+        activation.ActivatorEntity = player;
+        activation.TargetEntity = player;
+        activation.AbilityEntity = ability;
+        Assert.Null(manager.AbilityActivationSystem.CanActivateAbility(activation));
+        manager.ReturnMessage(activation);
+
+        if (equippable)
+        {
+            var unequip = EquipItemMessage.Create(manager);
+            unequip.ActorEntity = player;
+            unequip.ItemEntity = item;
+            unequip.Slot = EquipmentSlot.None;
+            manager.Enqueue(unequip);
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.Equal(EquipmentSlot.None, item.Item!.EquippedSlot);
+            Assert.DoesNotContain(ability, player.ActiveEffects!.AvailableAbilities);
+            activation = ActivateAbilityMessage.Create(manager);
+            activation.ActivatorEntity = player;
+            activation.TargetEntity = player;
+            activation.AbilityEntity = ability;
+            Assert.NotNull(manager.AbilityActivationSystem.CanActivateAbility(activation));
+            manager.ReturnMessage(activation);
+        }
+    }
+
+    [Fact]
+    public void Cuirass_grants_armor_deflection_and_hindrance_only_while_equipped()
+    {
+        var room = TestHelper.BuildRoom(".");
+        var player = PlayerRace.InstantiatePlayer("Tester", Sex.Male, room, new Point(0, 0));
+        var manager = player.Manager;
+        manager.AbilityLevelSystem.AddAbilityEffect(player, AbilityData.HeavyArmor);
+        Assert.True(ItemData.Cuirass.Instantiate(player));
+        manager.Queue.ProcessQueue(manager);
+        var item = player.Being!.Items.Single(candidate => candidate.Item!.TemplateName == ItemData.Cuirass.Name);
+        var initialArmor = player.Being.Armor;
+        var initialDeflection = player.Being.Deflection;
+        var initialResistance = player.Being.PhysicalResistance;
+        var initialHindrance = player.Being.Hindrance;
+        var equip = EquipItemMessage.Create(manager);
+        equip.ActorEntity = player;
+        equip.ItemEntity = item;
+        equip.Slot = EquipmentSlot.Torso;
+        manager.Enqueue(equip);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(EquipmentSlot.Torso, item.Item!.EquippedSlot);
+        Assert.Equal(initialArmor + 3, player.Being.Armor);
+        Assert.Equal(initialDeflection + 10, player.Being.Deflection);
+        Assert.Equal(initialResistance, player.Being.PhysicalResistance);
+        Assert.Equal(initialHindrance + 15, player.Being.Hindrance);
+        Assert.DoesNotContain(item.ActiveEffects!.Abilities,
+            ability => (ability.Ability!.Activation & ActivationType.Slottable) != 0
+                       && ability.Ability.Name != "Equip");
+
+        equip = EquipItemMessage.Create(manager);
+        equip.ActorEntity = player;
+        equip.ItemEntity = item;
+        equip.Slot = EquipmentSlot.None;
+        manager.Enqueue(equip);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(initialArmor, player.Being.Armor);
+        Assert.Equal(initialDeflection, player.Being.Deflection);
+        Assert.Equal(initialResistance, player.Being.PhysicalResistance);
+        Assert.Equal(initialHindrance, player.Being.Hindrance);
+        var weight = Item.CreateWeightFunction(ItemData.Cuirass.GenerationWeight!);
+        Assert.Equal(0, weight("outer wards", 1, 0));
+        Assert.Equal(0, weight("ruined stronghold", 1, 0));
+        Assert.True(weight("ruined stronghold", 2, 0) > 0);
+        Assert.True(weight("ruined stronghold", 3, 0) > 0);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    public void Item_complexity_does_not_block_activatable_effects(int trainedLevel)
+    {
+        var room = TestHelper.BuildRoom(".");
+        var player = PlayerRace.InstantiatePlayer("Tester", Sex.Male, room, new Point(0, 0));
+        var manager = player.Manager;
+        var template = new Item
+        {
+            Name = "test trained flask",
+            BaseName = ItemData.FlaskOfHealing.Name,
+            Abilities = [.. ItemData.FlaskOfHealing.Abilities],
+            Type = ItemType.Trinket,
+            Complexity = ItemComplexity.Normal
+        };
+        ((TestDataProvider)player.Game.Services.Data).Items.Add(template);
+        Assert.True(template.Instantiate(player));
+        if (trainedLevel > 0)
+        {
+            manager.AbilityLevelSystem.AddAbilityEffect(player, AbilityData.Artifice, trainedLevel);
+        }
+
+        manager.Queue.ProcessQueue(manager);
+        var item = player.Being!.Items.Single(candidate => candidate.Item!.TemplateName == template.Name);
+        var ability = item.ActiveEffects!.Abilities.Single(candidate => candidate.Ability!.Name == "Drink");
+        var activation = ActivateAbilityMessage.Create(manager);
+        activation.ActivatorEntity = player;
+        activation.TargetEntity = player;
+        activation.AbilityEntity = ability;
+
+        Assert.Null(manager.AbilityActivationSystem.CanActivateAbility(activation));
+        manager.ReturnMessage(activation);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void Item_complexity_does_not_block_equipping(int trainedLevel)
+    {
+        var room = TestHelper.BuildRoom(".");
+        var player = PlayerRace.InstantiatePlayer("Tester", Sex.Male, room, new Point(0, 0));
+        var manager = player.Manager;
+        var template = new Item
+        {
+            Name = "test trained armor",
+            BaseName = ItemData.MailArmor.Name,
+            Type = ItemType.ArmorTorso | ItemType.HeavyArmor,
+            Complexity = ItemComplexity.Normal
+        };
+        ((TestDataProvider)player.Game.Services.Data).Items.Add(template);
+        Assert.True(template.Instantiate(player));
+        if (trainedLevel > 0)
+        {
+            manager.AbilityLevelSystem.AddAbilityEffect(player, AbilityData.HeavyArmor, trainedLevel);
+        }
+
+        manager.Queue.ProcessQueue(manager);
+        var item = player.Being!.Items.Single(candidate => candidate.Item!.TemplateName == template.Name);
+        var equip = EquipItemMessage.Create(manager);
+        equip.ActorEntity = player;
+        equip.ItemEntity = item;
+        equip.Slot = EquipmentSlot.Torso;
+
+        Assert.True(manager.ItemUsageSystem.CanEquipItem(equip, manager));
+        manager.ReturnMessage(equip);
+    }
+
     [Fact]
     public void Generated_equip_ability_adds_equipment_delay()
     {
@@ -348,7 +537,7 @@ public class ItemUsageSystemTest
         Assert.Equal(200, playerEntity.Being.CooldownFactor);
         Assert.Equal(manager.Game.CurrentTick + 400, itemAbility.CooldownTick);
 
-        manager.EffectApplicationSystem.RemoveAbility(
+        manager.AbilityLevelSystem.RemoveAbility(
             playerEntity, AbilityData.Slowed.Name, manager);
         manager.Queue.ProcessQueue(manager);
 
@@ -383,7 +572,7 @@ public class ItemUsageSystemTest
             EffectType.Stick, playerEntity, amount: 200));
 
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(playerEntity, AbilityData.Stuck.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(playerEntity, AbilityData.Stuck.Name));
 
         var unequipMessage = EquipItemMessage.Create(manager);
         unequipMessage.ActorEntity = playerEntity;

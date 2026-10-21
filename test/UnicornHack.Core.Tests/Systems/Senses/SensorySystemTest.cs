@@ -1,3 +1,4 @@
+using UnicornHack.Systems.Abilities;
 using UnicornHack.Data.Abilities;
 using UnicornHack.Data.Creatures;
 using UnicornHack.Data.Items;
@@ -10,6 +11,55 @@ namespace UnicornHack.Systems.Senses;
 
 public class SensorySystemTest
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Visibility_cache_is_reused_and_invalidated_when_heading_changes(bool isPlayer)
+    {
+        var room = TestHelper.BuildRoom(".........");
+        var actor = isPlayer
+            ? PlayerRace.InstantiatePlayer("Tester", Sex.Male, room, new Point(4, 0))
+            : CreatureData.Manusya.Instantiate(room, new Point(4, 0));
+        var manager = actor.Manager;
+        actor.Position!.Heading = Direction.East;
+        manager.Queue.ProcessQueue(manager);
+        var visible = manager.SensorySystem.GetVisibleTiles(actor);
+        Assert.Same(visible, manager.SensorySystem.GetVisibleTiles(actor));
+        Assert.True(manager.SensorySystem.GetVisibility(actor, new Point(8, 0)) > 0);
+        var turn = TravelMessage.Create(manager);
+        turn.ActorEntity = actor;
+        turn.TargetHeading = Direction.West;
+        turn.Distance = 0;
+        turn.SuppressDelay = true;
+        manager.Enqueue(turn);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(0, manager.SensorySystem.GetVisibility(actor, new Point(8, 0)));
+        Assert.Same(actor.Being!.VisibleTerrain, manager.SensorySystem.GetVisibleTiles(actor));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Visibility_cache_is_refreshed_after_vision_is_lost(bool isPlayer)
+    {
+        var room = TestHelper.BuildRoom(".....");
+        var actor = isPlayer
+            ? PlayerRace.InstantiatePlayer("Tester", Sex.Male, room, new Point(0, 0))
+            : CreatureData.Manusya.Instantiate(room, new Point(0, 0));
+        var manager = actor.Manager;
+        actor.Position!.Heading = Direction.East;
+        manager.Queue.ProcessQueue(manager);
+        Assert.True(manager.SensorySystem.GetVisibility(actor, new Point(4, 0)) > 0);
+
+        manager.EffectApplicationSystem.ApplyStatus(
+            EffectApplicationContext.CreateStatus(EffectType.Blind, actor, amount: 400));
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(0, actor.Being!.PrimaryVisionRange);
+        Assert.All(manager.SensorySystem.GetVisibleTiles(actor).Take(room.TileCount), value => Assert.Equal(0, value));
+    }
+
     private static readonly string TestMap = @"
 ...
 ...
@@ -19,8 +69,8 @@ public class SensorySystemTest
     public void Hearing_uses_quietness_fast_range_and_weighted_terrain_attenuation()
     {
         var level = TestHelper.BuildRoom("...............");
-        var listener = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
-        var source = CreatureData.HumanWarrior.Instantiate(level, new Point(10, 0));
+        var listener = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
+        var source = CreatureData.Manusya.Instantiate(level, new Point(10, 0));
         var manager = listener.Manager;
         manager.Queue.ProcessQueue(manager);
 
@@ -39,15 +89,15 @@ public class SensorySystemTest
     public void Walls_attenuate_sound_more_than_open_floor()
     {
         var openLevel = TestHelper.BuildRoom("...");
-        var openListener = CreatureData.HumanWarrior.Instantiate(openLevel, new Point(0, 0));
-        var openSource = CreatureData.HumanWarrior.Instantiate(openLevel, new Point(2, 0));
+        var openListener = CreatureData.Manusya.Instantiate(openLevel, new Point(0, 0));
+        var openSource = CreatureData.Manusya.Instantiate(openLevel, new Point(2, 0));
         var openManager = openListener.Manager;
         openManager.Queue.ProcessQueue(openManager);
         Assert.True(openManager.SensorySystem.CanHear(openListener, openSource, actionNoise: 100));
 
         var wallLevel = TestHelper.BuildRoom(".#.");
-        var wallListener = CreatureData.HumanWarrior.Instantiate(wallLevel, new Point(0, 0));
-        var wallSource = CreatureData.HumanWarrior.Instantiate(wallLevel, new Point(2, 0));
+        var wallListener = CreatureData.Manusya.Instantiate(wallLevel, new Point(0, 0));
+        var wallSource = CreatureData.Manusya.Instantiate(wallLevel, new Point(2, 0));
         var wallManager = wallListener.Manager;
         wallManager.Queue.ProcessQueue(wallManager);
         Assert.False(wallManager.SensorySystem.CanHear(wallListener, wallSource, actionNoise: 100));
@@ -59,11 +109,11 @@ public class SensorySystemTest
         var level = TestHelper.BuildRoom(".....");
         GameEntity[] listeners =
         [
-            CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0)),
-            CreatureData.HumanWarrior.Instantiate(level, new Point(2, 0)),
-            CreatureData.HumanWarrior.Instantiate(level, new Point(3, 0))
+            CreatureData.Manusya.Instantiate(level, new Point(0, 0)),
+            CreatureData.Manusya.Instantiate(level, new Point(2, 0)),
+            CreatureData.Manusya.Instantiate(level, new Point(3, 0))
         ];
-        var source = CreatureData.HumanWarrior.Instantiate(level, new Point(4, 0));
+        var source = CreatureData.Manusya.Instantiate(level, new Point(4, 0));
         var manager = source.Manager;
         manager.Queue.ProcessQueue(manager);
         var soundSenses = new SenseType[listeners.Length];
@@ -84,7 +134,7 @@ public class SensorySystemTest
     {
         var level = TestHelper.BuildRoom("...........");
         var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
-        var source = CreatureData.HumanWarrior.Instantiate(level, new Point(10, 0));
+        var source = CreatureData.Manusya.Instantiate(level, new Point(10, 0));
         var manager = player.Manager;
         manager.Queue.ProcessQueue(manager);
 
@@ -112,7 +162,7 @@ public class SensorySystemTest
         manager.EffectApplicationSystem.ApplyStatus(
             EffectApplicationContext.CreateStatus(EffectType.Blind, player, amount: 400));
         manager.Queue.ProcessQueue(manager);
-        var source = CreatureData.HumanWarrior.Instantiate(level, new Point(2, 0));
+        var source = CreatureData.Manusya.Instantiate(level, new Point(2, 0));
         manager.Queue.ProcessQueue(manager);
         Assert.Null(source.Position!.Knowledge);
         player.Player!.LogEntries.Clear();
@@ -130,8 +180,8 @@ public class SensorySystemTest
     {
         var level = TestHelper.BuildRoom("...........");
         var listener = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
-        var deafListener = CreatureData.HumanWarrior.Instantiate(level, new Point(1, 0));
-        var source = CreatureData.HumanWarrior.Instantiate(level, new Point(10, 0));
+        var deafListener = CreatureData.Manusya.Instantiate(level, new Point(1, 0));
+        var source = CreatureData.Manusya.Instantiate(level, new Point(10, 0));
         var manager = listener.Manager;
         manager.Queue.ProcessQueue(manager);
 
@@ -160,7 +210,7 @@ public class SensorySystemTest
     {
         var level = TestHelper.BuildRoom("...");
         var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
-        var source = CreatureData.HumanWarrior.Instantiate(level, new Point(2, 0));
+        var source = CreatureData.Manusya.Instantiate(level, new Point(2, 0));
         player.Position!.Heading = Direction.East;
         var manager = player.Manager;
         manager.Queue.ProcessQueue(manager);
@@ -201,31 +251,31 @@ public class SensorySystemTest
     public void Audible_actions_do_not_clear_sleepy_status()
     {
         var level = TestHelper.BuildRoom("......");
-        var sleeper = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
-        var source = CreatureData.HumanWarrior.Instantiate(level, new Point(5, 0));
+        var sleeper = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
+        var source = CreatureData.Manusya.Instantiate(level, new Point(5, 0));
         var manager = sleeper.Manager;
         manager.Queue.ProcessQueue(manager);
 
         manager.EffectApplicationSystem.ApplyStatus(
             EffectApplicationContext.CreateStatus(EffectType.Sedate, sleeper, amount: 200));
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(sleeper, AbilityData.Sleepy.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(sleeper, AbilityData.Sleepy.Name));
 
         SoundMessage.Enqueue(source, actionNoise: 0, manager);
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(sleeper, AbilityData.Sleepy.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(sleeper, AbilityData.Sleepy.Name));
 
         SoundMessage.Enqueue(source, actionNoise: 100, manager);
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(sleeper, AbilityData.Sleepy.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(sleeper, AbilityData.Sleepy.Name));
     }
 
     [Fact]
     public void Successful_movement_emits_sound()
     {
         var level = TestHelper.BuildRoom("...");
-        var sleeper = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
-        var mover = CreatureData.HumanWarrior.Instantiate(level, new Point(2, 0));
+        var sleeper = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
+        var mover = CreatureData.Manusya.Instantiate(level, new Point(2, 0));
         var manager = sleeper.Manager;
         manager.Queue.ProcessQueue(manager);
 
@@ -239,7 +289,7 @@ public class SensorySystemTest
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(new Point(1, 0), mover.Position!.Cell);
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(sleeper, AbilityData.Sleepy.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(sleeper, AbilityData.Sleepy.Name));
     }
 
     [Fact]
@@ -313,8 +363,8 @@ public class SensorySystemTest
 .....
 .....");
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 1));
-        var adjacent = CreatureData.HumanWarrior.Instantiate(level, new Point(1, 1));
-        var far = CreatureData.HumanWarrior.Instantiate(level, new Point(4, 1));
+        var adjacent = CreatureData.Manusya.Instantiate(level, new Point(1, 1));
+        var far = CreatureData.Manusya.Instantiate(level, new Point(4, 1));
         playerEntity.Position!.Heading = Direction.East;
         var manager = playerEntity.Manager;
         manager.Queue.ProcessQueue(manager);
@@ -334,7 +384,7 @@ public class SensorySystemTest
             EffectApplicationContext.CreateStatus(EffectType.Blind, playerEntity, amount: 200));
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(playerEntity, AbilityData.Blinded.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(playerEntity, AbilityData.Blinded.Name));
         Assert.Equal(primaryRange / 2, playerEntity.Being.PrimaryVisionRange);
         Assert.Equal(secondaryRange / 2, playerEntity.Being.SecondaryVisionRange);
         Assert.True(manager.SensorySystem.GetVisibility(playerEntity, farCell) > 0);
@@ -344,13 +394,13 @@ public class SensorySystemTest
         manager.Queue.ProcessQueue(manager);
 
         // At level 2 no tile is visible; only the adjacent entity is still felt.
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(playerEntity, AbilityData.Blinded.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(playerEntity, AbilityData.Blinded.Name));
         Assert.Equal(0, manager.SensorySystem.GetVisibility(playerEntity, farCell));
         Assert.Equal(0, manager.SensorySystem.GetVisibility(playerEntity, adjacentCell));
         Assert.Equal(SenseType.Touch, manager.SensorySystem.CanSense(playerEntity, adjacent));
         Assert.Equal(SenseType.None, manager.SensorySystem.CanSense(playerEntity, far));
 
-        manager.EffectApplicationSystem.RemoveAbility(playerEntity, AbilityData.Blinded.Name, manager);
+        manager.AbilityLevelSystem.RemoveAbility(playerEntity, AbilityData.Blinded.Name, manager);
         manager.Queue.ProcessQueue(manager);
 
         // Sight restored: the far tile is visible again.
@@ -364,7 +414,7 @@ public class SensorySystemTest
     {
         var level = TestHelper.BuildRoom(".....");
         var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
-        var engulfer = CreatureData.GelatinousCube.Instantiate(level, new Point(1, 0));
+        var engulfer = CreatureData.Sylph.Instantiate(level, new Point(1, 0));
         var manager = player.Manager;
         manager.Queue.ProcessQueue(manager);
 

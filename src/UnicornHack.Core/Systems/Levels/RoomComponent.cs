@@ -10,7 +10,7 @@ public class RoomComponent : GameComponent, IKeepAliveComponent
     private string? _branchName;
     private byte _depth;
     private GameLevel? _level;
-    private RoomFeatures _features;
+    private RoomFeatures _featureTags;
     private RoomReveal _reveal;
     private byte _gridX;
     private byte _gridY;
@@ -95,10 +95,10 @@ public class RoomComponent : GameComponent, IKeepAliveComponent
         }
     }
 
-    public RoomFeatures Features
+    public RoomFeatures FeatureTags
     {
-        get => _features;
-        set => SetWithNotify(value, ref _features);
+        get => _featureTags;
+        set => SetWithNotify(value, ref _featureTags);
     }
 
     /// <summary>
@@ -235,6 +235,8 @@ public class RoomComponent : GameComponent, IKeepAliveComponent
         get;
     } = new SortedDictionary<Point, GameEntity>();
 
+    public IReadOnlyDictionary<Point, GameEntity> Features { get; } = new SortedDictionary<Point, GameEntity>();
+
     public IReadOnlyCollection<GameEntity> IncomingConnections
     {
         get;
@@ -316,42 +318,59 @@ public class RoomComponent : GameComponent, IKeepAliveComponent
     ///     <see cref="LevelGenerator.ResetGeneratedState" /> when a generation attempt
     ///     fails and the level needs a clean slate without orphaning cross-level links.
     /// </summary>
-    public void Reset()
+    public void Reset() => Reset(notify: true);
+
+    private void Reset(bool notify)
     {
         if (Terrain.Length > 0)
         {
             ArrayPool<MapFeature>.Shared.Return(Terrain);
-            Terrain = Array.Empty<MapFeature>();
         }
 
         if (Neighbors.Length > 0)
         {
             ArrayPool<DirectionFlags>.Shared.Return(Neighbors);
-            Neighbors = Array.Empty<DirectionFlags>();
         }
 
         if (KnownNeighbors.Length > 0)
         {
             ArrayPool<DirectionFlags>.Shared.Return(KnownNeighbors);
-            KnownNeighbors = Array.Empty<DirectionFlags>();
         }
 
         if (VisibleTerrain.Length > 0)
         {
             ArrayPool<byte>.Shared.Return(VisibleTerrain);
-            VisibleTerrain = Array.Empty<byte>();
         }
 
         if (KnownTerrain.Length > 0)
         {
             ArrayPool<MapFeature>.Shared.Return(KnownTerrain);
-            KnownTerrain = Array.Empty<MapFeature>();
         }
 
-        Width = 0;
-        Height = 0;
+        if (notify)
+        {
+            Terrain = Array.Empty<MapFeature>();
+            Neighbors = Array.Empty<DirectionFlags>();
+            KnownNeighbors = Array.Empty<DirectionFlags>();
+            VisibleTerrain = Array.Empty<byte>();
+            KnownTerrain = Array.Empty<MapFeature>();
+            Width = 0;
+            Height = 0;
+            FeatureTags = 0;
+        }
+        else
+        {
+            _terrain = Array.Empty<MapFeature>();
+            _neighbors = Array.Empty<DirectionFlags>();
+            _knownNeighbors = Array.Empty<DirectionFlags>();
+            _visibleTerrain = Array.Empty<byte>();
+            _knownTerrain = Array.Empty<MapFeature>();
+            _width = 0;
+            _height = 0;
+            _featureTags = 0;
+        }
+
         BoundPlaceableFeatures = 0;
-        Features = 0;
         TerrainChanges = null;
         KnownTerrainChanges = null;
         NeighborChanges = null;
@@ -363,6 +382,7 @@ public class RoomComponent : GameComponent, IKeepAliveComponent
         ((SortedDictionary<Point, GameEntity>?)Actors)?.Clear();
         ((SortedDictionary<Point, GameEntity>?)Items)?.Clear();
         ((SortedDictionary<Point, GameEntity>?)Connections)?.Clear();
+        ((SortedDictionary<Point, GameEntity>)Features).Clear();
         ((SortedDictionary<Point, GameEntity>?)KnownActors)?.Clear();
         ((SortedDictionary<Point, GameEntity>?)KnownItems)?.Clear();
         ((SortedDictionary<Point, GameEntity>?)KnownConnections)?.Clear();
@@ -375,7 +395,7 @@ public class RoomComponent : GameComponent, IKeepAliveComponent
         // called between generation attempts where the cross-level link must survive;
         // Clean runs at full component disposal so it additionally clears that and the
         // identity / position fields that uniquely tie the component to a level.
-        Reset();
+        Reset(notify: false);
 
         ((HashSet<GameEntity>?)IncomingConnections)?.Clear();
 

@@ -1,14 +1,19 @@
+using UnicornHack.Systems.Abilities;
 using BenchmarkDotNet.Attributes;
 using UnicornHack.Data.Abilities;
+using UnicornHack.Data.Creatures;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
+using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.PerformanceTests.Systems;
 
 [MemoryDiagnoser]
 public class EffectSystemPerfTest
 {
+    private DiedMessage _deathMessage = null!;
+
     private const int ApplyStatusOperations = 1536;
     private const int StatusApplicationsPerTarget = 3;
     private const int StatusTargetCount = 16;
@@ -17,11 +22,15 @@ public class EffectSystemPerfTest
     private const int ProcessTurnOperations = 512;
     private const int QueryLevelOperations = 16384;
     private const int ResolvePropertyOperations = 4096;
+    private const int ExpressionRefreshOperations = 256;
 
     private ActivePropertyEffect _bleedEffect = null!;
     private GameEntity _player = null!;
     private GameManager _manager = null!;
     private GameEntity[] _statusTargets = null!;
+    private EntityChange<GameEntity> _healthChange;
+    private EntityChange<GameEntity> _unrelatedChange;
+    private IEntityChangeListener<GameEntity> _abilityLevelListener = null!;
 
     [Params(16)]
     public int EffectCount { get; set; }
@@ -50,7 +59,7 @@ public class EffectSystemPerfTest
             EffectType.BleedDamage,
             expirationTarget: 100000,
             expirationEvent: EffectDuration.UntilTimeout);
-        _manager.EffectApplicationSystem.AddAbilityEffect(
+        _manager.AbilityLevelSystem.AddAbilityEffect(
             _player, AbilityData.Acrobatics);
         _player.ActiveEffects.AddComponentEffect(
             EffectType.DecreaseAbilityLevel, AbilityData.Acrobatics.Name, level: 1);
@@ -147,10 +156,91 @@ public class EffectSystemPerfTest
         var result = 0;
         for (var i = 0; i < QueryLevelOperations; i++)
         {
-            result += EffectApplicationSystem.GetAbilityLevel(_player, AbilityData.Acrobatics.Name);
+            result += AbilityLevelSystem.GetAbilityLevel(_player, AbilityData.Acrobatics.Name);
         }
 
         return result;
+    }
+
+    [GlobalSetup(Targets = [nameof(Refresh_ability_health), nameof(Refresh_ability_level_stats), nameof(Refresh_ability_unrelated_property)])]
+    public void Setup_ability_expressions()
+    {
+        var game = TestHelper.CreateGame();
+        var abilities = Enumerable.Range(0, 100)
+            .Select(index => new Ability { Name = $"benchmark static ability {index}", Type = AbilityType.Buff, Effects = [] })
+            .ToArray();
+        var dependent = new LeveledAbility
+        {
+            Name = "benchmark dynamic ability",
+            Type = AbilityType.Buff,
+            LevelExpression = "AbilityLevel('benchmark static ability 0')>0?1+($hitPoints<=$hitPointMaximum/2?1:0)+($levelDeaths>0?1:0):0",
+            LeveledEffects = new Dictionary<int, IReadOnlyList<Effect>> { [1] = [], [2] = [], [3] = [] }
+        };
+        ((TestDataProvider)game.Services.Data).AddAbilities([.. abilities, dependent]);
+        var room = TestHelper.BuildRoom(".", game);
+        _player = CreatureData.Boggart.Instantiate(room, new Point(0, 0));
+        _manager = game.Manager;
+        _manager.Queue.ProcessQueue(_manager);
+        foreach (var ability in abilities)
+        {
+            if (_player.ActiveEffects!.Abilities.Count >= 101)
+            {
+                break;
+            }
+
+            _manager.AbilityLevelSystem.AddAbilityEffect(_player, ability);
+            _manager.Queue.ProcessQueue(_manager);
+        }
+
+        if (_player.ActiveEffects!.Abilities.Count != 101
+            || AbilityLevelSystem.GetAbilityLevel(_player, dependent.Name) != 1)
+        {
+            throw new InvalidOperationException("Expected 100 static abilities and one dynamic ability.");
+        }
+
+        _abilityLevelListener = _manager.AbilityLevelSystem;
+        _deathMessage = new DiedMessage { BeingEntity = _player };
+        _healthChange = new EntityChange<GameEntity>(_player, IPropertyValueChanges.Create(
+            new PropertyValueChange<int>(_player.Being!, nameof(BeingComponent.HitPoints),
+                _player.Being!.HitPoints, _player.Being.HitPoints)));
+        _unrelatedChange = new EntityChange<GameEntity>(_player, IPropertyValueChanges.Create(
+            new PropertyValueChange<int>(_player.Being, nameof(BeingComponent.EnergyPoints),
+                _player.Being.EnergyPoints, _player.Being.EnergyPoints)));
+    }
+
+    [GlobalCleanup(Targets = [nameof(Refresh_ability_health), nameof(Refresh_ability_level_stats), nameof(Refresh_ability_unrelated_property)])]
+    public void Cleanup_ability_expressions()
+    {
+        _healthChange.PropertyChanges.Return();
+        _unrelatedChange.PropertyChanges.Return();
+        _deathMessage.Clean();
+    }
+
+    [Benchmark(OperationsPerInvoke = ExpressionRefreshOperations)]
+    public void Refresh_ability_health()
+    {
+        for (var iteration = 0; iteration < ExpressionRefreshOperations; iteration++)
+        {
+            _abilityLevelListener.OnPropertyValuesChanged(_healthChange);
+        }
+    }
+
+    [Benchmark(OperationsPerInvoke = ExpressionRefreshOperations)]
+    public void Refresh_ability_level_stats()
+    {
+        for (var iteration = 0; iteration < ExpressionRefreshOperations; iteration++)
+        {
+            _manager.AbilityLevelSystem.Process(_deathMessage, _manager);
+        }
+    }
+
+    [Benchmark(OperationsPerInvoke = ExpressionRefreshOperations)]
+    public void Refresh_ability_unrelated_property()
+    {
+        for (var iteration = 0; iteration < ExpressionRefreshOperations; iteration++)
+        {
+            _abilityLevelListener.OnPropertyValuesChanged(_unrelatedChange);
+        }
     }
 
     [IterationSetup(Target = nameof(Extend_movement_reactive_effects))]

@@ -14,6 +14,7 @@ public class AbilityComponent : GameComponent
     private int _minHeadingDeviation;
     private int _maxHeadingDeviation;
     private int _range;
+    private int _windup;
     private int _targetingShapeSize = 1;
     private TargetingShape _targetingShape;
     private AbilityAction _action;
@@ -54,7 +55,7 @@ public class AbilityComponent : GameComponent
             }
 
             _template = Ability.FindTemplate(
-                Entity.Manager, _name, item: OwnerEntity?.Item != null);
+                Entity.Manager, _name, item: OwnerEntity?.Item != null, owner: OwnerEntity);
             _templateLoaded = true;
             return _template;
         }
@@ -251,6 +252,12 @@ public class AbilityComponent : GameComponent
         }
     }
 
+    public int Windup
+    {
+        get => _windup;
+        set => SetWithNotify(value, ref _windup);
+    }
+
     public bool IsActive
     {
         get => _isActive;
@@ -288,6 +295,7 @@ public class AbilityComponent : GameComponent
         ability.MinHeadingDeviation = MinHeadingDeviation;
         ability.MaxHeadingDeviation = MaxHeadingDeviation;
         ability.Range = Range;
+        ability.Windup = Windup;
         ability.TargetingShapeSize = TargetingShapeSize;
         ability.TargetingShape = TargetingShape;
         ability.Action = Action;
@@ -326,6 +334,7 @@ public class AbilityComponent : GameComponent
         _minHeadingDeviation = default;
         _maxHeadingDeviation = default;
         _range = default;
+        _windup = default;
         _targetingShapeSize = default;
         _targetingShape = default;
         _action = default;

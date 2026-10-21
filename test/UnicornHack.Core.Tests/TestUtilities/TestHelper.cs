@@ -72,6 +72,50 @@ public static class TestHelper
         return game;
     }
 
+    public static string SnapshotLevelLayout(GameLevel level)
+        => System.Text.Json.JsonSerializer.Serialize(new
+        {
+            level.BranchName,
+            level.Depth,
+            level.Difficulty,
+            GenerationSeed = level.GenerationRandom.Seed,
+            WorldSeed = level.Game.Random.Seed,
+            GlobalFragments = level.Game.GenerationStats.FragmentInstancesByName.OrderBy(entry => entry.Key, StringComparer.Ordinal),
+            GlobalTags = level.Game.GenerationStats.FragmentInstancesByTag.OrderBy(entry => entry.Key, StringComparer.Ordinal),
+            GlobalFeatures = level.Game.GenerationStats.FragmentInstancesByFeature.OrderBy(entry => entry.Key),
+            GlobalCreatures = level.Game.GenerationStats.CreatureInstancesByName.OrderBy(entry => entry.Key, StringComparer.Ordinal),
+            GlobalCreatureFlags = level.Game.GenerationStats.CreatureInstancesByFlag.OrderBy(entry => entry.Key),
+            GlobalItems = level.Game.GenerationStats.ItemInstancesByName.OrderBy(entry => entry.Key, StringComparer.Ordinal),
+            GlobalItemTypes = level.Game.GenerationStats.ItemInstancesByType.OrderBy(entry => entry.Key),
+            GlobalRooms = level.Game.GenerationStats.RoomCountsByFeature.OrderBy(entry => entry.Key),
+            LevelFragments = level.GenerationStats.FragmentInstancesByName.OrderBy(entry => entry.Key, StringComparer.Ordinal),
+            LevelTags = level.GenerationStats.FragmentInstancesByTag.OrderBy(entry => entry.Key, StringComparer.Ordinal),
+            LevelFeatures = level.GenerationStats.FragmentInstancesByFeature.OrderBy(entry => entry.Key),
+            LevelCreatures = level.GenerationStats.CreatureInstancesByName.OrderBy(entry => entry.Key, StringComparer.Ordinal),
+            LevelItems = level.GenerationStats.ItemInstancesByName.OrderBy(entry => entry.Key, StringComparer.Ordinal),
+            Rooms = level.Rooms.OrderBy(room => room.GridX).ThenBy(room => room.GridY).Select(room => new
+            {
+                room.GridX,
+                room.GridY,
+                room.FeatureTags,
+                room.Width,
+                room.Height,
+                Terrain = room.Terrain.AsSpan(0, room.TileCount).ToArray(),
+                Connections = room.Connections.OrderBy(entry => entry.Key.X).ThenBy(entry => entry.Key.Y).Select(entry => new
+                {
+                    Cell = entry.Key,
+                    entry.Value.Connection!.Orientation,
+                    entry.Value.Connection.Directionality,
+                    entry.Value.Connection.Hidden,
+                    entry.Value.Connection.TargetCell,
+                    TargetBranch = entry.Value.Connection.TargetRoomEntity.Room!.BranchName,
+                    TargetDepth = entry.Value.Connection.TargetRoomEntity.Room!.Depth,
+                    TargetGridX = entry.Value.Connection.TargetRoomEntity.Room!.GridX,
+                    TargetGridY = entry.Value.Connection.TargetRoomEntity.Room!.GridY
+                })
+            })
+        });
+
     public static GameManager CreateGameManager(Game? game = null)
     {
         var manager = new GameManager { Game = game ?? CreateGame() };
@@ -85,7 +129,7 @@ public static class TestHelper
     public static (GameEntity Target, GameManager Manager) CreateEffectTarget()
     {
         var room = BuildRoom(".");
-        var target = CreatureData.HumanWarrior.Instantiate(room, new Point(0, 0));
+        var target = CreatureData.Manusya.Instantiate(room, new Point(0, 0));
         var manager = target.Manager;
         manager.Queue.ProcessQueue(manager);
         return (target, manager);
@@ -134,9 +178,6 @@ public static class TestHelper
             record => record.EffectType == EffectType.DecreaseAbilityLevel
                       && record.SourceAbilityEntityId == ability.EntityId);
     }
-
-    public static bool IsLevelExpressionGrant(ActiveComponentEffect record)
-        => SkillAbilitiesSystem.IsLevelExpressionGrant(record);
 
     /// <summary>
     ///     Builds a <see cref="RoomParameters" /> sized to

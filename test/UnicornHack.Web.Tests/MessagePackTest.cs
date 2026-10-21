@@ -4,6 +4,7 @@ using System.Reflection;
 using UnicornHack.Generation;
 using UnicornHack.Hubs.ChangeTracking;
 using UnicornHack.Systems.Actors;
+using UnicornHack.Systems.Levels;
 using Xunit;
 
 namespace UnicornHack;
@@ -90,7 +91,7 @@ public class MessagePackTest
             Name = "Dudley",
             PendingOptions = new PlayerOptionsData
             {
-                Choice = PlayerChoiceSystem.RaceChoice,
+                Choice = RewardType.RacePedestal,
                 Action = PlayerChoiceSystem.AddAction,
                 Title = "Choose a race",
                 Notice = "Permanent",
@@ -129,7 +130,7 @@ public class MessagePackTest
             bytes, Options, cancellationToken);
         Assert.Equal((int)EffectDuration.UntilXPGained, result.Abilities![1].ExpirationEvent);
         Assert.Equal(7, result.Abilities[1].Noise);
-        Assert.Equal(PlayerChoiceSystem.RaceChoice, result.PendingOptions!.Choice);
+        Assert.Equal(RewardType.RacePedestal, result.PendingOptions!.Choice);
         Assert.Equal(PlayerChoiceSystem.AddAction, result.PendingOptions.Action);
         Assert.Equal("Choose a race", result.PendingOptions.Title);
         Assert.Equal("Permanent", result.PendingOptions.Notice);

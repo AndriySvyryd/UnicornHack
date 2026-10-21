@@ -6,45 +6,26 @@ public static partial class CreatureData
     {
         Name = "aitvaras",
         SpeciesClass = SpeciesClass.Bird,
-        Abilities = new List<Ability>
-        {
-            new Ability
-            {
-                Name = "aitvaras ability #1",
-                Type = AbilityType.RangedAttack,
-                Activation = ActivationType.Targeted,
-                Trigger = ActivationType.OnRangedAttack,
-                Range = 20,
-                Action = AbilityAction.Gaze,
-                SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                Accuracy = "5+PerceptionModifier()",
-                Cooldown = 100,
-                Delay = "100*SpeedModifier()",
-                Effects = new List<Effect>
-                {
-                    new FireDamage { Amount = "70*FocusModifier()" },
-                    new FireDamage { Duration = EffectDuration.UntilTimeout, Amount = "70*FocusModifier()" }
-                }
-            }
-        },
-        InitialLevel = 6,
-        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 1.0",
-        Noise = ActorNoiseType.Hiss,
-        Size = 2,
-        Weight = 30,
         MovementDelay = 100,
         TurningDelay = 100,
+        Size = 2,
+        Weight = 30,
         PerceptionBonus = -6,
         MightBonus = -6,
         SpeedBonus = -6,
         FocusBonus = -6,
         Armor = 2,
         MagicResistance = 15,
-        FireResistance = 75,
         TorsoType = TorsoType.Quadruped,
         UpperExtremities = ExtremityType.None,
         LowerExtremities = ExtremityType.Claws,
         SlotCapacity = 1,
-        Infravisible = true
+        Infravisible = true,
+        EnglishDescription = "A squat, birdlike creature with a stiff crest, glossy dark feathers and short, clawed legs. Its long tail trails behind it in a narrow, rust-red plume.",
+        InitialLevel = 6,
+        GenerationWeight = "0",
+        GenerationFlags = CreatureGenerationFlags.NonPolymorphable,
+        Behavior = AIBehavior.NonRecruitable | AIBehavior.Wandering,
+        Noise = ActorNoiseType.Hiss
     };
 }

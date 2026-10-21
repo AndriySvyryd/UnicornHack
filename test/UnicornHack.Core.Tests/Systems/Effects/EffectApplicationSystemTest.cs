@@ -16,6 +16,650 @@ namespace UnicornHack.Systems.Effects;
 
 public class EffectApplicationSystemTest
 {
+    [Theory]
+    [InlineData(false, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(true, false, false)]
+    [InlineData(true, true, false)]
+    [InlineData(false, false, true)]
+    [InlineData(false, true, true)]
+    [InlineData(true, false, true)]
+    [InlineData(true, true, true)]
+    public void Non_decreasing_levels_survive_named_and_type_wide_decreases(bool typeWide, bool instant, bool nonDecreasing)
+    {
+        var template = new LeveledAbility
+        {
+            Name = "test non-decreasing ordinary ability",
+            Type = AbilityType.Buff,
+            NonDecreasingLevel = nonDecreasing,
+            LeveledEffects = new Dictionary<int, IReadOnlyList<Effect>>
+            {
+                [1] = [], [2] = [],
+                [3] = [new ChangeProperty<int> { TargetActivator = true, PropertyName = "Armor", Amount = "3" }]
+            }
+        };
+        var game = TestHelper.CreateGame();
+        ((TestDataProvider)game.Services.Data).AddAbilities(template);
+        var target = CreatureData.Boggart.Instantiate(TestHelper.BuildRoom(".", game), new Point(0, 0));
+        var manager = game.Manager;
+        manager.Queue.ProcessQueue(manager);
+        var initialArmor = target.Being!.Armor;
+        manager.AbilityLevelSystem.AddAbilityEffect(target, template, level: 3);
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(initialArmor + 3, target.Being.Armor);
+
+        AddLevelSuppressor(target, "test non-decreasing suppressor", AbilityType.Skill,
+            abilityName: typeWide ? null : template.Name, abilityType: typeWide ? AbilityType.Buff : null,
+            amount: 2, manager, instant ? EffectDuration.Instant : EffectDuration.Infinite);
+
+        Assert.Equal(nonDecreasing ? 3 : instant ? 0 : 1, AbilityLevelSystem.GetAbilityLevel(target, template.Name));
+        Assert.Equal(nonDecreasing || instant ? 0 : 2, AbilityLevelSystem.GetAbilityLevelReduction(target, template.Name));
+        Assert.Equal(initialArmor + (nonDecreasing ? 3 : 0), target.Being.Armor);
+        if (nonDecreasing)
+        {
+            Assert.Equal(3, Assert.Single(target.ActiveEffects!.ComponentEffects.GetValues(template.Name),
+                record => record.EffectType == EffectType.AddAbility).Level);
+            Assert.True(manager.AffectableAbilitiesIndex[(target.Id, template.Name)]!.Ability!.IsUsable);
+        }
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void Decrease_effects_cannot_change_expression_controlled_ability_levels(bool typeWide, bool instant)
+    {
+        var template = new LeveledAbility
+        {
+            Name = "test expression-controlled ability",
+            Type = AbilityType.Buff,
+            LevelExpression = "1",
+            LeveledEffects = new Dictionary<int, IReadOnlyList<Effect>> { [1] = [], [2] = [] }
+        };
+        var game = TestHelper.CreateGame();
+        ((TestDataProvider)game.Services.Data).AddAbilities(template);
+        var target = CreatureData.Boggart.Instantiate(TestHelper.BuildRoom(".", game), new Point(0, 0));
+        var manager = game.Manager;
+        var ordinary = new Ability { Name = "test ordinary ability before expression", Type = AbilityType.Buff, Effects = [] };
+        var ordinaryRecord = manager.AbilityLevelSystem.AddAbilityEffect(target, ordinary);
+        manager.Queue.ProcessQueue(manager);
+        var expressionRecord = Assert.Single(target.ActiveEffects!.ComponentEffects.GetValues(template.Name));
+        Assert.True(ordinaryRecord.InstanceId < expressionRecord.InstanceId);
+
+        var exception = Assert.Throws<InvalidOperationException>(() => AddLevelSuppressor(
+            target, "test invalid expression suppressor", AbilityType.Skill,
+            abilityName: typeWide ? null : template.Name, abilityType: typeWide ? AbilityType.Buff : null,
+            amount: 1, manager, instant ? EffectDuration.Instant : EffectDuration.Infinite));
+
+        Assert.Contains("level expression", exception.Message);
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(target, template.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(target, ordinary.Name));
+        Assert.Equal(1, ordinaryRecord.Level);
+        Assert.DoesNotContain(target.ActiveEffects!.ComponentEffects,
+            record => record.EffectType == EffectType.DecreaseAbilityLevel);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Add_effects_cannot_change_expression_controlled_ability_levels(bool instant)
+    {
+        var template = new LeveledAbility
+        {
+            Name = "test expression-controlled ability",
+            Type = AbilityType.Buff,
+            LevelExpression = "1",
+            LeveledEffects = new Dictionary<int, IReadOnlyList<Effect>> { [1] = [], [2] = [] }
+        };
+        var game = TestHelper.CreateGame();
+        ((TestDataProvider)game.Services.Data).AddAbilities(template);
+        var target = CreatureData.Boggart.Instantiate(TestHelper.BuildRoom(".", game), new Point(0, 0));
+        var manager = game.Manager;
+        manager.Queue.ProcessQueue(manager);
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+        {
+            new Ability
+            {
+                Name = "test invalid expression grant",
+                Type = AbilityType.Buff,
+                Effects = [new AddAbility
+                {
+                    TargetActivator = true, Name = template.Name,
+                    Duration = instant ? EffectDuration.Instant : EffectDuration.Infinite
+                }]
+            }.AddToAffectable(target);
+            manager.Queue.ProcessQueue(manager);
+        });
+
+        Assert.Contains("level expression", exception.Message);
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(target, template.Name));
+        Assert.Single(target.ActiveEffects!.ComponentEffects.GetValues(template.Name));
+        var carrierId = manager.AffectableAbilitiesIndex[(target.Id, template.Name)]!.Id;
+        Assert.Throws<InvalidOperationException>(() => manager.AbilityLevelSystem.AddAbilityEffect(
+            target, template, sourceAbilityEntityId: carrierId));
+        Assert.Single(target.ActiveEffects.ComponentEffects.GetValues(template.Name));
+    }
+
+    [Fact]
+    public void Dynamic_ability_levels_track_energy_and_keep_dependencies_at_level_zero()
+    {
+        var dependent = new LeveledAbility
+        {
+            Name = "test energy-dependent ability",
+            Type = AbilityType.Buff,
+            LevelExpression = "$energyPoints>0?1:0",
+            LeveledEffects = new Dictionary<int, IReadOnlyList<Effect>> { [1] = [] }
+        };
+        var game = TestHelper.CreateGame();
+        ((TestDataProvider)game.Services.Data).AddAbilities(dependent);
+        var actor = CreatureData.Boggart.Instantiate(TestHelper.BuildRoom(".", game), new Point(0, 0));
+        var manager = game.Manager;
+        manager.Queue.ProcessQueue(manager);
+        actor.Being!.EnergyPoints = 0;
+        Assert.Equal(0, AbilityLevelSystem.GetAbilityLevel(actor, dependent.Name));
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(0, AbilityLevelSystem.GetAbilityLevel(actor, dependent.Name));
+        Assert.Same(dependent, Assert.Single(actor.ActiveEffects!.GetDynamicAbilityDependents(nameof(BeingComponent.EnergyPoints))));
+
+        actor.Being.EnergyPoints = 1;
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(actor, dependent.Name));
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(actor, dependent.Name));
+
+        actor.Being.EnergyPoints = 0;
+        Assert.Equal(0, AbilityLevelSystem.GetAbilityLevel(actor, dependent.Name));
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(0, AbilityLevelSystem.GetAbilityLevel(actor, dependent.Name));
+        Assert.Same(dependent, Assert.Single(actor.ActiveEffects.GetDynamicAbilityDependents(nameof(BeingComponent.EnergyPoints))));
+    }
+
+    [Fact]
+    public void Dynamic_ability_levels_track_boolean_owner_properties()
+    {
+        var dependent = new LeveledAbility
+        {
+            Name = "test vision-dependent ability",
+            Type = AbilityType.Buff,
+            LevelExpression = "$infravision?1:0",
+            LeveledEffects = new Dictionary<int, IReadOnlyList<Effect>> { [1] = [] }
+        };
+        var game = TestHelper.CreateGame();
+        ((TestDataProvider)game.Services.Data).AddAbilities(dependent);
+        var actor = CreatureData.Boggart.Instantiate(TestHelper.BuildRoom(".", game), new Point(0, 0));
+        var manager = game.Manager;
+        manager.Queue.ProcessQueue(manager);
+        var initialVision = actor.Being!.Infravision;
+        Assert.Equal(initialVision ? 1 : 0, AbilityLevelSystem.GetAbilityLevel(actor, dependent.Name));
+
+        manager.EffectApplicationSystem.AddTimedPropertyOverride(
+            initialVision ? 0 : 1, nameof(BeingComponent.Infravision), actor, 100, manager);
+        Assert.Equal(!initialVision, actor.Being.Infravision);
+        Assert.Equal(initialVision ? 0 : 1, AbilityLevelSystem.GetAbilityLevel(actor, dependent.Name));
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(initialVision ? 0 : 1, AbilityLevelSystem.GetAbilityLevel(actor, dependent.Name));
+    }
+
+    [Fact]
+    public void Dynamic_ability_registrations_replace_and_remove_dependency_edges_without_tracking_static_abilities()
+    {
+        var effects = new ActiveEffectsComponent();
+        var original = new Ability { Name = "test registered ability", LevelExpression = "$hitPoints" };
+        var replacement = new Ability { Name = original.Name, LevelExpression = "$speed" };
+        AbilityLoader.Prepare(new Dictionary<string, Ability> { [original.Name] = original });
+        AbilityLoader.Prepare(new Dictionary<string, Ability> { [replacement.Name] = replacement });
+        effects.RegisterDynamicAbility(new Ability { Name = "test static ability" });
+        Assert.Empty(effects.GetDynamicAbilityDependents(nameof(BeingComponent.HitPoints)));
+
+        effects.RegisterDynamicAbility(original);
+        effects.RegisterDynamicAbility(original);
+        Assert.Same(original, Assert.Single(effects.GetDynamicAbilityDependents(nameof(BeingComponent.HitPoints))));
+
+        effects.RegisterDynamicAbility(replacement);
+        effects.UnregisterDynamicAbility(original);
+        Assert.Empty(effects.GetDynamicAbilityDependents(nameof(BeingComponent.HitPoints)));
+        Assert.Same(replacement, Assert.Single(effects.GetDynamicAbilityDependents(nameof(BeingComponent.Speed))));
+
+        effects.UnregisterDynamicAbility(replacement);
+        Assert.Empty(effects.GetDynamicAbilityDependents(nameof(BeingComponent.Speed)));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Level_expression_property_dependencies_apply_synchronously_and_preserve_damage_crossings(bool healBeforeQueue)
+    {
+        var source = new Ability { Name = "test queued phase presence", Type = AbilityType.Buff, Effects = [] };
+        var dependent = new LeveledAbility
+        {
+            Name = "test queued phase expression",
+            Type = AbilityType.Buff,
+            LevelExpression = "AbilityLevel('test queued phase presence')>0?"
+                + "1+($hitPoints*100<=$hitPointMaximum*75?1:0)"
+                + "+($hitPoints*100<=$hitPointMaximum*50?1:0)+($hitPoints*100<=$hitPointMaximum*25?1:0):0",
+            NonDecreasingLevel = true,
+            Cumulative = false,
+            LeveledEffects = Enumerable.Range(1, 4).ToDictionary(stage => stage, _ => (IReadOnlyList<Effect>)[])
+        };
+        var game = TestHelper.CreateGame();
+        ((TestDataProvider)game.Services.Data).AddAbilities(source, dependent);
+        var room = TestHelper.BuildRoom(".", game);
+        var actor = CreatureData.Boggart.Instantiate(room, new Point(0, 0));
+        var manager = game.Manager;
+        manager.AbilityLevelSystem.AddAbilityEffect(actor, source);
+        manager.Queue.ProcessQueue(manager);
+        var maximum = actor.Being!.HitPointMaximum;
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(actor, dependent.Name));
+        actor.Being.HitPoints = maximum / 4;
+        Assert.Equal(4, AbilityLevelSystem.GetAbilityLevel(actor, dependent.Name));
+        if (healBeforeQueue)
+        {
+            actor.Being.HitPoints = maximum;
+            Assert.Equal(4, AbilityLevelSystem.GetAbilityLevel(actor, dependent.Name));
+        }
+
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(4, AbilityLevelSystem.GetAbilityLevel(actor, dependent.Name));
+        actor.Being.HitPoints = maximum;
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(4, AbilityLevelSystem.GetAbilityLevel(actor, dependent.Name));
+    }
+
+    [Fact]
+    public void Non_decreasing_expression_levels_retain_reached_phases_after_healing()
+    {
+        var source = new Ability { Name = "test health expression presence", Type = AbilityType.Buff, Effects = [] };
+        var dependent = new LeveledAbility
+        {
+            Name = "test health expression phases",
+            Type = AbilityType.Buff,
+            LevelExpression = "AbilityLevel('test health expression presence')>0?($hitPoints*100<=$hitPointMaximum*50?2:1):0",
+            NonDecreasingLevel = true,
+            Cumulative = false,
+            LeveledEffects = new Dictionary<int, IReadOnlyList<Effect>> { [1] = [], [2] = [] }
+        };
+        var game = TestHelper.CreateGame();
+        ((TestDataProvider)game.Services.Data).AddAbilities(source, dependent);
+        var room = TestHelper.BuildRoom(".", game);
+        var actor = CreatureData.Boggart.Instantiate(room, new Point(0, 0));
+        var manager = game.Manager;
+        manager.AbilityLevelSystem.AddAbilityEffect(actor, source);
+        manager.Queue.ProcessQueue(manager);
+        Assert.Contains(nameof(BeingComponent.HitPoints), dependent.LevelExpressionInputs);
+        Assert.Contains(nameof(BeingComponent.HitPointMaximum), dependent.LevelExpressionInputs);
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(actor, dependent.Name));
+
+        actor.Being!.HitPoints = actor.Being.HitPointMaximum / 2;
+        AbilityLevelSystem.SynchronizeExpressionAbilityLevel(actor, dependent, manager);
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(actor, dependent.Name));
+        actor.Being.HitPoints = actor.Being.HitPointMaximum;
+        AbilityLevelSystem.SynchronizeExpressionAbilityLevel(actor, dependent, manager);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(actor, dependent.Name));
+    }
+
+    [Fact]
+    public void Level_expressions_derive_existing_ability_levels_from_level_death_stats()
+    {
+        var source = new Ability { Name = "test level stats presence", Type = AbilityType.Buff, Effects = [] };
+        var dependent = new LeveledAbility
+        {
+            Name = "test level stats progression",
+            Type = AbilityType.Buff,
+            Cumulative = false,
+            LevelExpression = "AbilityLevel('test level stats presence')>0?($levelDeaths>=4?2:1):0",
+            LeveledEffects = new Dictionary<int, IReadOnlyList<Effect>>
+            {
+                [1] = [],
+                [2] = [new ChangeProperty<int> { TargetActivator = true, PropertyName = nameof(BeingComponent.Armor), Amount = "2" }]
+            }
+        };
+        var game = TestHelper.CreateGame();
+        ((TestDataProvider)game.Services.Data).AddAbilities(source, dependent);
+        var room = TestHelper.BuildRoom(".", game);
+        var actor = CreatureData.Boggart.Instantiate(room, new Point(0, 0));
+        var manager = game.Manager;
+        var remote = LevelLayout.CreateEmptyRoom(room.Level, manager);
+        LevelLayout.AllocateTerrain(remote, 1, 1, MapFeature.StoneFloor);
+        manager.AbilityLevelSystem.AddAbilityEffect(actor, source);
+        manager.Queue.ProcessQueue(manager);
+        var initialArmor = actor.Being!.Armor;
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(actor, dependent.Name));
+
+        for (var deaths = 1; deaths <= 5; deaths++)
+        {
+            var victim = CreatureData.Boggart.Instantiate(remote, new Point(0, 0));
+            manager.Queue.ProcessQueue(manager);
+            victim.Being!.HitPoints = 0;
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.Equal(deaths < 4 ? 1 : 2, AbilityLevelSystem.GetAbilityLevel(actor, dependent.Name));
+            Assert.Equal(initialArmor + (deaths >= 4 ? 2 : 0), actor.Being.Armor);
+        }
+    }
+
+    [Theory]
+    [InlineData("$levelDeaths")]
+    [InlineData("2*Min(3,$levelDeaths>>1)")]
+    public void Level_deaths_are_not_available_in_effect_amount_or_duration_expressions(string expression)
+    {
+        Assert.Throws<InvalidOperationException>(() =>
+            EffectApplicationSystem.CreateAmountFunction(expression, "test level deaths", "test effect amount"));
+        Assert.Throws<InvalidOperationException>(() =>
+            EffectApplicationSystem.CreateStatusAbilityDurationFunction(expression, "test level deaths", "test effect duration"));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(2)]
+    [InlineData(4)]
+    [InlineData(6)]
+    [InlineData(8)]
+    public void Level_death_expression_reads_persisted_level_totals_without_an_active_observer(int deaths)
+    {
+        var room = TestHelper.BuildRoom(".");
+        var manager = room.Entity.Manager;
+        var remote = LevelLayout.CreateEmptyRoom(room.Level, manager);
+        LevelLayout.AllocateTerrain(remote, 1, 1, MapFeature.StoneFloor);
+        for (var index = 0; index < deaths; index++)
+        {
+            var victim = CreatureData.Boggart.Instantiate(remote, new Point(0, 0));
+            manager.Queue.ProcessQueue(manager);
+            victim.Being!.HitPoints = 0;
+            manager.Queue.ProcessQueue(manager);
+        }
+
+        Assert.Equal(deaths, room.Level.Stats.DeathCount);
+        Assert.Equal(deaths, manager.Game.Stats.DeathCount);
+        var observer = CreatureData.Boggart.Instantiate(room, new Point(0, 0));
+        manager.Queue.ProcessQueue(manager);
+        var expression = EffectApplicationSystem.CreateLevelExpression(
+            "2*Min(3,$levelDeaths>>1)", "test level deaths").Function;
+        Assert.Equal(2 * Math.Min(3, deaths / 2), expression(observer));
+
+        var otherLevel = LevelGenerator.CreateEmpty(room.Level.Branch, 2, 43, manager);
+        var otherRoom = LevelLayout.CreateEmptyRoom(otherLevel, manager);
+        LevelLayout.AllocateTerrain(otherRoom, 1, 1, MapFeature.StoneFloor);
+        var otherVictim = CreatureData.Boggart.Instantiate(otherRoom, new Point(0, 0));
+        manager.Queue.ProcessQueue(manager);
+        otherVictim.Being!.HitPoints = 0;
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(deaths, room.Level.Stats.DeathCount);
+        Assert.Equal(1, otherLevel.Stats.DeathCount);
+        Assert.Equal(deaths + 1, manager.Game.Stats.DeathCount);
+        Assert.Equal(2 * Math.Min(3, deaths / 2), expression(observer));
+        var laterVictim = CreatureData.Boggart.Instantiate(remote, new Point(0, 0));
+        manager.Queue.ProcessQueue(manager);
+        laterVictim.Being!.HitPoints = 0;
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(deaths + 1, room.Level.Stats.DeathCount);
+        Assert.Equal(deaths + 2, manager.Game.Stats.DeathCount);
+        Assert.Equal(2 * Math.Min(3, (deaths + 1) / 2), expression(observer));
+    }
+
+    [Theory]
+    [InlineData(false, false, false)]
+    [InlineData(true, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(false, false, true)]
+    public void Teleport_preserves_heading_and_action_time_and_requires_a_legal_landing(bool occupied, bool blocked, bool pretend)
+    {
+        var room = TestHelper.BuildRoom("....#");
+        var actor = CreatureData.Boggart.Instantiate(room, new Point(0, 0));
+        var manager = actor.Manager;
+        var ability = new Ability
+        {
+            Name = "test teleport",
+            Activation = ActivationType.Targeted,
+            Effects = [new Teleport()]
+        }.AddToAffectable(actor);
+        var destination = new Point(blocked ? (byte)4 : (byte)2, 0);
+        if (occupied)
+        {
+            CreatureData.Boggart.Instantiate(room, destination);
+        }
+
+        manager.AbilityLevelSystem.AddAbilityEffect(actor, AbilityData.Bound, 2);
+        manager.Queue.ProcessQueue(manager);
+        var initialHeading = actor.Position!.Heading;
+        var initialTick = actor.AI!.NextActionTick;
+        var effect = Assert.Single(ability.Effects);
+        var context = new EffectApplicationContext(
+            manager.EffectApplicationSystem, effect, actor, destination, actor, result: null, pretend);
+
+        Effect.GetMetadata(EffectType.Teleport).ApplicationHandler(context);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(occupied || blocked || pretend ? new Point(0, 0) : destination, actor.Position.Cell);
+        Assert.Equal(initialHeading, actor.Position.Heading);
+        Assert.Equal(initialTick, actor.AI.NextActionTick);
+    }
+
+    [Fact]
+    public void Push_accumulates_until_unstable_reaches_its_threshold()
+    {
+        var room = TestHelper.BuildRoom(".....");
+        var source = CreatureData.Boggart.Instantiate(room, new Point(0, 0));
+        var target = CreatureData.Boggart.Instantiate(room, new Point(1, 0));
+        var manager = source.Manager;
+        var ability = new Ability
+        {
+            Name = "test push buildup",
+            Activation = ActivationType.Manual,
+            Effects = [new Push { Amount = "60" }]
+        }.AddToAffectable(source);
+        manager.Queue.ProcessQueue(manager);
+        var effect = Assert.Single(ability.Effects);
+        const int contribution = 54;
+
+        TestHelper.ApplyEffect(effect, source, target, manager);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(0, AbilityLevelSystem.GetAbilityLevel(target, AbilityData.Unstable.Name));
+        Assert.Equal(contribution, target.ActiveEffects!.Accumulators.GetValueOrDefault(EffectType.Topple)!.Value);
+
+        TestHelper.ApplyEffect(effect, source, target, manager);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(target, AbilityData.Unstable.Name));
+        Assert.Equal(contribution * 2 - EffectApplicationSystem.BuildUpThreshold,
+            target.ActiveEffects.Accumulators.GetValueOrDefault(EffectType.Topple)!.Value);
+        Assert.Equal(new Point(1, 0), target.Position!.Cell);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Actor_push_does_not_apply_after_a_miss(bool hit)
+    {
+        var room = TestHelper.BuildRoom(".....");
+        var source = CreatureData.Boggart.Instantiate(room, new Point(0, 0));
+        var target = CreatureData.Boggart.Instantiate(room, new Point(1, 0));
+        var manager = source.Manager;
+        var ability = new Ability
+        {
+            Name = "test actor movement outcome",
+            Activation = ActivationType.Targeted,
+            Action = AbilityAction.Hit,
+            Effects = [new Push { Amount = "1200" }]
+        }.AddToAffectable(source);
+        manager.AbilityLevelSystem.AddAbilityEffect(target, AbilityData.Stable);
+        manager.Queue.ProcessQueue(manager);
+        var activated = AbilityActivatedMessage.Create(manager);
+        activated.ActivatorEntity = source;
+        activated.AbilityEntity = ability.Entity;
+        activated.TargetEntity = target;
+        activated.TargetCell = target.Position!.Cell;
+        activated.Trigger = ActivationType.OnMeleeAttack;
+        activated.Outcome = hit ? ApplicationOutcome.Success : ApplicationOutcome.Miss;
+        activated.EffectsToApply = System.Collections.Immutable.ImmutableList.CreateRange(ability.Effects);
+        manager.Enqueue(activated);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(new Point(hit ? (byte)4 : (byte)1, 0), target.Position.Cell);
+        Assert.Equal(hit, target.Being!.HasEffectOrAccumulator(EffectType.Topple));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(target, AbilityData.Stable.Name));
+    }
+
+    [Theory]
+    [InlineData(400)]
+    [InlineData(800)]
+    public void Actor_movement_force_must_overcome_current_weight(int weight)
+    {
+        var room = TestHelper.BuildRoom(".........");
+        var source = CreatureData.Boggart.Instantiate(room, new Point(0, 0));
+        var target = CreatureData.Boggart.Instantiate(room, new Point(1, 0));
+        var manager = source.Manager;
+        new Ability
+        {
+            Name = "test movement resistance weight",
+            Type = AbilityType.Buff,
+            Activation = ActivationType.Always,
+            Effects = [new ChangeProperty<int>
+            {
+                TargetActivator = true, PropertyName = nameof(PhysicalComponent.Weight),
+                Amount = weight.ToString(CultureInfo.InvariantCulture), CombinationFunction = ValueCombinationFunction.Override
+            }]
+        }.AddToAffectable(target);
+        manager.AbilityLevelSystem.AddAbilityEffect(target, AbilityData.Stable);
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(weight, target.Physical!.Weight);
+
+        Assert.Equal(0, manager.TravelSystem.PushActor(target, source, weight - 1, manager));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(target, AbilityData.Stable.Name));
+        Assert.Equal(1, manager.TravelSystem.PushActor(target, source, weight, manager));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(target, AbilityData.Stable.Name));
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(new Point(2, 0), target.Position!.Cell);
+        Assert.Equal(2, manager.TravelSystem.PushActor(target, source, weight * 2, manager));
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(new Point(4, 0), target.Position.Cell);
+    }
+
+    [Theory]
+    [InlineData(1, 1)]
+    [InlineData(1, 3)]
+    [InlineData(2, 3)]
+    public void Stable_is_not_consumed_by_displacement_and_damage_and_action_time_are_unchanged(int guardLevel, int distance)
+    {
+        var room = TestHelper.BuildRoom(".........");
+        var source = CreatureData.Boggart.Instantiate(room, new Point(0, 0));
+        var target = CreatureData.Boggart.Instantiate(room, new Point(1, 0));
+        var manager = source.Manager;
+        manager.AbilityLevelSystem.AddAbilityEffect(target, AbilityData.Stable, guardLevel);
+        manager.Queue.ProcessQueue(manager);
+        var initialTick = target.AI!.NextActionTick;
+        var initialHp = target.Being!.HitPoints;
+
+        Assert.Equal(distance, manager.TravelSystem.PushActor(target, source, target.Physical!.Weight * distance, manager));
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(new Point((byte)(1 + distance), 0), target.Position!.Cell);
+        Assert.Equal(guardLevel, AbilityLevelSystem.GetAbilityLevel(target, AbilityData.Stable.Name));
+        Assert.Equal(1, manager.TravelSystem.PushActor(target, source, target.Physical!.Weight, manager));
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(new Point((byte)(2 + distance), 0), target.Position.Cell);
+        Assert.Equal(initialTick, target.AI.NextActionTick);
+        Assert.Equal(initialHp, target.Being.HitPoints);
+    }
+
+    [Theory]
+    [InlineData("0", 64)]
+    [InlineData("10", 69)]
+    [InlineData("25", 80)]
+    [InlineData("40", 80)]
+    public void Armor_penetration_reduces_armor_but_preserves_physical_resistance(string penetration, int expectedDamage)
+    {
+        var (target, manager) = CreateEffectTarget();
+        manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
+            200, nameof(BeingComponent.HitPointMaximum), "test health", target);
+        manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
+            25 - target.Being!.Armor, nameof(BeingComponent.Armor), "test armor", target);
+        manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
+            20 - target.Being.PhysicalResistance, nameof(BeingComponent.PhysicalResistance), "test physical resistance", target);
+        var ability = new Ability
+        {
+            Name = "test armor-penetrating physical damage",
+            Activation = ActivationType.Manual,
+            Effects = [new PhysicalDamage { Amount = "100", ArmorPenetration = penetration }]
+        }.AddToAffectable(target);
+        manager.Queue.ProcessQueue(manager);
+        var initialHp = target.Being.HitPoints;
+
+        TestHelper.ApplyEffect(Assert.Single(ability.Effects), target, target, manager);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(expectedDamage, initialHp - target.Being.HitPoints);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Displacement_stops_at_walls_without_spending_the_targets_action_time(bool bound)
+    {
+        var room = TestHelper.BuildRoom("....#");
+        var source = CreatureData.Boggart.Instantiate(room, new Point(0, 0));
+        var target = CreatureData.Boggart.Instantiate(room, new Point(1, 0));
+        var manager = source.Manager;
+        manager.Queue.ProcessQueue(manager);
+        var ability = new Ability
+        {
+            Name = "test displacement",
+            Activation = ActivationType.Manual,
+            Effects = [new Push { Amount = (target.Physical!.Weight * 3).ToString(CultureInfo.InvariantCulture) }]
+        }.AddToAffectable(source);
+        if (bound)
+        {
+            manager.AbilityLevelSystem.AddAbilityEffect(target, AbilityData.Bound, 2);
+        }
+
+        manager.Queue.ProcessQueue(manager);
+        var initialTick = target.AI!.NextActionTick;
+        var heading = target.Position!.Heading;
+
+        TestHelper.ApplyEffect(Assert.Single(ability.Effects), source, target, manager);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(new Point(3, 0), target.Position.Cell);
+        Assert.Equal(initialTick, target.AI.NextActionTick);
+        Assert.Equal(heading, target.Position.Heading);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Displacement_never_stacks_actors_or_crosses_a_connection(bool connection)
+    {
+        var room = TestHelper.BuildRoom(connection ? "...>" : "....");
+        var source = CreatureData.Boggart.Instantiate(room, new Point(0, 0));
+        var target = CreatureData.Boggart.Instantiate(room, new Point(1, 0));
+        if (!connection)
+        {
+            CreatureData.Boggart.Instantiate(room, new Point(3, 0));
+        }
+
+        var manager = source.Manager;
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(1, manager.TravelSystem.PushActor(target, source, target.Physical!.Weight * 3, manager));
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(room.EntityId, target.Position!.RoomId);
+        Assert.Equal(new Point(2, 0), target.Position.Cell);
+        var message = TravelMessage.Create(manager);
+        message.Forced = true;
+        manager.ReturnMessage(message);
+        message = TravelMessage.Create(manager);
+        Assert.False(message.Forced);
+        manager.ReturnMessage(message);
+    }
+
     [Fact]
     public void Propagated_amount_placeholder_throws_when_evaluated()
     {
@@ -109,8 +753,8 @@ public class EffectApplicationSystemTest
             [
                 new Bind { ResistancePenetration = "25" },
                 new PhysicalDamage { ArmorPenetration = "11" },
-                new Polymorph { CreatureName = "gnome" },
-                new ConferLycanthropy { CreatureName = "wolfwere" }
+                new Polymorph { CreatureName = "rat" },
+                new ConferLycanthropy { CreatureName = "werewolf" }
             ]
         };
 
@@ -127,11 +771,11 @@ public class EffectApplicationSystemTest
                 .Effect!.SecondaryAmount);
         var polymorph = ability.Effects.Single(
             effect => effect.Effect!.EffectType == EffectType.Polymorph).Effect!;
-        Assert.Equal("gnome", polymorph.TargetName);
+        Assert.Equal("rat", polymorph.TargetName);
         Assert.Null(polymorph.SecondaryAmount);
         var lycanthropy = ability.Effects.Single(
             effect => effect.Effect!.EffectType == EffectType.ConferLycanthropy).Effect!;
-        Assert.Equal("wolfwere", lycanthropy.TargetName);
+        Assert.Equal("werewolf", lycanthropy.TargetName);
         Assert.Null(lycanthropy.SecondaryAmount);
     }
 
@@ -197,10 +841,10 @@ public class EffectApplicationSystemTest
         activeEffects.AddPropertyEffect(CreatePropertyEffect(activeEffects,
             0, 0, 0, EffectType.ChangeProperty, null,
             expirationEvent: EffectDuration.UntilNextLevel));
-        var roomAbility = manager.EffectApplicationSystem.AddAbilityEffect(
+        var roomAbility = manager.AbilityLevelSystem.AddAbilityEffect(
             target, AbilityData.Acrobatics);
         roomAbility.ExpirationEvent = EffectDuration.UntilNextRoom;
-        var levelAbility = manager.EffectApplicationSystem.AddAbilityEffect(
+        var levelAbility = manager.AbilityLevelSystem.AddAbilityEffect(
             target, AbilityData.Stealth);
         levelAbility.ExpirationEvent = EffectDuration.UntilNextLevel;
 
@@ -244,10 +888,34 @@ public class EffectApplicationSystemTest
     }
 
     [Fact]
+    public void Branch_bound_effects_survive_floor_changes_and_expire_on_branch_change()
+    {
+        var (target, manager) = CreateEffectTarget();
+        var activeEffects = target.ActiveEffects!;
+        var property = activeEffects.AddPropertyEffect(CreatePropertyEffect(activeEffects,
+            0, 0, 0, EffectType.ChangeProperty, null,
+            expirationEvent: EffectDuration.UntilNextBranch));
+        var ability = manager.AbilityLevelSystem.AddAbilityEffect(target, AbilityData.Acrobatics);
+        ability.ExpirationEvent = EffectDuration.UntilNextBranch;
+
+        manager.EffectApplicationSystem.ExpireTransitionEffects(target, levelChanged: false, manager);
+        Assert.Contains(property, activeEffects.PropertyEffects);
+        Assert.Contains(ability, activeEffects.ComponentEffects);
+
+        manager.EffectApplicationSystem.ExpireTransitionEffects(target, levelChanged: true, manager);
+        Assert.Contains(property, activeEffects.PropertyEffects);
+        Assert.Contains(ability, activeEffects.ComponentEffects);
+
+        manager.EffectApplicationSystem.ExpireTransitionEffects(target, levelChanged: true, manager, branchChanged: true);
+        Assert.DoesNotContain(property, activeEffects.PropertyEffects);
+        Assert.DoesNotContain(ability, activeEffects.ComponentEffects);
+    }
+
+    [Fact]
     public void Named_ability_decrease_suppresses_and_restores_without_consuming_positive_levels()
     {
         var (target, manager) = CreateEffectTarget();
-        var positiveRecord = manager.EffectApplicationSystem.AddAbilityEffect(
+        var positiveRecord = manager.AbilityLevelSystem.AddAbilityEffect(
             target, AbilityData.Acrobatics, level: 3);
         manager.Queue.ProcessQueue(manager);
 
@@ -257,22 +925,22 @@ public class EffectApplicationSystemTest
             amount: 4, manager);
 
         Assert.Equal(3, positiveRecord.Level);
-        Assert.Equal(-1, EffectApplicationSystem.GetAbilityLevel(
+        Assert.Equal(-1, AbilityLevelSystem.GetAbilityLevel(
             target, AbilityData.Acrobatics.Name));
         Assert.NotEqual(0, positiveRecord.CarrierId);
         var suppressed = manager.AffectableAbilitiesIndex[
             (target.Id, AbilityData.Acrobatics.Name)]!.Ability!;
         Assert.Equal(0, suppressed.Level);
         Assert.False(suppressed.IsUsable);
-        Assert.Equal(4, EffectApplicationSystem.GetAbilityLevelReduction(
+        Assert.Equal(4, AbilityLevelSystem.GetAbilityLevelReduction(
             target, AbilityData.Acrobatics.Name));
 
-        manager.EffectApplicationSystem.RemoveAbilityComponentEffects(
+        manager.AbilityLevelSystem.RemoveAbilityComponentEffects(
             target, suppressor.EntityId, manager);
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(3, positiveRecord.Level);
-        Assert.Equal(3, EffectApplicationSystem.GetAbilityLevel(
+        Assert.Equal(3, AbilityLevelSystem.GetAbilityLevel(
             target, AbilityData.Acrobatics.Name));
         var acrobatics = manager.AffectableAbilitiesIndex[
             (target.Id, AbilityData.Acrobatics.Name)]!.Ability!;
@@ -286,9 +954,9 @@ public class EffectApplicationSystemTest
         var (target, manager) = CreateEffectTarget();
         var firstSource = CreateSourceAbility(target);
         var secondSource = CreateSourceAbility(target);
-        var firstRecord = manager.EffectApplicationSystem.AddAbilityEffect(
+        var firstRecord = manager.AbilityLevelSystem.AddAbilityEffect(
             target, AbilityData.Acrobatics, level: 2, firstSource.Id);
-        var secondRecord = manager.EffectApplicationSystem.AddAbilityEffect(
+        var secondRecord = manager.AbilityLevelSystem.AddAbilityEffect(
             target, AbilityData.Acrobatics, level: 2, secondSource.Id);
         manager.Queue.ProcessQueue(manager);
 
@@ -297,18 +965,18 @@ public class EffectApplicationSystemTest
             abilityName: AbilityData.Acrobatics.Name, abilityType: null,
             amount: 3, manager);
 
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(target, AbilityData.Acrobatics.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(target, AbilityData.Acrobatics.Name));
         Assert.NotEqual(0, firstRecord.CarrierId);
         Assert.Equal(0, secondRecord.CarrierId);
         Assert.Equal(
             1,
             manager.AffectableAbilitiesIndex[(target.Id, AbilityData.Acrobatics.Name)]!.Ability!.Level);
 
-        manager.EffectApplicationSystem.RemoveAbilityComponentEffects(
+        manager.AbilityLevelSystem.RemoveAbilityComponentEffects(
             target, suppressor.EntityId, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(4, EffectApplicationSystem.GetAbilityLevel(target, AbilityData.Acrobatics.Name));
+        Assert.Equal(4, AbilityLevelSystem.GetAbilityLevel(target, AbilityData.Acrobatics.Name));
         Assert.NotEqual(0, firstRecord.CarrierId);
         Assert.NotEqual(0, secondRecord.CarrierId);
     }
@@ -356,9 +1024,9 @@ public class EffectApplicationSystemTest
         var abilityRef =
             $"<tooltip id='{abilityName}' category='{(int)DescriptionCategory.Ability}'>{abilityName}</tooltip>";
 
-        manager.EffectApplicationSystem.AddAbilityEffect(player, template);
-        manager.EffectApplicationSystem.AddAbilityEffect(player, template);
-        manager.EffectApplicationSystem.RemoveAbility(
+        manager.AbilityLevelSystem.AddAbilityEffect(player, template);
+        manager.AbilityLevelSystem.AddAbilityEffect(player, template);
+        manager.AbilityLevelSystem.RemoveAbility(
             player, abilityName, manager);
 
         var removalMessage = abilityType.IsStatusLike()
@@ -388,8 +1056,8 @@ public class EffectApplicationSystemTest
             Type = AbilityType.Debuff
         };
 
-        manager.EffectApplicationSystem.AddAbilityEffect(player, template);
-        manager.EffectApplicationSystem.RemoveAbility(
+        manager.AbilityLevelSystem.AddAbilityEffect(player, template);
+        manager.AbilityLevelSystem.RemoveAbility(
             player, template.Name, manager);
 
         Assert.Empty(player.Player.LogEntries);
@@ -408,9 +1076,9 @@ public class EffectApplicationSystemTest
         var raceRef =
             $"<tooltip id='{race.Name}' category='{(int)DescriptionCategory.Race}'>{race.Name}</tooltip>";
 
-        manager.EffectApplicationSystem.AddAbilityEffect(
+        manager.AbilityLevelSystem.AddAbilityEffect(
             player, race.GetRaceAbilityTemplate());
-        manager.EffectApplicationSystem.RemoveAbility(
+        manager.AbilityLevelSystem.RemoveAbility(
             player, race.GetRaceAbilityName(), manager);
 
         Assert.Equal(
@@ -438,8 +1106,8 @@ public class EffectApplicationSystemTest
         var firstSource = CreateSourceAbility(target);
         var secondSource = CreateSourceAbility(target);
 
-        manager.EffectApplicationSystem.AddAbilityEffect(target, template, level: 1, firstSource.Id);
-        var secondRecord = manager.EffectApplicationSystem.AddAbilityEffect(
+        manager.AbilityLevelSystem.AddAbilityEffect(target, template, level: 1, firstSource.Id);
+        var secondRecord = manager.AbilityLevelSystem.AddAbilityEffect(
             target, template, level: 1, secondSource.Id);
 
         Assert.NotEqual(0, secondRecord.CarrierId);
@@ -459,8 +1127,8 @@ public class EffectApplicationSystemTest
         var firstSource = CreateSourceAbility(target);
         var secondSource = CreateSourceAbility(target);
 
-        manager.EffectApplicationSystem.AddAbilityEffect(target, template, level: 1, firstSource.Id);
-        var secondRecord = manager.EffectApplicationSystem.AddAbilityEffect(
+        manager.AbilityLevelSystem.AddAbilityEffect(target, template, level: 1, firstSource.Id);
+        var secondRecord = manager.AbilityLevelSystem.AddAbilityEffect(
             target, template, level: 1, secondSource.Id);
 
         Assert.Equal(0, secondRecord.CarrierId);
@@ -523,11 +1191,11 @@ public class EffectApplicationSystemTest
     public void Type_decrease_applies_to_each_matching_ability_and_excludes_its_source()
     {
         var (target, manager) = CreateEffectTarget();
-        manager.EffectApplicationSystem.AddAbilityEffect(
+        manager.AbilityLevelSystem.AddAbilityEffect(
             target, AbilityData.Acrobatics, level: 2);
-        manager.EffectApplicationSystem.AddAbilityEffect(
+        manager.AbilityLevelSystem.AddAbilityEffect(
             target, AbilityData.Stealth, level: 2);
-        manager.EffectApplicationSystem.AddAbilityEffect(
+        manager.AbilityLevelSystem.AddAbilityEffect(
             target, AbilityData.Greased, level: 2);
         manager.Queue.ProcessQueue(manager);
 
@@ -536,13 +1204,13 @@ public class EffectApplicationSystemTest
             abilityName: null, abilityType: AbilityType.Skill,
             amount: 1, manager);
 
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(
             target, AbilityData.Acrobatics.Name));
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(
             target, AbilityData.Stealth.Name));
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(
             target, AbilityData.Greased.Name));
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(target, suppressor.Name!));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(target, suppressor.Name!));
         Assert.True(suppressor.IsUsable);
         var decreaseRecord = Assert.Single(
             target.ActiveEffects!.ComponentEffects,
@@ -551,11 +1219,11 @@ public class EffectApplicationSystemTest
         Assert.Null(decreaseRecord.TargetName);
         Assert.Equal((int)AbilityType.Skill, decreaseRecord.ConditionValue);
 
-        manager.EffectApplicationSystem.AddAbilityEffect(
+        manager.AbilityLevelSystem.AddAbilityEffect(
             target, AbilityData.WaterSourcery, level: 2);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(
             target, AbilityData.WaterSourcery.Name));
         Assert.Equal(
             1,
@@ -569,9 +1237,9 @@ public class EffectApplicationSystemTest
         var (target, manager) = CreateEffectTarget();
         var firstSource = CreateSourceAbility(target);
         var secondSource = CreateSourceAbility(target);
-        manager.EffectApplicationSystem.AddAbilityEffect(
+        manager.AbilityLevelSystem.AddAbilityEffect(
             target, AbilityData.Acrobatics, level: 2, firstSource.Id);
-        manager.EffectApplicationSystem.AddAbilityEffect(
+        manager.AbilityLevelSystem.AddAbilityEffect(
             target, AbilityData.Acrobatics, level: 1, secondSource.Id);
         manager.Queue.ProcessQueue(manager);
 
@@ -602,7 +1270,7 @@ public class EffectApplicationSystemTest
             amount: 3, manager));
 
         Assert.True(target.Being.IsAlive);
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(target, raceAbilityName));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(target, raceAbilityName));
         Assert.DoesNotContain(
             target.ActiveEffects!.ComponentEffects,
             effect => effect.EffectType == EffectType.DecreaseAbilityLevel
@@ -653,7 +1321,7 @@ public class EffectApplicationSystemTest
                 }
             }
         };
-        var record = manager.EffectApplicationSystem.AddAbilityEffect(target, template);
+        var record = manager.AbilityLevelSystem.AddAbilityEffect(target, template);
         var ability = manager.FindEntity(record.CarrierId)!.Ability!;
         manager.Queue.ProcessQueue(manager);
         return ability;
@@ -693,25 +1361,25 @@ public class EffectApplicationSystemTest
 
         if (greased)
         {
-            manager.EffectApplicationSystem.AddAbilityEffect(target, AbilityData.Greased);
+            manager.AbilityLevelSystem.AddAbilityEffect(target, AbilityData.Greased);
         }
 
         manager.Queue.ProcessQueue(manager);
-        var wettedLevel = EffectApplicationSystem.GetAbilityLevel(target, AbilityData.Wetted.Name);
-        var chilledLevel = EffectApplicationSystem.GetAbilityLevel(target, AbilityData.Chilled.Name);
-        var greasedLevel = EffectApplicationSystem.GetAbilityLevel(target, AbilityData.Greased.Name);
-        manager.EffectApplicationSystem.AddAbilityEffect(target, AbilityData.Burning, level: 2);
+        var wettedLevel = AbilityLevelSystem.GetAbilityLevel(target, AbilityData.Wetted.Name);
+        var chilledLevel = AbilityLevelSystem.GetAbilityLevel(target, AbilityData.Chilled.Name);
+        var greasedLevel = AbilityLevelSystem.GetAbilityLevel(target, AbilityData.Greased.Name);
+        manager.AbilityLevelSystem.AddAbilityEffect(target, AbilityData.Burning, level: 2);
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(
             wettedLevel - 2,
-            EffectApplicationSystem.GetAbilityLevel(target, AbilityData.Wetted.Name));
+            AbilityLevelSystem.GetAbilityLevel(target, AbilityData.Wetted.Name));
         Assert.Equal(
             chilledLevel - 2,
-            EffectApplicationSystem.GetAbilityLevel(target, AbilityData.Chilled.Name));
+            AbilityLevelSystem.GetAbilityLevel(target, AbilityData.Chilled.Name));
         Assert.Equal(
             greasedLevel - 2,
-            EffectApplicationSystem.GetAbilityLevel(target, AbilityData.Greased.Name));
+            AbilityLevelSystem.GetAbilityLevel(target, AbilityData.Greased.Name));
     }
 
     [Fact]
@@ -788,8 +1456,8 @@ public class EffectApplicationSystemTest
             EffectType.Frighten, target, 6 * EffectApplicationSystem.BuildUpThreshold, source.Id));
         manager.EffectApplicationSystem.ApplyStatus(EffectApplicationContext.CreateStatus(
             EffectType.Frighten, target, 2 * EffectApplicationSystem.BuildUpThreshold, source.Id));
-        Assert.Equal(4, EffectApplicationSystem.GetAbilityLevel(target, AbilityData.Frightened.Name));
-        Assert.True(EffectApplicationSystem.GetAbilityLevel(target, AbilityData.Frightened.Name) > 0);
+        Assert.Equal(4, AbilityLevelSystem.GetAbilityLevel(target, AbilityData.Frightened.Name));
+        Assert.True(AbilityLevelSystem.GetAbilityLevel(target, AbilityData.Frightened.Name) > 0);
 
         manager.EffectApplicationSystem.RemoveMatchingPropertyEffects(
             target.ActiveEffects!, target,
@@ -797,15 +1465,15 @@ public class EffectApplicationSystemTest
 
         var accumulator = target.ActiveEffects!.Accumulators[EffectType.Frighten];
         Assert.Equal(0, accumulator.Value);
-        Assert.False(EffectApplicationSystem.GetAbilityLevel(target, AbilityData.Frightened.Name) > 0);
+        Assert.False(AbilityLevelSystem.GetAbilityLevel(target, AbilityData.Frightened.Name) > 0);
 
         var replacementSource = CreateSourceAbility(target);
         manager.EffectApplicationSystem.ApplyStatus(EffectApplicationContext.CreateStatus(
             EffectType.Frighten, target, amount: 240, replacementSource.Id));
 
         Assert.Equal(20, accumulator.Value);
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(target, AbilityData.Frightened.Name));
-        Assert.True(EffectApplicationSystem.GetAbilityLevel(target, AbilityData.Frightened.Name) > 0);
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(target, AbilityData.Frightened.Name));
+        Assert.True(AbilityLevelSystem.GetAbilityLevel(target, AbilityData.Frightened.Name) > 0);
     }
 
     [Fact]
@@ -910,13 +1578,13 @@ public class EffectApplicationSystemTest
 
         ApplyInstantBuildup(amount: 220);
         Assert.Equal(50, accumulator.Value);
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(target, AbilityData.Paralyzed.Name));
-        Assert.True(EffectApplicationSystem.GetAbilityLevel(target, AbilityData.Paralyzed.Name) > 0);
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(target, AbilityData.Paralyzed.Name));
+        Assert.True(AbilityLevelSystem.GetAbilityLevel(target, AbilityData.Paralyzed.Name) > 0);
 
         manager.EffectApplicationSystem.RealizeBuildUps(
             target, TimeSystem.DefaultActionDelay, manager);
         Assert.Equal(30, accumulator.Value);
-        Assert.True(EffectApplicationSystem.GetAbilityLevel(target, AbilityData.Paralyzed.Name) > 0);
+        Assert.True(AbilityLevelSystem.GetAbilityLevel(target, AbilityData.Paralyzed.Name) > 0);
 
         void ApplyInstantBuildup(int amount)
         {
@@ -1182,7 +1850,7 @@ public class EffectApplicationSystemTest
         EffectTestHelper.ApplyDamageOverTimeEffect(
             target, EffectType.ToxinDamage, ratePerAction: 200, duration: 100, manager);
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(target, AbilityData.Blighted.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(target, AbilityData.Blighted.Name));
 
         target.Being!.HitPoints -= 10;
         var hitPointsBefore = target.Being.HitPoints;
@@ -1438,7 +2106,7 @@ public class EffectApplicationSystemTest
         var level = TestHelper.BuildRoom("..");
         var manager = level.Entity.Manager;
         var activatorEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
-        var targetEntity = CreatureData.HumanWarrior.Instantiate(level, new Point(1, 0));
+        var targetEntity = CreatureData.Manusya.Instantiate(level, new Point(1, 0));
         manager.Queue.ProcessQueue(manager);
 
         manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
@@ -1521,7 +2189,7 @@ public class EffectApplicationSystemTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var target = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var target = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         EffectTestHelper.ApplyDamageOverTimeEffect(
@@ -1542,7 +2210,7 @@ public class EffectApplicationSystemTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var target = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var target = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         using var effectReference = manager.CreateEntity();
@@ -1575,7 +2243,7 @@ public class EffectApplicationSystemTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var target = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var target = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         EffectTestHelper.ApplyDamageOverTimeEffect(
@@ -1598,7 +2266,7 @@ public class EffectApplicationSystemTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var target = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var target = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         GameEntity abilityEntity;
@@ -1664,7 +2332,7 @@ public class EffectApplicationSystemTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var targetEntity = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var targetEntity = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         EffectTestHelper.ApplyDamageOverTimeEffect(
@@ -1704,10 +2372,10 @@ public class EffectApplicationSystemTest
     {
         var level = TestHelper.BuildRoom("....");
         var manager = level.Entity.Manager;
-        var source = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
-        var resistantTarget = CreatureData.HumanWarrior.Instantiate(level, new Point(1, 0));
-        var penetratedTarget = CreatureData.HumanWarrior.Instantiate(level, new Point(2, 0));
-        var vulnerableTarget = CreatureData.HumanWarrior.Instantiate(level, new Point(3, 0));
+        var source = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
+        var resistantTarget = CreatureData.Manusya.Instantiate(level, new Point(1, 0));
+        var penetratedTarget = CreatureData.Manusya.Instantiate(level, new Point(2, 0));
+        var vulnerableTarget = CreatureData.Manusya.Instantiate(level, new Point(3, 0));
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(50, resistantTarget.Being!.PhysicalStatusResistance);
@@ -1729,8 +2397,8 @@ public class EffectApplicationSystemTest
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(50, resistantTarget.ActiveEffects!.Accumulators[EffectType.Bind].Value);
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(penetratedTarget, AbilityData.Bound.Name));
-        Assert.Equal(3, EffectApplicationSystem.GetAbilityLevel(vulnerableTarget, AbilityData.Bound.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(penetratedTarget, AbilityData.Bound.Name));
+        Assert.Equal(3, AbilityLevelSystem.GetAbilityLevel(vulnerableTarget, AbilityData.Bound.Name));
 
         GameEntity CreateBindEffect(string? secondaryAmount)
         {
@@ -1752,10 +2420,10 @@ public class EffectApplicationSystemTest
     {
         var level = TestHelper.BuildRoom("....");
         var manager = level.Entity.Manager;
-        var source = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
-        var resistantTarget = CreatureData.HumanWarrior.Instantiate(level, new Point(1, 0));
-        var penetratedTarget = CreatureData.HumanWarrior.Instantiate(level, new Point(2, 0));
-        var vulnerableTarget = CreatureData.HumanWarrior.Instantiate(level, new Point(3, 0));
+        var source = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
+        var resistantTarget = CreatureData.Manusya.Instantiate(level, new Point(1, 0));
+        var penetratedTarget = CreatureData.Manusya.Instantiate(level, new Point(2, 0));
+        var vulnerableTarget = CreatureData.Manusya.Instantiate(level, new Point(3, 0));
         manager.Queue.ProcessQueue(manager);
 
         manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
@@ -1776,9 +2444,9 @@ public class EffectApplicationSystemTest
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(50, resistantTarget.ActiveEffects!.Accumulators[EffectType.Topple].Value);
-        Assert.Equal(0, EffectApplicationSystem.GetAbilityLevel(resistantTarget, AbilityData.Unstable.Name));
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(penetratedTarget, AbilityData.Unstable.Name));
-        Assert.Equal(3, EffectApplicationSystem.GetAbilityLevel(vulnerableTarget, AbilityData.Unstable.Name));
+        Assert.Equal(0, AbilityLevelSystem.GetAbilityLevel(resistantTarget, AbilityData.Unstable.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(penetratedTarget, AbilityData.Unstable.Name));
+        Assert.Equal(3, AbilityLevelSystem.GetAbilityLevel(vulnerableTarget, AbilityData.Unstable.Name));
         Assert.Equal(0, vulnerableTarget.ActiveEffects!.Accumulators[EffectType.Topple].Value);
 
         GameEntity CreateToppleEffect(string? secondaryAmount)
@@ -1801,8 +2469,8 @@ public class EffectApplicationSystemTest
     {
         var level = TestHelper.BuildRoom("..");
         var manager = level.Entity.Manager;
-        var source = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
-        var target = CreatureData.HumanWarrior.Instantiate(level, new Point(1, 0));
+        var source = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
+        var target = CreatureData.Manusya.Instantiate(level, new Point(1, 0));
         manager.Queue.ProcessQueue(manager);
 
         manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
@@ -1835,7 +2503,7 @@ public class EffectApplicationSystemTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var targetEntity = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var targetEntity = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
         var resistance = targetEntity.Being!.FireResistance + targetEntity.Being.MagicResistance;
@@ -1849,7 +2517,7 @@ public class EffectApplicationSystemTest
         Assert.DoesNotContain(targetEntity.ActiveEffects!.PropertyEffects,
             i => i.EffectType == EffectType.FireDamage
                  && Effect.GetMetadata(i.EffectType).ResourceProperty != null);
-        Assert.Equal(0, EffectApplicationSystem.GetAbilityLevel(
+        Assert.Equal(0, AbilityLevelSystem.GetAbilityLevel(
             targetEntity, Effect.GetMetadata(EffectType.FireDamage).StatusAbilityName!));
     }
 
@@ -2008,10 +2676,10 @@ public class EffectApplicationSystemTest
         var ogreRace = playerEntity.Being.Races.Single(race => race.Ability!.Name == ogreRaceName);
         Assert.Equal(ogreRecords[0].CarrierId, ogreRace.Id);
         Assert.Equal(2, ogreRace.Ability!.Level);
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(playerEntity, ogreRaceName));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(playerEntity, ogreRaceName));
         Assert.Null(manager.AffectableAbilitiesIndex[(playerEntity.Id, "ogre race#2")]);
 
-        EffectApplicationSystem.DetachComponentCarrier(ogreRecords[0], playerEntity, manager);
+        AbilityLevelSystem.DetachComponentCarrier(ogreRecords[0], playerEntity, manager);
 
         var promotedRace = playerEntity.Being.Races.Single(race => race.Ability!.Name == ogreRaceName);
         Assert.NotEqual(0, ogreRecords[1].CarrierId);
@@ -2098,7 +2766,7 @@ public class EffectApplicationSystemTest
         var entity = creature.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(entity, AbilityData.Acrobatics.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(entity, AbilityData.Acrobatics.Name));
     }
 
     [Fact]
@@ -2114,7 +2782,7 @@ public class EffectApplicationSystemTest
 
         var raceTemplate = race.GetRaceAbilityTemplate();
         var raceAbilityName = raceTemplate.Name;
-        var firstRecord = manager.EffectApplicationSystem.AddAbilityEffect(
+        var firstRecord = manager.AbilityLevelSystem.AddAbilityEffect(
             playerEntity, raceTemplate, level: 1, sourceAbility.Id);
         var firstCarrier = manager.FindEntity(firstRecord.CarrierId)!;
         Assert.Same(firstRecord, Assert.Single(
@@ -2126,7 +2794,7 @@ public class EffectApplicationSystemTest
         Assert.Contains(
             playerEntity,
             manager.ComponentEffectsToCarrierRelationship.GetDependents(firstCarrierId));
-        var secondRecord = manager.EffectApplicationSystem.AddAbilityEffect(
+        var secondRecord = manager.AbilityLevelSystem.AddAbilityEffect(
             playerEntity, raceTemplate, level: 1, sourceAbility.Id);
         var secondCarrier = manager.FindEntity(secondRecord.CarrierId)!;
         Assert.Same(secondRecord, Assert.Single(
@@ -2519,7 +3187,7 @@ public class EffectApplicationSystemTest
         var second = player.ActiveEffects.AddComponentEffect(
             EffectType.AddAbility, "batch status", carrier.Id);
 
-        manager.EffectApplicationSystem.RemoveAbility(player, "batch status", manager);
+        manager.AbilityLevelSystem.RemoveAbility(player, "batch status", manager);
 
         Assert.DoesNotContain(first, player.ActiveEffects!.ComponentEffects);
         Assert.DoesNotContain(second, player.ActiveEffects!.ComponentEffects);
@@ -2534,7 +3202,7 @@ public class EffectApplicationSystemTest
         var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
-        var surviving = manager.EffectApplicationSystem.AddAbilityEffect(
+        var surviving = manager.AbilityLevelSystem.AddAbilityEffect(
             player, AbilityData.WaterSourcery);
         const int sourceAbilityId = 12345;
         var firstRemoved = player.ActiveEffects!.AddComponentEffect(
@@ -2543,20 +3211,20 @@ public class EffectApplicationSystemTest
         var secondRemoved = player.ActiveEffects.AddComponentEffect(
             EffectType.AddAbility, AbilityData.WaterSourcery.Name,
             sourceAbilityEntityId: sourceAbilityId);
-        manager.EffectApplicationSystem.RelevelAbility(
+        manager.AbilityLevelSystem.RelevelAbility(
             AbilityData.WaterSourcery.Name, player, manager);
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(3, EffectApplicationSystem.GetAbilityLevel(
+        Assert.Equal(3, AbilityLevelSystem.GetAbilityLevel(
             player, AbilityData.WaterSourcery.Name));
 
-        manager.EffectApplicationSystem.RemoveAbilityComponentEffects(
+        manager.AbilityLevelSystem.RemoveAbilityComponentEffects(
             player, sourceAbilityId, manager);
         manager.Queue.ProcessQueue(manager);
 
         var remaining = Assert.Single(
             player.ActiveEffects!.ComponentEffects.GetValues(AbilityData.WaterSourcery.Name));
         Assert.Same(surviving, remaining);
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(
             player, AbilityData.WaterSourcery.Name));
         Assert.Equal(
             surviving.CarrierId,
@@ -2567,8 +3235,8 @@ public class EffectApplicationSystemTest
     public void Amount_expressions_read_activator_and_target_being_properties()
     {
         var room = TestHelper.BuildRoom("..");
-        var activator = CreatureData.HumanWarrior.Instantiate(room, new Point(0, 0));
-        var target = CreatureData.HumanWarrior.Instantiate(room, new Point(1, 0));
+        var activator = CreatureData.Manusya.Instantiate(room, new Point(0, 0));
+        var target = CreatureData.Manusya.Instantiate(room, new Point(1, 0));
         var manager = room.Entity.Manager;
         manager.Queue.ProcessQueue(manager);
 
@@ -2611,11 +3279,11 @@ public class EffectApplicationSystemTest
             Name = "level expression source",
             Effects = []
         };
-        var dependent = new Ability
+        var dependent = new LeveledAbility
         {
             Name = "level expression dependent",
             LevelExpression = expression,
-            Effects = []
+            LeveledEffects = new Dictionary<int, IReadOnlyList<Effect>> { [7] = [] }
         };
         var game = TestHelper.CreateGame();
         ((TestDataProvider)game.Services.Data).AddAbilities(source, dependent);
@@ -2624,7 +3292,7 @@ public class EffectApplicationSystemTest
             "Dudley", Sex.Male, room, new Point(0, 0));
         var manager = player.Manager;
         manager.Queue.ProcessQueue(manager);
-        manager.EffectApplicationSystem.AddAbilityEffect(player, source, level: 3);
+        manager.AbilityLevelSystem.AddAbilityEffect(player, source, level: 3);
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(expectedLevel, dependent.GetExpressionLevel(player));
@@ -2912,17 +3580,12 @@ public class EffectApplicationSystemTest
         manager.EffectApplicationSystem.ApplyPolymorph(form, playerEntity, duration, manager);
         manager.Queue.ProcessQueue(manager);
 
-        // While polymorphed, the being's own race keeps an effectless presentation carrier while abilities
-        // granted by that race are inactive.
         foreach (var abilityName in suppressibleNames)
         {
-            if (manager.AffectableAbilitiesIndex[(playerEntity.Id, abilityName)] is { Ability: { } suppressed })
-            {
-                Assert.Equal(AbilityType.Race, suppressed.Type);
-                Assert.Equal(0, suppressed.Level);
-                Assert.False(suppressed.IsUsable);
-            }
+            Assert.Null(manager.AffectableAbilitiesIndex[(playerEntity.Id, abilityName)]);
         }
+
+        Assert.All(playerEntity.Being!.Races, entity => Assert.True(entity.Ability!.Level > 0));
 
         // Once the transformation lapses they are reactivated.
         manager.Game.CurrentTick += duration + 1;
@@ -2933,7 +3596,7 @@ public class EffectApplicationSystemTest
             playerEntity.ActiveEffects!.ComponentEffects,
             effect => effect.EffectType == EffectType.DecreaseAbilityLevel
                       && effect.ConditionValue == (int)AbilityType.Race);
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(playerEntity, "human race"));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(playerEntity, "human race"));
         Assert.NotEqual(
             0,
             Assert.Single(
@@ -2959,7 +3622,7 @@ public class EffectApplicationSystemTest
         var activeEffects = playerEntity.ActiveEffects!;
 
         var firstForm = Creature.Loader.Find(CreatureData.Tiger.Name)!;
-        var secondForm = Creature.Loader.Find("gnome")!;
+        var secondForm = Creature.Loader.Find(CreatureData.Rat.Name)!;
         var secondId = Creature.Loader.GetId(secondForm.Name!);
         Assert.NotEqual(firstForm.Weight, secondForm.Weight);
 
@@ -3013,7 +3676,7 @@ public class EffectApplicationSystemTest
         TestHelper.ActivateItemAbility(potion, "Drink", playerEntity, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(Creature.Loader.GetId("gnome"), being.Species);
+        Assert.Equal(Creature.Loader.GetId("rat"), being.Species);
     }
 
     [Fact]
@@ -3153,7 +3816,7 @@ public class EffectApplicationSystemTest
         var level = TestHelper.BuildRoom("..");
         var manager = level.Entity.Manager;
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
-        var creature = CreatureData.HumanWarrior.Instantiate(level, new Point(1, 0));
+        var creature = CreatureData.Manusya.Instantiate(level, new Point(1, 0));
         manager.Queue.ProcessQueue(manager);
 
         var ability = CreateAbility(manager, playerEntity, "aura");
@@ -3203,8 +3866,8 @@ public class EffectApplicationSystemTest
 ...");
         var manager = room.Game.Manager;
 
-        var attacker = CreatureData.HumanWarrior.Instantiate(room, new Point(1, 1));
-        var victim = CreatureData.HumanWarrior.Instantiate(room, new Point(2, 2));
+        var attacker = CreatureData.Manusya.Instantiate(room, new Point(1, 1));
+        var victim = CreatureData.Manusya.Instantiate(room, new Point(2, 2));
         manager.Queue.ProcessQueue(manager);
 
         var sourceAbility = CreateAbility(manager, attacker, "venom");
@@ -3237,12 +3900,12 @@ public class EffectApplicationSystemTest
         var being = playerEntity.Being!;
         var initialRaceCount = being.Races.Count;
 
-        ConferLycanthropy(playerEntity, "wolfwere", manager);
+        ConferLycanthropy(playerEntity, "werewolf", manager);
 
         // The bite applies the permanent, client-visible base status without transforming the victim.
         Assert.Equal(initialRaceCount, being.Races.Count);
-        Assert.DoesNotContain(being.Races, r => r.Ability?.Name == "wolfwere race");
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(playerEntity, AbilityData.Lycanthropic.Name));
+        Assert.DoesNotContain(being.Races, r => r.Ability?.Name == "werewolf race");
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(playerEntity, AbilityData.Lycanthropic.Name));
 
         var counter = playerEntity.ActiveEffects!.Accumulators[EffectType.ConferLycanthropy];
         Assert.Equal(0, counter.Value);
@@ -3250,18 +3913,18 @@ public class EffectApplicationSystemTest
             effect => effect.EffectType == EffectType.ConferLycanthropy
                       && effect.CombinationFunction == ValueCombinationFunction.Sum
                       && effect.MagnitudeSecondary != 0);
-        Assert.Equal(Creature.Loader.GetId("wolfwere"), marker.MagnitudeSecondary);
+        Assert.Equal(Creature.Loader.GetId("werewolf"), marker.MagnitudeSecondary);
         var source = Assert.Single(playerEntity.ActiveEffects.PropertyEffects,
             effect => effect.EffectType == EffectType.ConferLycanthropy
                       && effect.MagnitudePrimary != 0);
         Assert.Equal(10, source.MagnitudePrimary);
         Assert.Equal(ValueCombinationFunction.BuildUpPerSource, source.CombinationFunction);
-        Assert.Equal(Creature.Loader.GetId("wolfwere"), source.MagnitudeSecondary);
+        Assert.Equal(Creature.Loader.GetId("werewolf"), source.MagnitudeSecondary);
         var statusAbility = manager.AffectableAbilitiesIndex[
             (playerEntity.Id, AbilityData.Lycanthropic.Name)]!.Ability!;
         var statusEffect = Assert.Single(statusAbility.Effects).Effect!;
         Assert.Equal(
-            Creature.Loader.GetId("wolfwere").ToString(CultureInfo.InvariantCulture),
+            Creature.Loader.GetId("werewolf").ToString(CultureInfo.InvariantCulture),
             statusEffect.SecondaryAmount);
 
         // The resisted L1 contribution does not outpace regular status decay, so its spent bank is removed.
@@ -3277,7 +3940,7 @@ public class EffectApplicationSystemTest
             playerEntity, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(playerEntity, AbilityData.Lycanthropic.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(playerEntity, AbilityData.Lycanthropic.Name));
         statusAbility = manager.AffectableAbilitiesIndex[
             (playerEntity.Id, AbilityData.Lycanthropic.Name)]!.Ability!;
         statusEffect = Assert.Single(
@@ -3285,10 +3948,10 @@ public class EffectApplicationSystemTest
             effect => effect.Effect!.EffectType == EffectType.Polymorph).Effect!;
         Assert.Equal(EffectType.Polymorph, statusEffect.EffectType);
         Assert.Equal(
-            Creature.Loader.GetId("wolfwere").ToString(CultureInfo.InvariantCulture),
+            Creature.Loader.GetId("werewolf").ToString(CultureInfo.InvariantCulture),
             statusEffect.SecondaryAmount);
-        Assert.Equal(Creature.Loader.GetId("wolfwere"), being.Species);
-        Assert.Contains(being.Races, r => r.Ability?.Name == "wolfwere race");
+        Assert.Equal(Creature.Loader.GetId("werewolf"), being.Species);
+        Assert.Contains(being.Races, r => r.Ability?.Name == "werewolf race");
         var statusRecords = playerEntity.ActiveEffects.ComponentEffects
             .GetValues(AbilityData.Lycanthropic.Name)
             .OrderBy(record => record.InstanceId)
@@ -3310,15 +3973,15 @@ public class EffectApplicationSystemTest
         manager.EffectApplicationSystem.ExpireTimedPropertyEffects(playerEntity, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(playerEntity, AbilityData.Lycanthropic.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(playerEntity, AbilityData.Lycanthropic.Name));
         var persistentStatusRecord = Assert.Single(
             playerEntity.ActiveEffects.ComponentEffects.GetValues(AbilityData.Lycanthropic.Name));
         Assert.Same(statusRecords[0], persistentStatusRecord);
         Assert.NotEqual(0, persistentStatusRecord.CarrierId);
         Assert.Null(persistentStatusRecord.ExpirationEvent);
         Assert.Null(persistentStatusRecord.ExpirationTarget);
-        Assert.NotEqual(Creature.Loader.GetId("wolfwere"), being.Species);
-        Assert.DoesNotContain(being.Races, r => r.Ability?.Name == "wolfwere race");
+        Assert.NotEqual(Creature.Loader.GetId("werewolf"), being.Species);
+        Assert.DoesNotContain(being.Races, r => r.Ability?.Name == "werewolf race");
     }
 
     [Fact]
@@ -3330,7 +3993,7 @@ public class EffectApplicationSystemTest
             "Dudley", Sex.Male, level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
-        ConferLycanthropy(playerEntity, "wolfwere", manager);
+        ConferLycanthropy(playerEntity, "werewolf", manager);
 
         var activeEffects = playerEntity.ActiveEffects!;
         var marker = Assert.Single(
@@ -3339,13 +4002,13 @@ public class EffectApplicationSystemTest
                       && effect.CombinationFunction == ValueCombinationFunction.Sum);
         activeEffects.PropertyEffects.Remove(marker);
 
-        var formId = Creature.Loader.GetId("wolfwere");
+        var formId = Creature.Loader.GetId("werewolf");
         Assert.Contains(
             activeEffects.PropertyEffects,
             effect => effect.EffectType == EffectType.ConferLycanthropy
                       && effect.MagnitudeSecondary == formId);
 
-        manager.EffectApplicationSystem.RelevelAbility(
+        manager.AbilityLevelSystem.RelevelAbility(
             AbilityData.Lycanthropic.Name, playerEntity, manager);
 
         var statusAbility = manager.AffectableAbilitiesIndex[
@@ -3363,24 +4026,24 @@ public class EffectApplicationSystemTest
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
-        ConferLycanthropy(playerEntity, "wolfwere", manager);
+        ConferLycanthropy(playerEntity, "werewolf", manager);
         var activeEffects = playerEntity.ActiveEffects!;
         var accumulator = activeEffects.Accumulators[EffectType.ConferLycanthropy];
         accumulator.Value = 10;
 
-        ConferLycanthropy(playerEntity, "hyenawere", manager, amount: "10");
+        ConferLycanthropy(playerEntity, "tiger", manager, amount: "10");
         Assert.Equal(
-            Creature.Loader.GetId("wolfwere"),
+            Creature.Loader.GetId("werewolf"),
             activeEffects.PropertyEffects.Single(
                 effect => effect.EffectType == EffectType.ConferLycanthropy
                           && effect.CombinationFunction == ValueCombinationFunction.Sum)
                 .MagnitudeSecondary);
 
-        ConferLycanthropy(playerEntity, "hyenawere", manager, amount: "40");
+        ConferLycanthropy(playerEntity, "tiger", manager, amount: "40");
 
-        var hyenawereId = Creature.Loader.GetId("hyenawere");
+        var tigerId = Creature.Loader.GetId("tiger");
         Assert.Equal(
-            hyenawereId,
+            tigerId,
             activeEffects.PropertyEffects.Single(
                 effect => effect.EffectType == EffectType.ConferLycanthropy
                           && effect.CombinationFunction == ValueCombinationFunction.Sum)
@@ -3388,7 +4051,7 @@ public class EffectApplicationSystemTest
         var statusAbility = manager.AffectableAbilitiesIndex[
             (playerEntity.Id, AbilityData.Lycanthropic.Name)]!.Ability!;
         Assert.Equal(
-            hyenawereId.ToString(CultureInfo.InvariantCulture),
+            tigerId.ToString(CultureInfo.InvariantCulture),
             Assert.Single(
                 statusAbility.Effects,
                 effect => effect.Effect!.EffectType == EffectType.ConferLycanthropy)
@@ -3404,7 +4067,7 @@ public class EffectApplicationSystemTest
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
-        ConferLycanthropy(playerEntity, "wolfwere", manager);
+        ConferLycanthropy(playerEntity, "werewolf", manager);
         var activeEffects = playerEntity.ActiveEffects!;
         var source = Assert.Single(activeEffects.PropertyEffects,
             effect => effect.EffectType == EffectType.ConferLycanthropy
@@ -3420,7 +4083,7 @@ public class EffectApplicationSystemTest
 
         Assert.Equal(species, playerEntity.Being.Species);
         Assert.Equal(EffectApplicationSystem.BuildUpThreshold - 21, accumulator.Value);
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(playerEntity, AbilityData.Lycanthropic.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(playerEntity, AbilityData.Lycanthropic.Name));
     }
 
     [Fact]
@@ -3433,7 +4096,7 @@ public class EffectApplicationSystemTest
         var appliedTick = manager.Game.CurrentTick;
 
         ConferLycanthropy(
-            playerEntity, "wolfwere", manager,
+            playerEntity, "werewolf", manager,
             EffectDuration.UntilTimeout, durationAmount: "50");
 
         var activeEffects = playerEntity.ActiveEffects!;
@@ -3455,7 +4118,7 @@ public class EffectApplicationSystemTest
         Assert.DoesNotContain(activeEffects.PropertyEffects,
             effect => effect.EffectType == EffectType.ConferLycanthropy);
         Assert.Equal(50, activeEffects.Accumulators[EffectType.ConferLycanthropy].Value);
-        Assert.Equal(0, EffectApplicationSystem.GetAbilityLevel(playerEntity, AbilityData.Lycanthropic.Name));
+        Assert.Equal(0, AbilityLevelSystem.GetAbilityLevel(playerEntity, AbilityData.Lycanthropic.Name));
     }
 
     [Fact]
@@ -3468,14 +4131,14 @@ public class EffectApplicationSystemTest
         manager.Queue.ProcessQueue(manager);
 
         ConferLycanthropy(
-            playerEntity, "wolfwere", manager,
+            playerEntity, "werewolf", manager,
             EffectDuration.UntilTimeout, durationAmount: "50");
         var source = Assert.Single(
             playerEntity.ActiveEffects!.PropertyEffects,
             effect => effect.EffectType == EffectType.ConferLycanthropy);
 
         ConferLycanthropy(
-            playerEntity, "hyenawere", manager,
+            playerEntity, "tiger", manager,
             EffectDuration.UntilTimeout, durationAmount: "50");
 
         Assert.Same(
@@ -3483,7 +4146,7 @@ public class EffectApplicationSystemTest
             Assert.Single(
                 playerEntity.ActiveEffects.PropertyEffects,
                 effect => effect.EffectType == EffectType.ConferLycanthropy));
-            Assert.Equal(0, source.MagnitudeSecondary);
+        Assert.Equal(0, source.MagnitudeSecondary);
     }
 
     [Fact]
@@ -3495,22 +4158,22 @@ public class EffectApplicationSystemTest
         manager.Queue.ProcessQueue(manager);
 
         var initialRaceCount = playerEntity.Being!.Races.Count;
-        manager.EffectApplicationSystem.AddAbilityEffect(
-            playerEntity, Creature.Loader.Find("wolfwere")!.GetRaceAbilityTemplate());
+        manager.AbilityLevelSystem.AddAbilityEffect(
+            playerEntity, Creature.Loader.Find("werewolf")!.GetRaceAbilityTemplate());
         manager.Queue.ProcessQueue(manager);
-        Assert.Contains(playerEntity.Being.Races, r => r.Ability?.Name == "wolfwere race");
+        Assert.Contains(playerEntity.Being.Races, r => r.Ability?.Name == "werewolf race");
 
-        RemoveRace(playerEntity, "wolfwere race", manager);
+        RemoveRace(playerEntity, "werewolf race", manager);
 
         // The were-race leaves the being's effective Races collection while its positive source remains
         // available for restoration, without disturbing the being's original races.
         Assert.Equal(initialRaceCount, playerEntity.Being.Races.Count);
-        Assert.DoesNotContain(playerEntity.Being.Races, r => r.Ability?.Name == "wolfwere race");
-        Assert.Equal(0, EffectApplicationSystem.GetAbilityLevel(playerEntity, "wolfwere race"));
+        Assert.DoesNotContain(playerEntity.Being.Races, r => r.Ability?.Name == "werewolf race");
+        Assert.Equal(0, AbilityLevelSystem.GetAbilityLevel(playerEntity, "werewolf race"));
         Assert.Contains(playerEntity.ActiveEffects!.ComponentEffects,
-            r => r.EffectType == EffectType.AddAbility && r.TargetName == "wolfwere race");
+            r => r.EffectType == EffectType.AddAbility && r.TargetName == "werewolf race");
         Assert.Contains(playerEntity.ActiveEffects.ComponentEffects,
-            r => r.EffectType == EffectType.DecreaseAbilityLevel && r.TargetName == "wolfwere race");
+            r => r.EffectType == EffectType.DecreaseAbilityLevel && r.TargetName == "werewolf race");
         Assert.True(playerEntity.Being.IsAlive);
     }
 
@@ -3522,10 +4185,10 @@ public class EffectApplicationSystemTest
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
-        manager.EffectApplicationSystem.AddAbilityEffect(
-            playerEntity, Creature.Loader.Find("wolfwere")!.GetRaceAbilityTemplate());
+        manager.AbilityLevelSystem.AddAbilityEffect(
+            playerEntity, Creature.Loader.Find("werewolf")!.GetRaceAbilityTemplate());
         manager.Queue.ProcessQueue(manager);
-        var wereRace = playerEntity.Being!.Races.Single(r => r.Ability?.Name == "wolfwere race");
+        var wereRace = playerEntity.Being!.Races.Single(r => r.Ability?.Name == "werewolf race");
         var initialLevel = wereRace.Ability!.Level;
         var initialXp = playerEntity.Being.ExperiencePoints;
 

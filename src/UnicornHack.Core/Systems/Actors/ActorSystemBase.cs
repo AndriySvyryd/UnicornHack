@@ -1,4 +1,4 @@
-﻿using UnicornHack.Systems.Abilities;
+using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Levels;
@@ -219,7 +219,7 @@ public abstract class ActorSystemBase
             case ActorActionType.TravelToRoom:
                 if (actorEntity.Player != null
                     && being.CanMove
-                    && EffectApplicationSystem.GetAbilityLevel(actorEntity, AbilityData.Engulfed.Name) == 0
+                    && AbilityLevelSystem.GetAbilityLevel(actorEntity, AbilityData.Engulfed.Name) == 0
                     && manager.EngulferToVictimRelationship.GetVictim(actorEntity) == null)
                 {
                     var room = position.RoomEntity.Room!;
@@ -336,7 +336,7 @@ public abstract class ActorSystemBase
                    : 0);
 
     protected static bool IsAllowedWhileTaunted(GameEntity actorEntity, ActorActionType action)
-        => EffectApplicationSystem.GetAbilityLevel(actorEntity, AbilityData.Taunted.Name) < 3
+        => AbilityLevelSystem.GetAbilityLevel(actorEntity, AbilityData.Taunted.Name) < 3
             || action is ActorActionType.ChangeHeading
                 or ActorActionType.MoveOneCell
                 or ActorActionType.MoveToCell
@@ -502,6 +502,17 @@ public abstract class ActorSystemBase
                 manager.LoggingSystem.WriteLog(activationError, actorEntity, manager);
                 manager.Queue.ReturnMessage(activationMessage);
                 return false;
+            }
+
+            if (actorEntity.Player is { QueuedAction: false } player && ability.Windup > 0)
+            {
+                player.NextAction = ActorActionType.UseAbilitySlot;
+                player.NextActionTarget = ability.Slot;
+                player.NextActionTarget2 = actorEntity.Position!.Cell!.Value.DifferenceTo(targetCell).ToInt32();
+                player.NextActionTick = checked(player.NextActionTick + ability.Windup);
+                player.QueuedAction = true;
+                manager.ReturnMessage(activationMessage);
+                return true;
             }
         }
         else if (manager.AbilityActivationSystem.CanActivateAbility(activationMessage) != null)
@@ -684,7 +695,7 @@ public abstract class ActorSystemBase
             var toDistance = toCell.DistanceTo(sourceCell);
             var forbidden = isFear
                 ? toDistance < fromDistance
-                : EffectApplicationSystem.GetAbilityLevel(actorEntity, AbilityData.Taunted.Name) >= 3
+                : AbilityLevelSystem.GetAbilityLevel(actorEntity, AbilityData.Taunted.Name) >= 3
                     ? toDistance >= fromDistance
                     : toDistance > fromDistance;
             if (forbidden)
@@ -701,7 +712,7 @@ public abstract class ActorSystemBase
     {
         var abilityName = Effect.GetMetadata(effectType).StatusAbilityName;
         if (abilityName == null
-            || EffectApplicationSystem.GetAbilityLevel(actorEntity, abilityName) < requiredLevel
+            || AbilityLevelSystem.GetAbilityLevel(actorEntity, abilityName) < requiredLevel
             || AbilityActivationSystem.FindStatusSource(actorEntity, effectType, manager)
                 is not { Position: { Cell: not null } sourcePosition } source
             || sourcePosition.RoomId != actorEntity.Position!.RoomId

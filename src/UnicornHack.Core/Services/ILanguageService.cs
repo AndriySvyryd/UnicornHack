@@ -1,6 +1,7 @@
 using UnicornHack.Services.LogEvents;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Items;
+using UnicornHack.Systems.Levels;
 
 namespace UnicornHack.Services;
 
@@ -70,7 +71,7 @@ public interface ILanguageService
         int currentLevel);
 
     string GetPlayerChoiceText(
-        string choice,
+        RewardType choice,
         PlayerChoiceText text,
         string? action = null,
         string? option = null);
@@ -88,16 +89,11 @@ public interface ILanguageService
     ///     Revealed creature count, or <c>-1</c> when not revealed at the player's current
     ///     closeness to the room.
     /// </param>
-    /// <param name="revealedItemCount">Revealed item count, or <c>-1</c> when not revealed.</param>
-    /// <param name="strongestActorName">
-    ///     Localized name of the room's strongest creature, or <c>null</c> when none / not
-    ///     revealed.
-    /// </param>
+    /// <param name="eliteName">Localized elite identity when room details can be perceived; otherwise <c>null</c>.</param>
     string GetRoomTooltip(
         RoomFeatures features,
         bool isCurrent,
         bool isVisited,
         int revealedActorCount,
-        int revealedItemCount,
-        string? strongestActorName);
+        string? eliteName);
 }

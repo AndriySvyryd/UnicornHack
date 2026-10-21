@@ -165,8 +165,14 @@ public partial class EffectApplicationSystem
                 being.EnergyPoints += amount;
                 break;
             case nameof(BeingComponent.ExperiencePoints):
-                Debug.Assert(amount >= 0);
-                manager.XPSystem.AddPlayerXP(amount, manager);
+                if (targetEntity.Player == null)
+                {
+                    being.ExperiencePoints += amount;
+                }
+                else
+                {
+                    manager.XPSystem.AddPlayerXP(amount, manager);
+                }
                 break;
             default:
                 throw new InvalidOperationException($"Unsupported resource property '{property}'.");

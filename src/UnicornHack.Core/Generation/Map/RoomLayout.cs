@@ -71,7 +71,7 @@ public abstract class RoomLayout
     /// </summary>
     protected static bool AllPlaceableFeaturesBound(RoomComponent room)
     {
-        var unboundFeatures = room.Features & MapFragment.PlaceableFeaturesMask
+        var unboundFeatures = room.FeatureTags & MapFragment.PlaceableFeaturesMask
             & ~RoomFeatures.Trapped
             & ~room.BoundPlaceableFeatures;
         if (unboundFeatures != 0)
@@ -218,12 +218,12 @@ public abstract class RoomLayout
     {
         // Exit and Shortcut are symmetric outgoing inter-level sources; they differ only in
         // how far ahead they target (Exit: +1, Shortcut: +2).
-        if ((room.Features & RoomFeatures.Exit) != 0)
+        if ((room.FeatureTags & RoomFeatures.Exit) != 0)
         {
             return NeedsOutgoingSourceConnection(room, depthDelta: 1);
         }
 
-        if ((room.Features & RoomFeatures.Shortcut) != 0)
+        if ((room.FeatureTags & RoomFeatures.Shortcut) != 0)
         {
             return NeedsOutgoingSourceConnection(room, depthDelta: 2);
         }
@@ -276,12 +276,12 @@ public abstract class RoomLayout
             return MapFragment.FeatureTagNames[RoomFeatures.Entrance];
         }
 
-        if ((room.Features & RoomFeatures.Exit) != 0)
+        if ((room.FeatureTags & RoomFeatures.Exit) != 0)
         {
             return MapFragment.FeatureTagNames[RoomFeatures.Exit];
         }
 
-        if ((room.Features & RoomFeatures.Shortcut) != 0)
+        if ((room.FeatureTags & RoomFeatures.Shortcut) != 0)
         {
             return MapFragment.FeatureTagNames[RoomFeatures.Shortcut];
         }
@@ -294,6 +294,14 @@ public abstract class RoomLayout
     ///     that successfully places into the lot described by <paramref name="ctx" />. The
     ///     doorway demand for the lot is taken from <see cref="LotPlacementContext.DemandedDoorways" />.
     /// </summary>
+    protected static Chunk? TryPlace<TFragment>(
+        RoomComponent room,
+        in LotPlacementContext context,
+        IReadOnlyList<TFragment> candidates,
+        Func<TFragment, float> getWeight)
+        where TFragment : MapFragment
+        => TryPlace(room, context, room.Level.GenerationRandom.WeightedOrder(candidates, getWeight));
+
     protected static Chunk? TryPlace(
         RoomComponent room,
         in LotPlacementContext ctx,
@@ -307,7 +315,7 @@ public abstract class RoomLayout
                 continue;
             }
 
-            IncrementInstanceCounts(room, nextFragment);
+            nextFragment.IncrementInstanceCounts(room.Level, room.FeatureTags);
             return placedChunk;
         }
 
@@ -665,13 +673,6 @@ public abstract class RoomLayout
                 }
             }
         }
-    }
-
-    public static void IncrementInstanceCounts(RoomComponent room, MapFragment fragment)
-    {
-        room.Level.GenerationStats.RecordFragmentInstance(fragment.SourceName, fragment.Tags, room.Features);
-        room.Level.Game.GenerationStats.RecordFragmentInstance(fragment.SourceName, fragment.Tags, room.Features);
-        room.Level.GenerationStats.RecordFragmentVariant(fragment.Name);
     }
 
     /// <summary>

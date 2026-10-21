@@ -65,7 +65,8 @@ public static partial class CreatureData
                 Effects = new List<Effect> { new Paralyze { Amount = "100*MightModifier()" } }
             }
         },
+        EnglishDescription = "An oversized spider with a rounded abdomen, glossy eyes and eight bristled legs. Its jointed limbs spread wide around a low body, with paired fangs tucked beneath the head.",
         InitialLevel = 1,
-        GenerationWeight = "$branch == 'entrance' ? 0 : 2"
+        GenerationWeight = "$branch == 'ruined stronghold' && $depth <= 2 ? 2 : 0"
     };
 }

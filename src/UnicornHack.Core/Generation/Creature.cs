@@ -1,4 +1,3 @@
-using System.Linq.Expressions;
 using CSharpScriptSerialization;
 using UnicornHack.Data.Creatures;
 using UnicornHack.Systems.Actors;
@@ -96,12 +95,21 @@ public class Creature : Being, ICSScriptSerializable, ILoadable
     public override int GetTemplateId() => Loader.GetId(Name);
 
     protected override Dictionary<int, IReadOnlyList<Effect>> GetRaceLeveledEffects()
-        => Abilities.Count == 0
-            ? []
-            : new Dictionary<int, IReadOnlyList<Effect>>
-            {
-                [1] = Abilities.Select(ability => (Effect)new AddAbility { Ability = ability }).ToList()
-            };
+    {
+        if (Abilities.Count == 0)
+        {
+            return [];
+        }
+
+        AbilityLoader.Prepare(Abilities);
+        var granted = new Effect[Abilities.Count];
+        for (var index = 0; index < Abilities.Count; index++)
+        {
+            granted[index] = new AddAbility { Ability = Abilities[index] };
+        }
+
+        return new Dictionary<int, IReadOnlyList<Effect>> { [1] = granted };
+    }
 
     // TODO: Move to LanguageService
     public string? EnglishDescription
@@ -138,7 +146,7 @@ public class Creature : Being, ICSScriptSerializable, ILoadable
             ? Primitives.Sex.Female
             : Primitives.Sex.Male);
 
-        being.ExperiencePoints = XP;
+        being.ExperiencePoints = XP != 0 ? XP : 100 + InitialLevel * 10;
         creatureEntity.Being = being;
 
         var physical = manager.CreateComponent<PhysicalComponent>(EntityComponent.Physical);
@@ -156,7 +164,7 @@ public class Creature : Being, ICSScriptSerializable, ILoadable
 
         manager.EffectApplicationSystem.ApplyAbilityWithoutCarrier(AbilityData.Innate, creatureEntity);
 
-        manager.EffectApplicationSystem.AddAbilityEffect(
+        manager.AbilityLevelSystem.AddAbilityEffect(
             creatureEntity, GetRaceAbilityTemplate(), InitialLevel);
 
         return creatureEntity;
@@ -201,60 +209,25 @@ public class Creature : Being, ICSScriptSerializable, ILoadable
 
     protected static readonly string DefaultWeight = "1.0";
 
-    protected static readonly ParameterExpression BranchParameter =
-        Expression.Parameter(typeof(string), name: "branch");
-
-    protected static readonly ParameterExpression DepthParameter =
-        Expression.Parameter(typeof(int), name: "depth");
-
-    protected static readonly ParameterExpression InstancesParameter =
-        Expression.Parameter(typeof(int), name: "instances");
-
-    private static readonly UnicornExpressionVisitor _translator =
-        new([BranchParameter, DepthParameter, InstancesParameter]);
-
     public static Func<string, int, int, float> CreateWeightFunction(string expression)
-        => _translator.Translate<Func<string, int, int, float>, float>(expression);
+        => UnicornExpressionVisitor.CreateGenerationWeightFunction(expression);
+
+    public bool CanPlaceInstance(GameLevel level)
+        => !IsNamed
+           || level.Game.GenerationStats.CreatureInstancesByName.GetValueOrDefault(Name) <= 0
+           && (!IsNamedNonBoss || level.GenerationStats.NamedNonBossCreatureCount <= 0);
 
     public float GetWeight(RoomComponent room)
     {
         var levelStats = room.Level.GenerationStats;
-        if (IsNamed)
+        if (!CanPlaceInstance(room.Level))
         {
-            if (room.Level.Game.GenerationStats.CreatureInstancesByName.GetValueOrDefault(Name) > 0)
-            {
-                return 0;
-            }
-
-            if (IsNamedNonBoss && levelStats.NamedNonBossCreatureCount > 0)
-            {
-                return 0;
-            }
+            return 0;
         }
 
-        if (_weightFunction == null)
-        {
-            try
-            {
-                _weightFunction = CreateWeightFunction(GenerationWeight ?? DefaultWeight);
-            }
-            catch (Exception e)
-            {
-                throw new InvalidOperationException("Error while parsing the GenerationWeight for " + Name, e);
-            }
-        }
-
-        try
-        {
-            return _weightFunction(
-                room.Level.Branch.Name,
-                room.Level.Depth,
-                levelStats.CreatureInstancesByName.GetValueOrDefault(Name));
-        }
-        catch (Exception e)
-        {
-            throw new InvalidOperationException("Error while evaluating the Weight for " + Name, e);
-        }
+        return UnicornExpressionVisitor.EvaluateGenerationWeight(
+            ref _weightFunction, GenerationWeight ?? DefaultWeight, Name, room.Level.Branch.Name, room.Level.Depth,
+            levelStats.CreatureInstancesByName.GetValueOrDefault(Name));
     }
 
     public static Creature? GetTemplate(GameEntity entity)

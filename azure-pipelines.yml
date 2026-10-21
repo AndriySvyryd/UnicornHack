@@ -11,6 +11,12 @@ variables:
   buildConfiguration: 'Release'
 
 steps:
+- task: UseDotNet@2
+  displayName: 'Set Up .NET SDK'
+  inputs:
+    packageType: 'sdk'
+    useGlobalJson: true
+
 - task: DotNetCoreCLI@2
   displayName: 'Restore'
   inputs:
@@ -26,9 +32,22 @@ steps:
 - task: DotNetCoreCLI@2
   displayName: 'Test'
   inputs:
-    command: 'test'
-    projects: '**/*.Tests/*.csproj'
-    arguments: '--configuration $(buildConfiguration) --collect "Code coverage"'
+    command: 'custom'
+    custom: 'test'
+    arguments: '--solution UnicornHack.sln --configuration $(buildConfiguration) --no-build --coverage --coverage-output-format cobertura --report-trx --results-directory "$(Agent.TempDirectory)/TestResults"'
+
+- task: PublishTestResults@2
+  displayName: 'Publish Test Results'
+  condition: succeededOrFailed()
+  inputs:
+    testResultsFormat: 'VSTest'
+    testResultsFiles: '$(Agent.TempDirectory)/TestResults/**/*.trx'
+
+- task: PublishCodeCoverageResults@2
+  displayName: 'Publish Code Coverage'
+  condition: succeededOrFailed()
+  inputs:
+    summaryFileLocation: '$(Agent.TempDirectory)/TestResults/**/*.cobertura.xml'
 
 - task: DotNetCoreCLI@2
   displayName: 'Benchmark Core'

@@ -10,6 +10,50 @@ namespace UnicornHack.Systems.Levels;
 
 public class TravelSystemTest
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void A_living_boss_can_be_bypassed_without_receiving_its_rewards(bool useExplicitTravel)
+    {
+        var room = TestHelper.BuildRoom(".>.");
+        var manager = room.Game.Manager;
+        var target = TestHelper.BuildRoom("..", room.Game, depth: 1);
+        Array.Copy(target.Terrain, target.KnownTerrain, target.TileCount);
+        var connection = room.Connections.Values.Single().Connection!;
+        connection.TargetRoomId = target.EntityId;
+        connection.TargetCell = new Point(0, 0);
+        room.FeatureTags |= RoomFeatures.Boss;
+        var player = PlayerRace.InstantiatePlayer("Tester", Sex.Male, room, new Point((byte)(useExplicitTravel ? 1 : 0), 0));
+        var boss = CreatureData.Lindwurm.Instantiate(room, new Point(2, 0));
+        Assert.True(ItemData.GoldCoin.Instantiate(boss));
+        manager.Queue.ProcessQueue(manager);
+        var initialExperience = player.Being!.ExperiencePoints;
+        var rewardId = Assert.Single(boss.Being!.Items).Id;
+        Assert.True(boss.Being.IsAlive);
+
+        if (useExplicitTravel)
+        {
+            Assert.True(manager.TravelSystem.TravelToRoom(player, target.EntityId, manager));
+        }
+        else
+        {
+            var travel = TravelMessage.Create(manager);
+            travel.ActorEntity = player;
+            travel.TargetCell = new Point(1, 0);
+            travel.TargetHeading = Direction.East;
+            Assert.True(manager.TravelSystem.CanTravel(travel, manager));
+            Assert.True(boss.Being.IsAlive);
+            manager.Enqueue(travel);
+        }
+
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(target.EntityId, player.Position!.RoomId);
+        Assert.Equal(initialExperience, player.Being.ExperiencePoints);
+        Assert.DoesNotContain(player.Being.Items, item => item.Id == rewardId);
+        Assert.DoesNotContain(target.Items.Values, item => item.Id == rewardId);
+        Assert.Null(manager.FindEntity(rewardId));
+    }
+
     private static void Engulf(GameEntity engulfer, GameEntity victim, GameManager manager)
     {
         var engulfEffect = engulfer.ActiveEffects!.Abilities
@@ -70,10 +114,10 @@ public class TravelSystemTest
         connection1.TargetRoomId = level2.EntityId;
         connection1.TargetCell = targetCell;
 
-        var roomBound = manager.EffectApplicationSystem.AddAbilityEffect(
+        var roomBound = manager.AbilityLevelSystem.AddAbilityEffect(
             player, new Ability { Name = "room-bound test", Type = AbilityType.Buff });
         roomBound.ExpirationEvent = EffectDuration.UntilNextRoom;
-        var levelBound = manager.EffectApplicationSystem.AddAbilityEffect(
+        var levelBound = manager.AbilityLevelSystem.AddAbilityEffect(
             player, new Ability { Name = "level-bound test", Type = AbilityType.Buff });
         levelBound.ExpirationEvent = EffectDuration.UntilNextLevel;
 
@@ -156,7 +200,7 @@ public class TravelSystemTest
 ...
 ...
 ...");
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(1, 1));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(1, 1));
         var manager = npc.Manager;
         manager.Queue.ProcessQueue(manager);
 
@@ -182,7 +226,7 @@ public class TravelSystemTest
     public void Relative_target_is_calculated_after_forced_movement()
     {
         var level = TestHelper.BuildRoom("....");
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         var manager = npc.Manager;
         manager.Queue.ProcessQueue(manager);
 
@@ -205,7 +249,7 @@ public class TravelSystemTest
 ...
 ...
 ...");
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(1, 1));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(1, 1));
         var manager = npc.Manager;
         manager.Queue.ProcessQueue(manager);
 
@@ -215,7 +259,7 @@ public class TravelSystemTest
             EffectType.Bind, npc, amount: 200));
 
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Bound.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Bound.Name));
 
         var startCell = npc.Position!.Cell!.Value;
         var travelMessage = TravelMessage.Create(manager);
@@ -237,7 +281,7 @@ public class TravelSystemTest
 ...
 ...
 ...");
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(1, 1));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(1, 1));
         var manager = npc.Manager;
         manager.Queue.ProcessQueue(manager);
 
@@ -245,7 +289,7 @@ public class TravelSystemTest
         manager.EffectApplicationSystem.ApplyStatus(EffectApplicationContext.CreateStatus(
             EffectType.Stick, npc, amount: 600));
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(3, EffectApplicationSystem.GetAbilityLevel(npc, AbilityData.Stuck.Name));
+        Assert.Equal(3, AbilityLevelSystem.GetAbilityLevel(npc, AbilityData.Stuck.Name));
 
         var startCell = npc.Position.Cell!.Value;
         var travelMessage = TravelMessage.Create(manager);
@@ -279,8 +323,8 @@ public class TravelSystemTest
         var manager = level.Entity.Manager;
         var engulferStart = new Point(2, 2);
         var victimStart = new Point(3, 2);
-        var engulfer = CreatureData.GelatinousCube.Instantiate(level, engulferStart);
-        var victim = CreatureData.HumanWarrior.Instantiate(level, victimStart);
+        var engulfer = CreatureData.Sylph.Instantiate(level, engulferStart);
+        var victim = CreatureData.Manusya.Instantiate(level, victimStart);
         manager.Queue.ProcessQueue(manager);
         Engulf(engulfer, victim, manager);
 
@@ -310,8 +354,8 @@ public class TravelSystemTest
     {
         var level = TestHelper.BuildRoom("...#");
         var manager = level.Entity.Manager;
-        var engulfer = CreatureData.GelatinousCube.Instantiate(level, new Point(1, 0));
-        var victim = CreatureData.HumanWarrior.Instantiate(level, new Point(2, 0));
+        var engulfer = CreatureData.Sylph.Instantiate(level, new Point(1, 0));
+        var victim = CreatureData.Manusya.Instantiate(level, new Point(2, 0));
         manager.Queue.ProcessQueue(manager);
         Engulf(engulfer, victim, manager);
 
@@ -333,8 +377,8 @@ public class TravelSystemTest
     {
         var level = TestHelper.BuildRoom("....");
         var manager = level.Entity.Manager;
-        var engulfer = CreatureData.GelatinousCube.Instantiate(level, new Point(1, 0));
-        var victim = CreatureData.HumanWarrior.Instantiate(level, new Point(2, 0));
+        var engulfer = CreatureData.Sylph.Instantiate(level, new Point(1, 0));
+        var victim = CreatureData.Manusya.Instantiate(level, new Point(2, 0));
         manager.Queue.ProcessQueue(manager);
         Engulf(engulfer, victim, manager);
 
@@ -362,8 +406,8 @@ public class TravelSystemTest
     {
         var level = TestHelper.BuildRoom("...");
         var manager = level.Entity.Manager;
-        var engulfer = CreatureData.GelatinousCube.Instantiate(level, new Point(0, 0));
-        var victim = CreatureData.HumanWarrior.Instantiate(level, new Point(1, 0));
+        var engulfer = CreatureData.Sylph.Instantiate(level, new Point(0, 0));
+        var victim = CreatureData.Manusya.Instantiate(level, new Point(1, 0));
         manager.Queue.ProcessQueue(manager);
         Engulf(engulfer, victim, manager);
 
@@ -386,8 +430,8 @@ public class TravelSystemTest
 .>.
 ...");
         var manager = level1.Entity.Manager;
-        var engulfer = CreatureData.GelatinousCube.Instantiate(level1, new Point(1, 0));
-        var victim = CreatureData.HumanWarrior.Instantiate(level1, new Point(0, 0));
+        var engulfer = CreatureData.Sylph.Instantiate(level1, new Point(1, 0));
+        var victim = CreatureData.Manusya.Instantiate(level1, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
         Engulf(engulfer, victim, manager);
 
@@ -434,8 +478,8 @@ public class TravelSystemTest
         connection.Directionality = Directionality.Source;
         connectionEntity.Connection = connection;
 
-        var engulfer = CreatureData.GelatinousCube.Instantiate(room1, new Point(1, 0));
-        var victim = CreatureData.HumanWarrior.Instantiate(room1, new Point(2, 0));
+        var engulfer = CreatureData.Sylph.Instantiate(room1, new Point(1, 0));
+        var victim = CreatureData.Manusya.Instantiate(room1, new Point(2, 0));
         manager.Queue.ProcessQueue(manager);
         Engulf(engulfer, victim, manager);
 
@@ -579,7 +623,7 @@ public class TravelSystemTest
 ...");
         var manager = room.Game.Manager;
 
-        var npc = CreatureData.HumanWarrior.Instantiate(room, new Point(1, 1));
+        var npc = CreatureData.Manusya.Instantiate(room, new Point(1, 1));
         ItemData.GoldCoin.Instantiate(room, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
@@ -626,7 +670,7 @@ public class TravelSystemTest
 ...");
         var manager = room.Game.Manager;
 
-        var npc = CreatureData.HumanWarrior.Instantiate(room, new Point(1, 1));
+        var npc = CreatureData.Manusya.Instantiate(room, new Point(1, 1));
         manager.Queue.ProcessQueue(manager);
 
         var npcId = npc.Id;
@@ -662,7 +706,7 @@ public class TravelSystemTest
 ...");
         var manager = room.Game.Manager;
 
-        var npc = CreatureData.HumanWarrior.Instantiate(room, new Point(1, 1));
+        var npc = CreatureData.Manusya.Instantiate(room, new Point(1, 1));
         manager.Queue.ProcessQueue(manager);
 
         // A creature carries its race on a separate carrier entity (being.Races), distinct from its
@@ -709,7 +753,7 @@ public class TravelSystemTest
         connection.Orientation = Direction.South;
         connectionEntity.Connection = connection;
 
-        var npc = CreatureData.HumanWarrior.Instantiate(roomA, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(roomA, new Point(0, 0));
         using var abilityReference = manager.CreateEntity();
         var abilityEntity = abilityReference.Referenced;
         var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
@@ -756,14 +800,12 @@ public class TravelSystemTest
 
         ConnectRooms(
             playerSource, new Point(1, 0),
-            playerDestination, new Point(0, 0),
-            manager);
+            playerDestination, new Point(0, 0));
         ConnectRooms(
             roamingDestination, new Point(2, 0),
-            roamingSource, new Point(0, 0),
-            manager);
+            roamingSource, new Point(0, 0));
 
-        var roamingCreature = CreatureData.Cerberous.Instantiate(
+        var roamingCreature = CreatureData.Cerberus.Instantiate(
             roamingSource, new Point(1, 0));
         var player = PlayerRace.InstantiatePlayer(
             "Dudley", Sex.Male, playerSource, new Point(1, 0));
@@ -792,14 +834,12 @@ public class TravelSystemTest
 
         ConnectRooms(
             playerSource, new Point(1, 0),
-            destination, new Point(0, 0),
-            manager);
+            destination, new Point(0, 0));
         ConnectRooms(
             destination, new Point(2, 0),
-            escapeRoom, new Point(0, 0),
-            manager);
+            escapeRoom, new Point(0, 0));
 
-        var roamingCreature = CreatureData.Cerberous.Instantiate(
+        var roamingCreature = CreatureData.Cerberus.Instantiate(
             destination, new Point(1, 0));
         var player = PlayerRace.InstantiatePlayer(
             "Dudley", Sex.Male, playerSource, new Point(1, 0));
@@ -854,7 +894,7 @@ public class TravelSystemTest
         level2Room.Level.BranchName = level1.BranchName;
 
         // A creature stranded in the side room of level 1.
-        var strandedNpc = CreatureData.HumanWarrior.Instantiate(sideRoom, new Point(0, 0));
+        var strandedNpc = CreatureData.Manusya.Instantiate(sideRoom, new Point(0, 0));
 
         var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, exitRoom, new Point(1, 0));
         manager.Queue.ProcessQueue(manager);
@@ -920,8 +960,8 @@ public class TravelSystemTest
         down.Connection!.TargetCell = up.Position!.Cell;
         down.Connection!.Orientation = Direction.Down;
 
-        var exitNpc = CreatureData.HumanWarrior.Instantiate(exitRoom, new Point(0, 0));
-        var deeperNpc = CreatureData.HumanWarrior.Instantiate(deeperRoom, new Point(0, 0));
+        var exitNpc = CreatureData.Manusya.Instantiate(exitRoom, new Point(0, 0));
+        var deeperNpc = CreatureData.Manusya.Instantiate(deeperRoom, new Point(0, 0));
         var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, exitRoom, new Point(1, 0));
         manager.Queue.ProcessQueue(manager);
 
@@ -967,22 +1007,7 @@ public class TravelSystemTest
         RoomComponent source,
         Point sourceCell,
         RoomComponent target,
-        Point targetCell,
-        GameManager manager)
-    {
-        using var connectionReference = manager.CreateEntity();
-        var connectionEntity = connectionReference.Referenced;
-        var position = manager.CreateComponent<PositionComponent>(EntityComponent.Position);
-        position.RoomEntity = source.Entity;
-        position.Cell = sourceCell;
-        connectionEntity.Position = position;
-
-        var connection = manager.CreateComponent<ConnectionComponent>(EntityComponent.Connection);
-        connection.TargetRoomId = target.EntityId;
-        connection.TargetCell = targetCell;
-        connection.Directionality = Directionality.Source;
-        connection.Orientation = Direction.East;
-        connectionEntity.Connection = connection;
-        return connectionEntity;
-    }
+        Point targetCell)
+        => LevelConnection.CreateConnection(source, sourceCell, target.EntityId, targetCell,
+            Directionality.Source, Direction.East).Entity;
 }

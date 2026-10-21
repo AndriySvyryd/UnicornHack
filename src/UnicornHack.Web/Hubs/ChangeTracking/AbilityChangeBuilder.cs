@@ -784,7 +784,7 @@ public class AbilityChangeBuilder
     {
         var ability = abilityEntity.Ability!;
         return ability.OwnerEntity is { } owner
-            ? EffectApplicationSystem.GetAbilityLevelReduction(owner, ability.Name!)
+            ? AbilityLevelSystem.GetAbilityLevelReduction(owner, ability.Name!)
             : 0;
     }
 

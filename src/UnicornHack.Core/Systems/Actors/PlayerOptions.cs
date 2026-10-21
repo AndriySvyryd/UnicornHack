@@ -1,14 +1,21 @@
+using UnicornHack.Systems.Levels;
 using UnicornHack.Utils;
 
 namespace UnicornHack.Systems.Actors;
 
 public sealed class PlayerOptions : NotificationEntity
 {
-    private string _pendingChoice = "";
+    public int? SourceFeatureId
+    {
+        get;
+        set => SetWithNotify(value, ref field);
+    }
+
+    private RewardType _pendingChoice;
     private string? _pendingChoiceAction;
     private string[] _pendingChoiceOptions = [];
 
-    public string ChoiceType
+    public RewardType ChoiceType
     {
         get => _pendingChoice;
         set => SetWithNotify(value, ref _pendingChoice);
@@ -28,7 +35,7 @@ public sealed class PlayerOptions : NotificationEntity
 }
 
 public sealed record PlayerChoicePresentation(
-    string Choice,
+    RewardType Choice,
     string? Action,
     string Title,
     IReadOnlyList<PlayerChoiceOptionPresentation> Options,

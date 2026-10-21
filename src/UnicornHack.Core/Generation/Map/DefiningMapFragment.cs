@@ -185,6 +185,37 @@ public class DefiningMapFragment : ConnectingMapFragment
             GlobalFeatureInstancesParameter,
             ConnectionParameter);
 
+    public float GetWeight(GameLevel level, RoomFeatures features)
+    {
+        if (((features & RoomFeatures.Boss) != 0) != (Tags?.Contains("boss") == true))
+        {
+            return 0;
+        }
+
+        var demandMultiplier = GetDemandMultiplier(features, 0, DirectionFlags.None);
+        if (demandMultiplier == 0f)
+        {
+            return 0;
+        }
+
+        if (Creatures != null)
+        {
+            foreach (var name in Creatures.Values)
+            {
+                if (!level.Game.Services.Data.Creatures.Get(name).CanPlaceInstance(level))
+                {
+                    return 0;
+                }
+            }
+        }
+
+        var stats = level.GenerationStats;
+        var global = level.Game.GenerationStats;
+        return GetWeight(level.BranchName, level.Depth, features,
+            stats.FragmentInstancesByName, global.FragmentInstancesByName,
+            stats.FragmentInstancesByTag, global.FragmentInstancesByTag, global.FragmentInstancesByFeature) * demandMultiplier;
+    }
+
     protected override void ResetWeightFunction() => _weightFunction = null;
 
     public override void EnsureWeightFunctionCompiled()

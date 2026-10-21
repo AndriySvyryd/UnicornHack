@@ -1,8 +1,9 @@
+using CSharpScriptSerialization;
 using UnicornHack.Systems.Levels;
 
 namespace UnicornHack.Generation;
 
-public class ItemGenerator
+public class ItemGenerator : ICSScriptSerializable
 {
     public byte ExpectedInitialCount
     {
@@ -47,6 +48,8 @@ public class ItemGenerator
                             if (itemVariant.Instantiate(room, point, quantity))
                             {
                                 room.Level.GenerationStats.RecordItemInstance(
+                                    itemVariant.Name, itemVariant.Type);
+                                room.Level.Game.GenerationStats.RecordItemInstance(
                                     itemVariant.Name, itemVariant.Type);
                                 itemPlaced = true;
                                 break;
@@ -99,4 +102,12 @@ public class ItemGenerator
             roomsToFill--;
         }
     }
+
+    private static readonly CSScriptSerializer Serializer = new PropertyCSScriptSerializer<ItemGenerator>(
+        new Dictionary<string, Func<ItemGenerator, object?, bool>>
+        {
+            [nameof(ExpectedInitialCount)] = (_, value) => (byte)value! != 3
+        });
+
+    public ICSScriptSerializer GetSerializer() => Serializer;
 }

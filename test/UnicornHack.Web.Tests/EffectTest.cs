@@ -42,7 +42,7 @@ public class EffectTest
         var game = TestHelper.CreateGame();
         var level = TestHelper.BuildRoom(TestMap, game);
         var manager = game.Manager;
-        var enemy = CreatureData.HumanWarrior.Instantiate(level, new Point(2, 3));
+        var enemy = CreatureData.Manusya.Instantiate(level, new Point(2, 3));
         var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(2, 2));
         manager.Queue.ProcessQueue(manager);
 
@@ -64,7 +64,7 @@ public class EffectTest
 
         Assert.NotNull(GameStateManager.GetState(
             player, game.Services).Room!.Actors![enemyKnowledgeId].NextAction);
-        manager.EffectApplicationSystem.RemoveAbility(enemy, AbilityData.Confused.Name, manager);
+        manager.AbilityLevelSystem.RemoveAbility(enemy, AbilityData.Confused.Name, manager);
         manager.Queue.ProcessQueue(manager);
         listener.Reset(manager);
 
@@ -80,7 +80,7 @@ public class EffectTest
             player, game.Services).Room!.Actors![enemyKnowledgeId].NextAction);
         listener.Reset(manager);
 
-        manager.EffectApplicationSystem.RemoveAbility(player, AbilityData.Confused.Name, manager);
+        manager.AbilityLevelSystem.RemoveAbility(player, AbilityData.Confused.Name, manager);
         manager.Queue.ProcessQueue(manager);
 
         var restoredDelta = playerBuilder.BuildChangeSet(manager, game.Services)
@@ -95,7 +95,7 @@ public class EffectTest
         var game = TestHelper.CreateGame();
         var level = TestHelper.BuildRoom(TestMap, game);
         var manager = game.Manager;
-        var enemy = CreatureData.HumanWarrior.Instantiate(level, new Point(2, 3));
+        var enemy = CreatureData.Manusya.Instantiate(level, new Point(2, 3));
         var confusedPlayer = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(2, 2));
         var capablePlayer = PlayerRace.InstantiatePlayer("Cudley", Sex.Female, level, new Point(3, 2));
         manager.Queue.ProcessQueue(manager);
@@ -135,7 +135,7 @@ public class EffectTest
         // A status rides on the being as a slot-less ability, carrying its related effect accumulator.
         EffectTestHelper.ApplyStatus(playerEntity, EffectType.Chill, duration: 100, manager);
         manager.Queue.ProcessQueue(manager);
-        Assert.True(EffectApplicationSystem.GetAbilityLevel(playerEntity, "chilled") > 0);
+        Assert.True(AbilityLevelSystem.GetAbilityLevel(playerEntity, "chilled") > 0);
         var chilledRecord = Assert.Single(
             playerEntity.ActiveEffects!.ComponentEffects,
             effect => effect.TargetName == AbilityData.Chilled.Name);
@@ -157,7 +157,7 @@ public class EffectTest
         var (manager, playerEntity, listener) = SetupGameWithListener();
         var playerBuilder = Assert.Single(
             listener.PlayerBuilders, builder => builder.PlayerEntityId == playerEntity.Id);
-        var positiveRecord = manager.EffectApplicationSystem.AddAbilityEffect(
+        var positiveRecord = manager.AbilityLevelSystem.AddAbilityEffect(
             playerEntity, AbilityData.Greased);
         manager.Queue.ProcessQueue(manager);
 
@@ -204,7 +204,7 @@ public class EffectTest
         Assert.Equal(1, state.Abilities[originalCarrierId].LevelReduction);
         listener.Reset(manager);
 
-        manager.EffectApplicationSystem.RemoveAbilityComponentEffects(
+        manager.AbilityLevelSystem.RemoveAbilityComponentEffects(
             playerEntity, suppressor.EntityId, manager);
         manager.Queue.ProcessQueue(manager);
 
@@ -244,7 +244,7 @@ public class EffectTest
             EffectType.Stun, residual, playerEntity, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.True(EffectApplicationSystem.GetAbilityLevel(playerEntity, AbilityData.Stunned.Name) > 0);
+        Assert.True(AbilityLevelSystem.GetAbilityLevel(playerEntity, AbilityData.Stunned.Name) > 0);
         Assert.Equal(residual, playerEntity.ActiveEffects!.Accumulators[EffectType.Stun].Value);
 
         var context = new SerializationContext(null!, playerEntity, manager.Game.Services);
@@ -303,7 +303,7 @@ public class EffectTest
             EffectType.Stun, buildup, playerEntity, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(0, EffectApplicationSystem.GetAbilityLevel(playerEntity, AbilityData.Stunned.Name));
+        Assert.Equal(0, AbilityLevelSystem.GetAbilityLevel(playerEntity, AbilityData.Stunned.Name));
         Assert.Equal(buildup, playerEntity.ActiveEffects!.Accumulators[EffectType.Stun].Value);
 
         var context = new SerializationContext(null!, playerEntity, manager.Game.Services);
@@ -386,7 +386,7 @@ public class EffectTest
             ability => ability.Value.Name == "Stunned" && ability.Value.Level == 1);
         listener.Reset(manager);
 
-        manager.EffectApplicationSystem.RemoveAbility(
+        manager.AbilityLevelSystem.RemoveAbility(
             playerEntity, AbilityData.Stunned.Name, manager);
         manager.Queue.ProcessQueue(manager);
 
@@ -425,13 +425,13 @@ public class EffectTest
         EffectTestHelper.ApplyStatus(playerEntity, EffectType.Stun, duration: 100, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.False(EffectApplicationSystem.GetAbilityLevel(playerEntity, "stunned") > 0);
+        Assert.False(AbilityLevelSystem.GetAbilityLevel(playerEntity, "stunned") > 0);
 
         // A second hit pushes the build-up over the threshold and the stun takes hold.
         EffectTestHelper.ApplyStatus(playerEntity, EffectType.Stun, duration: 100, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.True(EffectApplicationSystem.GetAbilityLevel(playerEntity, "stunned") > 0);
+        Assert.True(AbilityLevelSystem.GetAbilityLevel(playerEntity, "stunned") > 0);
     }
 
     [Fact]
@@ -441,7 +441,7 @@ public class EffectTest
 
         EffectTestHelper.ApplyStatus(playerEntity, EffectType.Stun, duration: 100, manager);
         manager.Queue.ProcessQueue(manager);
-        Assert.True(EffectApplicationSystem.GetAbilityLevel(playerEntity, "stunned") > 0);
+        Assert.True(AbilityLevelSystem.GetAbilityLevel(playerEntity, "stunned") > 0);
 
         var state = ClientStateHelpers.Deserialize(
             GameStateManager.GetState(playerEntity, manager.Game.Services));
@@ -467,7 +467,7 @@ public class EffectTest
         // A full-strength stun (no resistance) takes hold at once as an accumulator instance.
         EffectTestHelper.ApplyStatus(playerEntity, EffectType.Stun, duration: 100, manager);
         manager.Queue.ProcessQueue(manager);
-        Assert.True(EffectApplicationSystem.GetAbilityLevel(playerEntity, "stunned") > 0);
+        Assert.True(AbilityLevelSystem.GetAbilityLevel(playerEntity, "stunned") > 0);
 
         // The change sets must carry the incapacitation add (and any subsequent removal as it is spent)
         // so the client state converges to a fresh snapshot without divergence or an orphaned removal.
@@ -565,7 +565,7 @@ public class EffectTest
 
         EffectTestHelper.ApplyStatus(playerEntity, EffectType.Confuse, duration: 1000, manager);
         manager.Queue.ProcessQueue(manager);
-        Assert.True(EffectApplicationSystem.GetAbilityLevel(playerEntity, "confused") > 0);
+        Assert.True(AbilityLevelSystem.GetAbilityLevel(playerEntity, "confused") > 0);
 
         var changeSets = WebTestHelper.PerformAction(player, listener, services, ActorActionType.Wait);
         Assert.True(changeSets.TryGetValue(playerEntity.Id, out var playerChangeSets));
@@ -603,7 +603,7 @@ public class EffectTest
         // Waiting draws the build-up down each turn; once it is spent the status ability is lifted, and that
         // removal must be carried to the client. Advance until the server lifts it (a cap guards against a
         // never-ending loop) and apply each turn's change set so the client mirror tracks the removal.
-        for (var i = 0; i < 30 && (EffectApplicationSystem.GetAbilityLevel(playerEntity, "confused") > 0); i++)
+        for (var i = 0; i < 30 && (AbilityLevelSystem.GetAbilityLevel(playerEntity, "confused") > 0); i++)
         {
             var sets = WebTestHelper.PerformAction(player, listener, services, ActorActionType.Wait);
             if (sets.TryGetValue(playerEntity.Id, out var s))
@@ -612,7 +612,7 @@ public class EffectTest
             }
         }
 
-        Assert.False(EffectApplicationSystem.GetAbilityLevel(playerEntity, "confused") > 0);
+        Assert.False(AbilityLevelSystem.GetAbilityLevel(playerEntity, "confused") > 0);
         Assert.DoesNotContain(baseline.Abilities!.Values, a => a.Type == (int)AbilityType.Debuff && a.Name == "Confused");
 
         var fresh = ClientStateHelpers.Deserialize(GameStateManager.GetState(playerEntity, services));
@@ -819,7 +819,7 @@ public class EffectTest
         }
 
         Assert.True(
-            EffectApplicationSystem.GetAbilityLevel(player, "stunned") > 0,
+            AbilityLevelSystem.GetAbilityLevel(player, "stunned") > 0,
             "Expected the accumulated stun to be in force before saving.");
         persisted.Context.SaveChanges();
 
@@ -827,7 +827,7 @@ public class EffectTest
 
         var reloadedPlayer = persisted.PlayerEntity;
         Assert.True(
-            EffectApplicationSystem.GetAbilityLevel(reloadedPlayer, "stunned") > 0,
+            AbilityLevelSystem.GetAbilityLevel(reloadedPlayer, "stunned") > 0,
             "The stun condition should reconstruct from the persisted build-up accumulator after a reload.");
     }
 

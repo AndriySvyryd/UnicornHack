@@ -6,18 +6,32 @@ public static partial class CreatureData
     {
         Name = "bugbear",
         SpeciesClass = SpeciesClass.Humanoid,
+        MovementDelay = 33,
+        TurningDelay = 33,
+        Size = 8,
+        Weight = 1250,
+        PerceptionBonus = -8,
+        MightBonus = -8,
+        SpeedBonus = -8,
+        FocusBonus = -8,
+        Armor = 2,
+        TorsoType = TorsoType.Humanoid,
+        UpperExtremities = ExtremityType.GraspingFingers,
+        LowerExtremities = ExtremityType.Fingers,
+        Infravisible = true,
+        Infravision = true,
         Abilities = new List<Ability>
         {
             new Ability
             {
-                Name = "bugbear ability #1",
+                Name = "ambush force",
                 Activation = ActivationType.OnMeleeAttack,
                 Action = AbilityAction.Modifier,
                 Effects = new List<Effect> { new PhysicalDamage { Amount = "50*MightModifier()" } }
             },
             new Ability
             {
-                Name = "bugbear ability #2",
+                Name = "looming punch",
                 Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
@@ -31,7 +45,7 @@ public static partial class CreatureData
             },
             new Ability
             {
-                Name = "bugbear ability #3",
+                Name = "terrifying scream",
                 Type = AbilityType.RangedAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnRangedAttack,
@@ -44,22 +58,9 @@ public static partial class CreatureData
                 Effects = new List<Effect> { new Taunt() }
             }
         },
+        EnglishDescription = "A broad, shaggy humanoid with a thick neck, a blunt muzzle and heavy arms. Coarse hair bristles around its ears and spills over the edges of its rough clothing.",
         InitialLevel = 5,
-        GenerationWeight = "$branch == 'entrance' ? 0 : 4",
-        Noise = ActorNoiseType.Growl,
-        Size = 8,
-        Weight = 1250,
-        MovementDelay = 33,
-        TurningDelay = 33,
-        PerceptionBonus = -8,
-        MightBonus = -8,
-        SpeedBonus = -8,
-        FocusBonus = -8,
-        Armor = 2,
-        TorsoType = TorsoType.Humanoid,
-        UpperExtremities = ExtremityType.GraspingFingers,
-        LowerExtremities = ExtremityType.Fingers,
-        Infravisible = true,
-        Infravision = true
+        GenerationWeight = "$branch == 'ruined stronghold' ? 4 : 0",
+        Noise = ActorNoiseType.Growl
     };
 }

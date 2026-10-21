@@ -17,7 +17,7 @@ public sealed class RoomEntryFormatter : IMessagePackFormatter<RoomEntry?>
         }
 
         var resolver = options.Resolver;
-        writer.WriteArrayHeader(10);
+        writer.WriteArrayHeader(9);
         writer.Write(value.Id);
         writer.Write(value.GridX);
         writer.Write(value.GridY);
@@ -25,9 +25,8 @@ public sealed class RoomEntryFormatter : IMessagePackFormatter<RoomEntry?>
         writer.Write(value.IsVisited);
         resolver.GetFormatterWithVerify<List<int>>().Serialize(ref writer, value.ConnectedTo, options);
         writer.Write(value.RevealedActorCount);
-        writer.Write(value.RevealedItemCount);
-        resolver.GetFormatterWithVerify<string?>().Serialize(ref writer, value.StrongestActorName, options);
         resolver.GetFormatterWithVerify<string?>().Serialize(ref writer, value.Tooltip, options);
+        resolver.GetFormatterWithVerify<string?>().Serialize(ref writer, value.EliteName, options);
     }
 
     public RoomEntry? Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
@@ -66,13 +65,10 @@ public sealed class RoomEntryFormatter : IMessagePackFormatter<RoomEntry?>
                     value.RevealedActorCount = reader.ReadInt32();
                     break;
                 case 7:
-                    value.RevealedItemCount = reader.ReadInt32();
+                    value.Tooltip = resolver.GetFormatterWithVerify<string?>().Deserialize(ref reader, options);
                     break;
                 case 8:
-                    value.StrongestActorName = resolver.GetFormatterWithVerify<string?>().Deserialize(ref reader, options);
-                    break;
-                case 9:
-                    value.Tooltip = resolver.GetFormatterWithVerify<string?>().Deserialize(ref reader, options);
+                    value.EliteName = resolver.GetFormatterWithVerify<string?>().Deserialize(ref reader, options);
                     break;
                 default:
                     reader.Skip();

@@ -113,7 +113,7 @@ public class VisibilityTest
         manager.Queue.ProcessQueue(manager);
 
         // Place the NPC in the open, a couple of tiles north of the player.
-        CreatureData.HumanWarrior.Instantiate(level, new Point(5, 3));
+        CreatureData.Manusya.Instantiate(level, new Point(5, 3));
         manager.Queue.ProcessQueue(manager);
 
         var listener = WebTestHelper.SetupListeners(manager);
@@ -371,9 +371,9 @@ public class VisibilityTest
         var manager = game.Manager;
 
         // Place several NPCs south of the wall (invisible to the player initially)
-        CreatureData.HumanWarrior.Instantiate(level, new Point(3, 20));
-        CreatureData.HumanWarrior.Instantiate(level, new Point(7, 22));
-        CreatureData.HumanWarrior.Instantiate(level, new Point(10, 18));
+        CreatureData.Manusya.Instantiate(level, new Point(3, 20));
+        CreatureData.Manusya.Instantiate(level, new Point(7, 22));
+        CreatureData.Manusya.Instantiate(level, new Point(10, 18));
         manager.Queue.ProcessQueue(manager);
 
         // Player starts far north
@@ -465,8 +465,8 @@ public class VisibilityTest
         var manager = game.Manager;
 
         // Place creatures and item south of where the player will be — visible in south-facing FOV.
-        CreatureData.HumanWarrior.Instantiate(level, new Point(12, 13));
-        CreatureData.HumanWarrior.Instantiate(level, new Point(10, 13));
+        CreatureData.Manusya.Instantiate(level, new Point(12, 13));
+        CreatureData.Manusya.Instantiate(level, new Point(10, 13));
         ItemData.LongSword.Instantiate(level, new Point(13, 13));
         manager.Queue.ProcessQueue(manager);
 

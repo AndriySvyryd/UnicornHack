@@ -454,6 +454,8 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         set;
     }
 
+    public Dictionary<char, string>? Creatures { get; set; }
+
     public bool NoRandomDoorways
     {
         get;
@@ -1025,6 +1027,13 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
                     $"{Name}: annotation '{glyph}' has an empty substitution string.");
             }
         }
+    }
+
+    public void IncrementInstanceCounts(GameLevel level, RoomFeatures features)
+    {
+        level.GenerationStats.RecordFragmentInstance(SourceName, Tags, features);
+        level.Game.GenerationStats.RecordFragmentInstance(SourceName, Tags, features);
+        level.GenerationStats.RecordFragmentVariant(Name);
     }
 
     /// <summary>
@@ -1731,6 +1740,10 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     ///     is outstanding or the fragment carries no relevant tags / anti-tags.
     /// </summary>
     public float GetDemandMultiplier(RoomComponent room, in LotPlacementContext ctx)
+        => GetDemandMultiplier(room.FeatureTags, room.BoundPlaceableFeatures, ctx.DemandedDoorways);
+
+    protected float GetDemandMultiplier(
+        RoomFeatures features, RoomFeatures boundPlaceableFeatures, DirectionFlags demandedDoorways)
     {
         var multiplier = 1f;
         var matches = 0;
@@ -1754,7 +1767,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             {
                 if (bit == RoomFeatures.Trapped)
                 {
-                    if ((room.Features & RoomFeatures.Trapped) == 0
+                    if ((features & RoomFeatures.Trapped) == 0
                         && FeatureTagNames.TryGetValue(RoomFeatures.Trapped, out var trappedTag)
                         && tags.Contains(trappedTag))
                     {
@@ -1763,7 +1776,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
                     continue;
                 }
 
-                if ((room.Features & bit) == 0
+                if ((features & bit) == 0
                     && FeatureTagNames.TryGetValue(bit, out var tagName)
                     && tags.Contains(tagName))
                 {
@@ -1772,8 +1785,8 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             }
         }
 
-        var outstandingPlaceable = room.Features & PlaceableFeaturesMask & ~room.BoundPlaceableFeatures;
-        var outstandingNonPlaceable = room.Features & NonPlaceableFeatures;
+        var outstandingPlaceable = features & PlaceableFeaturesMask & ~boundPlaceableFeatures;
+        var outstandingNonPlaceable = features & NonPlaceableFeatures;
         var outstanding = outstandingPlaceable | outstandingNonPlaceable;
         if (outstanding != 0)
         {
@@ -1797,12 +1810,12 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             }
         }
 
-        if (ctx.DemandedDoorways != DirectionFlags.None)
+        if (demandedDoorways != DirectionFlags.None)
         {
-            ApplyDoorDirectionDemand(ctx.DemandedDoorways, DirectionFlags.North, Direction.North, ref matches, tags, antiTags);
-            ApplyDoorDirectionDemand(ctx.DemandedDoorways, DirectionFlags.South, Direction.South, ref matches, tags, antiTags);
-            ApplyDoorDirectionDemand(ctx.DemandedDoorways, DirectionFlags.East, Direction.East, ref matches, tags, antiTags);
-            ApplyDoorDirectionDemand(ctx.DemandedDoorways, DirectionFlags.West, Direction.West, ref matches, tags, antiTags);
+            ApplyDoorDirectionDemand(demandedDoorways, DirectionFlags.North, Direction.North, ref matches, tags, antiTags);
+            ApplyDoorDirectionDemand(demandedDoorways, DirectionFlags.South, Direction.South, ref matches, tags, antiTags);
+            ApplyDoorDirectionDemand(demandedDoorways, DirectionFlags.East, Direction.East, ref matches, tags, antiTags);
+            ApplyDoorDirectionDemand(demandedDoorways, DirectionFlags.West, Direction.West, ref matches, tags, antiTags);
         }
 
         // Fast path: most fragments match no outstanding demand, so skip the arithmetic.
@@ -1821,6 +1834,22 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             ? multiplier * (1f + matches * (DemandTagBonus - 1f))
             : multiplier / (1f - matches * (DemandTagBonus - 1f));
     }
+
+    protected float GetPlacementMultiplier(RoomComponent room, in LotPlacementContext context)
+    {
+        if (PossibleDoorwayCount < context.MinDoorways && !HasOpenPerimeter)
+        {
+            return 0;
+        }
+
+        var demandMultiplier = GetDemandMultiplier(room, context);
+        return demandMultiplier == 0f ? 0f : demandMultiplier * GetEdgeMatchMultiplier(room, context);
+    }
+
+    protected float GetPlacementWeight(float baseWeight, float placementMultiplier)
+        => baseWeight <= 0f
+            ? 0f
+            : (baseWeight + PayloadArea.Width * PayloadArea.Height * SizeWeightBonus) * placementMultiplier * VariantMultiplier;
 
     private static void ApplyDoorDirectionDemand(
         DirectionFlags demanded, DirectionFlags flag, Direction direction,
@@ -2961,7 +2990,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
                 insidePoints: insidePoints,
                 perimeterPoints: perimeterPoints,
                 roomParameters: roomParameters));
-            RoomLayout.IncrementInstanceCounts(room, deferredFragment);
+            deferredFragment.IncrementInstanceCounts(room.Level, room.FeatureTags);
         }
 
         return chunks;
@@ -3191,7 +3220,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     /// </remarks>
     private static void BindWildcardFeatures(RoomComponent room, List<(Point Point, RoomFeatures? Feature)> featurePoints)
     {
-        var demanded = room.Features & PlaceableFeaturesMask;
+        var demanded = room.FeatureTags & PlaceableFeaturesMask;
         if (demanded == 0)
         {
             return;
@@ -3299,7 +3328,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         var insidePoints = new HashSet<Point>();
         var points = new List<Point>();
         var featurePoints = new List<(Point Point, RoomFeatures? Feature)>();
-        var creaturePoints = new List<Point>();
+        var creaturePoints = new List<(Point Point, string? CreatureName)>();
         var trapPoints = new List<Point>();
         WriteMap(target, room, Write,
             (doorwayPoints, perimeterPoints, insidePoints, points, featurePoints, creaturePoints, trapPoints, ctx));
@@ -3358,12 +3387,18 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             HashSet<Point> insidePoints,
             List<Point> points,
             List<(Point Point, RoomFeatures? Feature)> featurePoints,
-            List<Point> creaturePoints,
+            List<(Point Point, string? CreatureName)> creaturePoints,
             List<Point> trapPoints,
             LotPlacementContext ctx) state)
     {
         var (doorwayPoints, perimeterPoints, insidePoints, points,
             featurePoints, creaturePoints, trapPoints, ctx) = state;
+
+        if (Creatures?.TryGetValue(c, out var creatureName) == true)
+        {
+            creaturePoints.Add((point, creatureName));
+            c = '.';
+        }
 
         MapFeature feature;
         switch (c)
@@ -3411,7 +3446,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
                 break;
             case CreatureWildcardGlyph:
                 insidePoints.Add(point);
-                creaturePoints.Add(point);
+                creaturePoints.Add((point, null));
                 feature = MapFeature.StoneFloor;
                 break;
             default:
@@ -3915,12 +3950,12 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         where TMapFragment : MapFragment => new()
     {
         { nameof(Name), (_, v) => v != null },
-        // ReSharper disable once CompareOfFloatsByEqualityOperator
-        { nameof(GenerationWeight), (_, v) => v != null && (string)v != DefaultWeight },
+        { nameof(GenerationWeight), (_, v) => v != null && (string?)v != DefaultWeight },
         { nameof(NoMirror), (_, v) => (bool)v! },
         { nameof(NoTurnOver), (_, v) => (bool)v! },
         { nameof(NoTransform), (_, v) => (bool)v! },
         { nameof(NoOverwrite), (_, v) => (bool)v! },
+        { nameof(Creatures), (_, v) => v is Dictionary<char, string> { Count: > 0 } },
         { nameof(Map), (_, v) => !string.IsNullOrEmpty((string)v!) }
     };
 

@@ -35,7 +35,7 @@ public class MultiTurnSequenceTest
         ItemData.Dagger.Instantiate(playerEntity);
         manager.Queue.ProcessQueue(manager);
 
-        CreatureData.HumanWarrior.Instantiate(level, new Point(5, 3));
+        CreatureData.Manusya.Instantiate(level, new Point(5, 3));
         manager.Queue.ProcessQueue(manager);
 
         var listener = WebTestHelper.SetupListeners(manager);

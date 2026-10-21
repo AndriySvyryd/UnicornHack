@@ -1,11 +1,11 @@
 using UnicornHack.Data.Abilities;
-using UnicornHack.Generation;
 using UnicornHack.Generation.Effects;
 using UnicornHack.Hubs.ChangeTracking;
 using UnicornHack.Services;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Effects;
+using UnicornHack.Systems.Levels;
 
 namespace UnicornHack.Hubs;
 
@@ -397,11 +397,8 @@ public static class GameQueryProcessor
     ///     <list type="bullet">
     ///         <item>Features and graph topology are always revealed (the picker on the client
     ///             needs to render every cell).</item>
-    ///         <item><see cref="RoomEntry.RevealedActorCount" /> /
-    ///             <see cref="RoomEntry.RevealedItemCount" /> are populated for the player's
-    ///             current room, every adjacent (1 hop) room and every visited room.</item>
-    ///         <item><see cref="RoomEntry.StrongestActorName" /> is populated for visited
-    ///             rooms only.</item>
+    ///         <item><see cref="RoomEntry.RevealedActorCount" /> is populated for visited rooms,
+    ///             including the current room, and rooms within perception range at level 1 or higher.</item>
     ///     </list>
     ///     "Adjacent" follows non-hidden intra-level connections; hidden corridors don't reveal
     ///     anything until traversed.
@@ -419,21 +416,34 @@ public static class GameQueryProcessor
 
         // Compute available travel targets based on hostiles + player position.
         // TODO: Check hostility
-        var hasHostiles = currentRoom.Actors.Values.Any(a => a.HasComponent(EntityComponent.AI));
+        var hasHostiles = currentRoom.Actors.Values.Any(AISystem.IsHostileToPlayers);
         var playerCell = playerEntity.Position!.Cell;
 
-        // Distance 0 = current room; distance 1 = adjacent via non-hidden intra-level
-        // connection; everything else stays unrevealed unless visited.
-        var adjacentRoomIds = new HashSet<int>();
-        foreach (var connectionEntity in currentRoom.Connections.Values)
+        var perceivedRoomIds = new HashSet<int> { currentRoom.EntityId };
+        var pendingRooms = new Queue<(RoomComponent Room, int Distance)>();
+        if (playerEntity.Being!.RoomPerceptionLevel > 0)
         {
-            var connection = connectionEntity.Connection!;
-            var targetRoom = connection.TargetRoomEntity.Room!;
-            if (targetRoom.Level != gameLevel || connection.Hidden)
+            pendingRooms.Enqueue((currentRoom, 0));
+        }
+
+        while (pendingRooms.TryDequeue(out var pending))
+        {
+            if (pending.Distance >= playerEntity.Being.RoomPerceptionRange)
             {
                 continue;
             }
-            adjacentRoomIds.Add(targetRoom.EntityId);
+
+            foreach (var connectionEntity in pending.Room.Connections.Values)
+            {
+                var connection = connectionEntity.Connection!;
+                var targetRoom = connection.TargetRoomEntity.Room!;
+                if (targetRoom.Level != gameLevel || connection.Hidden || !perceivedRoomIds.Add(targetRoom.EntityId))
+                {
+                    continue;
+                }
+
+                pendingRooms.Enqueue((targetRoom, pending.Distance + 1));
+            }
         }
 
         var languageService = playerEntity.Manager.Game.Services.Language;
@@ -469,50 +479,20 @@ public static class GameQueryProcessor
                 Id = room.EntityId,
                 GridX = room.GridX,
                 GridY = room.GridY,
-                Features = room.Features,
+                Features = room.FeatureTags,
                 IsVisited = room.IsVisited,
                 ConnectedTo = connectedTo
             };
 
             var isCurrent = room.EntityId == currentRoom.EntityId;
-            var isClose = isCurrent || adjacentRoomIds.Contains(room.EntityId);
-            var canSeeDetails = isClose || room.IsVisited;
-            if (canSeeDetails)
+            if (isCurrent || room.IsVisited || perceivedRoomIds.Contains(room.EntityId))
             {
-                entry.RevealedActorCount = isCurrent
-                    ? room.Actors.Values.Count(a => a != playerEntity)
-                    : room.Actors.Count;
-                entry.RevealedItemCount = room.Items.Count;
-
-                GameEntity? strongest = null;
-                var bestHp = -1;
-                var namedFound = false;
-                foreach (var actor in room.Actors.Values)
+                entry.RevealedActorCount = room.Actors.Values.Count(actor => actor != playerEntity);
+                var elite = room.Actors.Values.FirstOrDefault(actor => actor != playerEntity
+                    && actor.Being is { IsAlive: true } && Creature.GetTemplate(actor)?.IsNamed == true);
+                if (elite != null)
                 {
-                    if (actor == playerEntity)
-                    {
-                        continue;
-                    }
-
-                    var isNamed = Creature.GetTemplate(actor) is { IsNamed: true };
-                    if (!isNamed
-                        && (namedFound || !room.IsVisited))
-                    {
-                        continue;
-                    }
-
-                    var hp = actor.Being?.HitPointMaximum ?? 0;
-                    if ((isNamed && !namedFound)
-                        || isNamed == namedFound && hp > bestHp)
-                    {
-                        namedFound = isNamed;
-                        bestHp = hp;
-                        strongest = actor;
-                    }
-                }
-                if (strongest != null)
-                {
-                    entry.StrongestActorName = languageService.GetActorName(strongest, isIdentified: true);
+                    entry.EliteName = languageService.GetActorName(elite, isIdentified: true);
                 }
             }
 
@@ -521,8 +501,7 @@ public static class GameQueryProcessor
                 isCurrent,
                 room.IsVisited,
                 entry.RevealedActorCount,
-                entry.RevealedItemCount,
-                entry.StrongestActorName);
+                entry.EliteName);
 
             result.Rooms.Add(entry);
         }

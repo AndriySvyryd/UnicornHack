@@ -27,10 +27,10 @@ public class SoundPropagationPerfTest
         var room = TestHelper.BuildRoom(map);
         for (byte i = 0; i < _listeners.Length; i++)
         {
-            _listeners[i] = CreatureData.HumanWarrior.Instantiate(room, new Point(i, 0));
+            _listeners[i] = CreatureData.Manusya.Instantiate(room, new Point(i, 0));
         }
 
-        _source = CreatureData.HumanWarrior.Instantiate(room, new Point((byte)(RoomSize - 1), (byte)(RoomSize - 1)));
+        _source = CreatureData.Manusya.Instantiate(room, new Point((byte)(RoomSize - 1), (byte)(RoomSize - 1)));
         _manager = _source.Manager;
         _manager.Queue.ProcessQueue(_manager);
         foreach (var listener in _listeners)

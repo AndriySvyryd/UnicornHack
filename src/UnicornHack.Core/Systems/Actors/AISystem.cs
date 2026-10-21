@@ -1,6 +1,5 @@
-﻿using UnicornHack.Systems.Abilities;
+using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
-using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Systems.Time;
@@ -18,6 +17,10 @@ public class AISystem :
     IGameSystem<DelayMessage>,
     IGameSystem<ItemEquippedMessage>
 {
+    public static bool IsHostileToPlayers(GameEntity actor)
+        => actor.AI is { } ai && actor.Being is { IsAlive: true }
+            && (ai.Behavior & (AIBehavior.Peaceful | AIBehavior.RangedPeaceful)) == 0;
+
     public MessageProcessingResult Process(PerformActionMessage message, GameManager manager)
     {
         var actorEntity = message.Actor;
@@ -134,17 +137,14 @@ public class AISystem :
 
     private void DecideNextAction(GameEntity actorEntity, GameManager manager)
     {
-        if (EffectApplicationSystem.GetAbilityLevel(actorEntity, AbilityData.Engulfed.Name) >= 2)
+        if (AbilityLevelSystem.GetAbilityLevel(actorEntity, AbilityData.Engulfed.Name) >= 2)
         {
             // Engulfed: the only permitted attack is against whatever holds the actor.
             if (manager.EngulferToVictimRelationship.GetEngulfer(actorEntity) is { } engulfer
                 && manager.AbilitySlottingSystem.GetAbility(
-                    actorEntity, AbilitySlottingSystem.DefaultMeleeAttackSlot) != null)
+                    actorEntity, AbilitySlottingSystem.DefaultMeleeAttackSlot) is { } ability)
             {
-                actorEntity.AI!.NextAction = ActorActionType.UseAbilitySlot;
-                actorEntity.AI.NextActionTarget = AbilitySlottingSystem.DefaultMeleeAttackSlot;
-                actorEntity.AI.NextActionTarget2 = actorEntity.Position!.Cell!.Value
-                    .DifferenceTo(engulfer.Position!.Cell!.Value).ToInt32();
+                SetAbilityAction(actorEntity, ability, engulfer);
             }
             else
             {
@@ -165,6 +165,12 @@ public class AISystem :
 
         if (TryFleeFearSource(actorEntity, position, manager))
         {
+            return;
+        }
+
+        if (!IsHostileToPlayers(actorEntity))
+        {
+            actorEntity.AI!.NextAction = ActorActionType.Wait;
             return;
         }
 
@@ -189,7 +195,7 @@ public class AISystem :
     private static bool TryFleeFearSource(
         GameEntity actorEntity, PositionComponent position, GameManager manager)
     {
-        var frightenedLevel = EffectApplicationSystem.GetAbilityLevel(actorEntity, AbilityData.Frightened.Name);
+        var frightenedLevel = AbilityLevelSystem.GetAbilityLevel(actorEntity, AbilityData.Frightened.Name);
         if (frightenedLevel < 2
             || FindPerceivedStatusSource(actorEntity, EffectType.Frighten, requiredLevel: 2, manager)
                 is not { Position.Cell: { } sourceCell })
@@ -275,13 +281,25 @@ public class AISystem :
             return false;
         }
 
-        var ai = aiEntity.AI!;
-        ai.NextAction = ActorActionType.UseAbilitySlot;
-        ai.NextActionTarget = abilityEntity.Ability!.Slot;
-        ai.NextActionTarget2 = aiEntity.Position!.Cell!.Value
-            .DifferenceTo(targetEntity.Position!.Cell!.Value).ToInt32();
+        SetAbilityAction(aiEntity, abilityEntity, targetEntity);
 
         return true;
+    }
+
+    private static void SetAbilityAction(GameEntity actorEntity, GameEntity abilityEntity, GameEntity targetEntity)
+    {
+        var ai = actorEntity.AI!;
+        var ability = abilityEntity.Ability!;
+        var target = actorEntity.Position!.Cell!.Value.DifferenceTo(targetEntity.Position!.Cell!.Value).ToInt32();
+        if (ability.Windup > 0
+            && (ai.NextAction != ActorActionType.UseAbilitySlot || ai.NextActionTarget != ability.Slot || ai.NextActionTarget2 != target))
+        {
+            ai.NextActionTick = checked(ai.NextActionTick + ability.Windup);
+        }
+
+        ai.NextAction = ActorActionType.UseAbilitySlot;
+        ai.NextActionTarget = ability.Slot;
+        ai.NextActionTarget2 = target;
     }
 
     public GameEntity? GetDefaultAttack(GameEntity aiEntity, GameEntity targetEntity, bool? melee,

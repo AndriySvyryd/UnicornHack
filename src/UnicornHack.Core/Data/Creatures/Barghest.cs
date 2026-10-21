@@ -6,11 +6,25 @@ public static partial class CreatureData
     {
         Name = "barghest",
         SpeciesClass = SpeciesClass.Canine | SpeciesClass.ShapeChanger,
+        MovementDelay = -25,
+        TurningDelay = -25,
+        Weight = 1200,
+        PerceptionBonus = -5,
+        MightBonus = -6,
+        SpeedBonus = -5,
+        FocusBonus = -6,
+        Armor = 4,
+        MagicResistance = 10,
+        TorsoType = TorsoType.Quadruped,
+        UpperExtremities = ExtremityType.None,
+        LowerExtremities = ExtremityType.Claws,
+        SlotCapacity = 1,
+        Infravisible = true,
         Abilities = new List<Ability>
         {
             new Ability
             {
-                Name = "barghest ability #1",
+                Name = "crippling bite",
                 Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
@@ -24,7 +38,7 @@ public static partial class CreatureData
             },
             new Ability
             {
-                Name = "barghest ability #2",
+                Name = "raking claw",
                 Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
@@ -37,23 +51,10 @@ public static partial class CreatureData
                 Effects = new List<Effect> { new PhysicalDamage { Amount = "50*MightModifier()" } }
             }
         },
+        EnglishDescription = "A great black hound with a shaggy coat and long, angular legs. Its eyes shine beneath heavy brows, and pale teeth show along the edge of its narrow muzzle.",
         InitialLevel = 9,
-        GenerationWeight = "$branch == 'entrance' ? 0 : 2",
+        GenerationWeight = "$branch == 'ruined stronghold' && $depth >= 2 ? 2 : 0",
         Behavior = AIBehavior.Mountable,
-        Noise = ActorNoiseType.Bark,
-        Weight = 1200,
-        MovementDelay = -25,
-        TurningDelay = -25,
-        PerceptionBonus = -5,
-        MightBonus = -6,
-        SpeedBonus = -5,
-        FocusBonus = -6,
-        Armor = 4,
-        MagicResistance = 10,
-        TorsoType = TorsoType.Quadruped,
-        UpperExtremities = ExtremityType.None,
-        LowerExtremities = ExtremityType.Claws,
-        SlotCapacity = 1,
-        Infravisible = true
+        Noise = ActorNoiseType.Bark
     };
 }

@@ -62,7 +62,6 @@ public abstract class ActorComponent : GameComponent
         _nextActionTarget2 = default;
         _nextActionTick = default;
         _previousActionTick = default;
-
         base.Clean();
     }
 }

@@ -28,18 +28,11 @@ public partial class GameManager
             .AllOf((int)EntityComponent.Being, (int)EntityComponent.Physical), capacity: 512);
 
         LivingSystem = new LivingSystem();
+        Beings.AddListener(LivingSystem);
         queue.Register<XPGainedMessage>(LivingSystem, XPGainedMessage.Name, 0);
         queue.Register<EntityAddedMessage<GameEntity>>(LivingSystem, Beings.GetEntityAddedMessageName(), 0);
         queue.Register<PropertyValueChangedMessage<GameEntity, int>>(LivingSystem,
             Beings.GetPropertyValueChangedMessageName(nameof(BeingComponent.HitPoints)), 0);
-        queue.Register<PropertyValueChangedMessage<GameEntity, int>>(LivingSystem,
-            Beings.GetPropertyValueChangedMessageName(nameof(BeingComponent.HitPointMaximum)), 0);
-        queue.Register<PropertyValueChangedMessage<GameEntity, int>>(LivingSystem,
-            Beings.GetPropertyValueChangedMessageName(nameof(BeingComponent.EnergyPointMaximum)), 0);
-        queue.Register<PropertyValueChangedMessage<GameEntity, int>>(LivingSystem,
-            Beings.GetPropertyValueChangedMessageName(nameof(BeingComponent.ReservedHitPoints)), 0);
-        queue.Register<PropertyValueChangedMessage<GameEntity, int>>(LivingSystem,
-            Beings.GetPropertyValueChangedMessageName(nameof(BeingComponent.ReservedEnergyPoints)), 0);
         queue.Register<PropertyValueChangedMessage<GameEntity, int>>(LivingSystem,
             Beings.GetPropertyValueChangedMessageName(nameof(BeingComponent.Focus)), 0);
         queue.Register<PropertyValueChangedMessage<GameEntity, int>>(LivingSystem,

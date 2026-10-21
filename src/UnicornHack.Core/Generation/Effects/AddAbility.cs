@@ -33,7 +33,7 @@ public class AddAbility : Effect
         var addedName = context.Effect.Component.TargetName;
         Debug.Assert(addedName != null);
 
-        context.System.ApplyAddAbility(
+        context.Manager.AbilityLevelSystem.ApplyAddAbility(
             context,
             addedName,
             context.Amount);

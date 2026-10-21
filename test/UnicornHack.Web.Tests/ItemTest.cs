@@ -190,7 +190,7 @@ public class ItemTest
         manager.Queue.ProcessQueue(manager);
 
         // Place NPC adjacent to damage the player
-        CreatureData.HumanWarrior.Instantiate(level, new Point(3, 2));
+        CreatureData.Manusya.Instantiate(level, new Point(3, 2));
         manager.Queue.ProcessQueue(manager);
 
         var listener = WebTestHelper.SetupListeners(manager);
@@ -287,7 +287,7 @@ public class ItemTest
         var manager = game.Manager;
 
         // Place a creature just south of the wall gap
-        CreatureData.HumanWarrior.Instantiate(level, new Point(12, 14));
+        CreatureData.Manusya.Instantiate(level, new Point(12, 14));
         manager.Queue.ProcessQueue(manager);
 
         // Player starts north of the wall, near the gap
@@ -374,7 +374,7 @@ public class ItemTest
         };
         foreach (var pos in creaturePositions)
         {
-            CreatureData.HumanWarrior.Instantiate(level, pos);
+            CreatureData.Manusya.Instantiate(level, pos);
         }
 
         manager.Queue.ProcessQueue(manager);
@@ -476,7 +476,7 @@ public class ItemTest
         // Creature directly north of the player. Player faces South initially,
         // so this creature is OUTSIDE perception. After turning to East, still outside.
         // After turning to North, INSIDE perception.
-        CreatureData.HumanWarrior.Instantiate(level, new Point(12, 8));
+        CreatureData.Manusya.Instantiate(level, new Point(12, 8));
         manager.Queue.ProcessQueue(manager);
 
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(12, 12));

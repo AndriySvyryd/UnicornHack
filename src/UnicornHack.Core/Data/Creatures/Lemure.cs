@@ -6,11 +6,34 @@ public static partial class CreatureData
     {
         Name = "lemure",
         SpeciesClass = SpeciesClass.Undead,
+        Material = Material.Air,
+        MovementDelay = 20,
+        TurningDelay = 20,
+        Weight = 0,
+        PerceptionBonus = -3,
+        MightBonus = -4,
+        SpeedBonus = -3,
+        FocusBonus = 2,
+        HealingResistance = 200,
+        PhysicalResistance = 50,
+        MagicResistance = 12,
+        ColdResistance = 75,
+        VoidResistance = 75,
+        StickResistance = 100,
+        SuffocateResistance = 100,
+        TorsoType = TorsoType.Humanoid,
+        UpperExtremities = ExtremityType.GraspingFingers,
+        LowerExtremities = ExtremityType.Fingers,
+        RespirationType = RespirationType.None,
+        LocomotionType = LocomotionType.Walking | LocomotionType.Phasing,
+        SlotCapacity = 0,
+        Infravision = true,
+        InvisibilityDetection = true,
         Abilities = new List<Ability>
         {
             new Ability
             {
-                Name = "lemure ability #1",
+                Name = "numbing touch",
                 Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
@@ -24,7 +47,7 @@ public static partial class CreatureData
             },
             new Ability
             {
-                Name = "lemure ability #2",
+                Name = "delaying touch",
                 Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
@@ -37,33 +60,11 @@ public static partial class CreatureData
                 Effects = new List<Effect> { new Slow() }
             }
         },
+        EnglishDescription = "A dim, slouching human outline with a blurred face and hanging arms. Its translucent edges fray into thin wisps, leaving the surroundings faintly visible through its body.",
         InitialLevel = 12,
-        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 1.0",
+        GenerationWeight = "0",
         GenerationFlags = CreatureGenerationFlags.NonGenocidable | CreatureGenerationFlags.NonPolymorphable,
         Behavior = AIBehavior.Wandering | AIBehavior.Stalking,
-        Noise = ActorNoiseType.Howl,
-        Weight = 0,
-        MovementDelay = 20,
-        TurningDelay = 20,
-        Material = Material.Air,
-        PerceptionBonus = -3,
-        MightBonus = -4,
-        SpeedBonus = -3,
-        FocusBonus = 2,
-        HealingResistance = 200,
-        PhysicalResistance = 50,
-        MagicResistance = 12,
-        ColdResistance = 75,
-        StickResistance = 100,
-        SuffocateResistance = 100,
-        VoidResistance = 75,
-        TorsoType = TorsoType.Humanoid,
-        UpperExtremities = ExtremityType.GraspingFingers,
-        LowerExtremities = ExtremityType.Fingers,
-        RespirationType = RespirationType.None,
-        LocomotionType = LocomotionType.Walking | LocomotionType.Phasing,
-        SlotCapacity = 0,
-        Infravision = true,
-        InvisibilityDetection = true
+        Noise = ActorNoiseType.Howl
     };
 }

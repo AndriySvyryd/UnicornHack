@@ -179,6 +179,34 @@ public class EnglishLanguageServiceTest
     }
 
     [Fact]
+    public void Stable_description_uses_authored_unstable_suppression()
+    {
+        var description = new EnglishLanguageService().GetDescription(
+            AbilityData.Stable.Name, DescriptionCategory.Ability);
+
+        Assert.Contains("unstable level -1", description);
+        Assert.Contains("unstable level -2", description);
+        Assert.Contains("Suppresses one Unstable level while Stable remains active", description);
+        Assert.Contains("Suppresses two Unstable levels while Stable remains active", description);
+        Assert.DoesNotContain("Prevents new Unstable", description);
+        Assert.DoesNotContain("forced displacement", description);
+        Assert.DoesNotContain("consumed", description);
+    }
+
+    [Fact]
+    public void Move_and_push_descriptions_distinguish_items_from_actors()
+    {
+        var language = new EnglishLanguageService();
+        var move = language.GetDescription(nameof(EffectType.Move), DescriptionCategory.Effect);
+        var push = language.GetDescription(nameof(EffectType.Push), DescriptionCategory.Effect);
+
+        Assert.Contains("item", move);
+        Assert.DoesNotContain("actor", move);
+        Assert.Contains("actor", push);
+        Assert.Contains("unstable", push);
+    }
+
+    [Fact]
     public void Non_cumulative_ability_description_marks_replacement_levels()
     {
         var description = new EnglishLanguageService().GetDescription(

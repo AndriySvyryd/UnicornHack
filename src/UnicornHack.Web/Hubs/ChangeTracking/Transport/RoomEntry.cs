@@ -27,32 +27,21 @@ public class RoomEntry
     public List<int> ConnectedTo { get; set; } = [];
 
     /// <summary>
-    ///     Number of hostile / neutral actors in the room. Revealed for the player's current
-    ///     room and adjacent (1 hop) rooms, and for any visited room. <c>-1</c> when the count
-    ///     is not yet revealed at the player's current closeness to this room.
+    ///     Total actors other than the observer. Revealed in the current room and, at room
+    ///     perception level 1 or higher, within room perception range through non-hidden
+    ///     intra-level connections. <c>-1</c> when the count is not revealed.
     /// </summary>
     [Key(6)]
     public int RevealedActorCount { get; set; } = -1;
-
-    /// <summary>
-    ///     Number of items in the room. Same reveal rules as <see cref="RevealedActorCount" />.
-    /// </summary>
-    [Key(7)]
-    public int RevealedItemCount { get; set; } = -1;
-
-    /// <summary>
-    ///     Localized name of a named creature in the room when one is present and room details
-    ///     are visible; otherwise the actor with the highest <c>HitPointMaximum</c> in a visited
-    ///     room.
-    /// </summary>
-    [Key(8)]
-    public string? StrongestActorName { get; set; }
 
     /// <summary>
     ///     Pre-composed, localized hover tooltip text for this room cell. Built server-side
     ///     so it goes through the language service and stays consistent with the rest of the
     ///     localized payload.
     /// </summary>
-    [Key(9)]
+    [Key(7)]
     public string? Tooltip { get; set; }
+
+    [Key(8)]
+    public string? EliteName { get; set; }
 }

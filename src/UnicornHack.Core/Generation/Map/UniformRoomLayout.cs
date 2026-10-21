@@ -192,14 +192,14 @@ public class UniformRoomLayout : RoomLayout, ICSScriptSerializable
 
             var danglingConnection = room.IncomingConnections
                 .Select(c => c.Connection!).FirstOrDefault(c => c.TargetLevelX == null);
-            IEnumerable<MapFragment> sortedFragments;
+            Chunk? placedChunk;
             if (placingLevelConnection)
             {
                 // Any connecting fragment is selectable; a fragment carrying the room's role
                 // tag (entrance / exit / shortcut) is preferred via a weight bonus. Untagged
                 // general-purpose fragments stay selectable, so this never excludes a fragment.
                 var roleTag = GetConnectingRoleTag(room);
-                sortedFragments = room.Level.GenerationRandom.WeightedOrder(
+                placedChunk = TryPlace(room, ctx,
                     room.Level.Game.Services.Data.ConnectingMapFragments.GetAsList(),
                     f => f.GetWeight(room, ctx, danglingConnection)
                         * (roleTag != null && f.Tags is not null && f.Tags.Contains(roleTag)
@@ -208,12 +208,10 @@ public class UniformRoomLayout : RoomLayout, ICSScriptSerializable
             }
             else
             {
-                sortedFragments = room.Level.GenerationRandom.WeightedOrder(
+                placedChunk = TryPlace(room, ctx,
                     room.Level.Game.Services.Data.NormalMapFragments.GetAsList(),
                     f => f.GetWeight(room, ctx));
             }
-
-            var placedChunk = TryPlace(room, ctx, sortedFragments);
 
             // Fallback: when a level connection is needed but no ConnectingMapFragment
             // fit this lot, *and* the lot is flush with the level perimeter on a side
@@ -243,9 +241,7 @@ public class UniformRoomLayout : RoomLayout, ICSScriptSerializable
                         continue;
                     }
 
-                    var fallbackOrder = room.Level.GenerationRandom.WeightedOrder(
-                        normalCandidates, f => f.GetWeight(room, capturedCtx));
-                    var attempt = TryPlace(room, ctx, fallbackOrder);
+                    var attempt = TryPlace(room, ctx, normalCandidates, f => f.GetWeight(room, capturedCtx));
                     if (attempt != null)
                     {
                         placedChunk = attempt;

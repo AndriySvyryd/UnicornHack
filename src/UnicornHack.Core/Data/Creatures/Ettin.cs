@@ -6,18 +6,30 @@ public static partial class CreatureData
     {
         Name = "ettin",
         SpeciesClass = SpeciesClass.Humanoid,
+        Size = 16,
+        Weight = 2250,
+        PerceptionBonus = -4,
+        MightBonus = -4,
+        SpeedBonus = -4,
+        FocusBonus = -4,
+        Armor = 3,
+        TorsoType = TorsoType.Humanoid,
+        UpperExtremities = ExtremityType.GraspingFingers,
+        LowerExtremities = ExtremityType.Fingers,
+        Infravisible = true,
+        Infravision = true,
         Abilities = new List<Ability>
         {
             new Ability
             {
-                Name = "ettin ability #1",
+                Name = "two-headed force",
                 Activation = ActivationType.OnMeleeAttack,
                 Action = AbilityAction.Modifier,
                 Effects = new List<Effect> { new PhysicalDamage { Amount = "90*MightModifier()" } }
             },
             new Ability
             {
-                Name = "ettin ability #2",
+                Name = "left fist",
                 Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
@@ -31,7 +43,7 @@ public static partial class CreatureData
             },
             new Ability
             {
-                Name = "ettin ability #3",
+                Name = "right fist",
                 Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
@@ -44,20 +56,9 @@ public static partial class CreatureData
                 Effects = new List<Effect> { new PhysicalDamage() }
             }
         },
+        EnglishDescription = "A hulking, two-headed humanoid with thick limbs and a broad, sloping chest. Its mismatched heads sit close together, each with a heavy jaw and a tangled crop of hair.",
         InitialLevel = 10,
-        GenerationWeight = "$branch == 'entrance' ? 0 : 2",
-        Noise = ActorNoiseType.Boast,
-        Size = 16,
-        Weight = 2250,
-        PerceptionBonus = -4,
-        MightBonus = -4,
-        SpeedBonus = -4,
-        FocusBonus = -4,
-        Armor = 3,
-        TorsoType = TorsoType.Humanoid,
-        UpperExtremities = ExtremityType.GraspingFingers,
-        LowerExtremities = ExtremityType.Fingers,
-        Infravisible = true,
-        Infravision = true
+        GenerationWeight = "$branch == 'ruined stronghold' && $depth >= 2 ? 2 : 0",
+        Noise = ActorNoiseType.Boast
     };
 }

@@ -6,11 +6,22 @@ public static partial class CreatureData
     {
         Name = "spriggan",
         SpeciesClass = SpeciesClass.Fey,
+        Weight = 600,
+        PerceptionBonus = -8,
+        MightBonus = -7,
+        SpeedBonus = -5,
+        FocusBonus = -5,
+        MagicResistance = 10,
+        TorsoType = TorsoType.Humanoid,
+        UpperExtremities = ExtremityType.GraspingFingers,
+        LowerExtremities = ExtremityType.Fingers,
+        LocomotionType = LocomotionType.Walking | LocomotionType.Teleportation,
+        Infravisible = true,
         Abilities = new List<Ability>
         {
             new Ability
             {
-                Name = "spriggan ability #1",
+                Name = "drowsing touch",
                 Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
@@ -24,7 +35,7 @@ public static partial class CreatureData
             },
             new Ability
             {
-                Name = "spriggan ability #2",
+                Name = "stunning touch",
                 Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
@@ -37,20 +48,10 @@ public static partial class CreatureData
                 Effects = new List<Effect> { new Stun() }
             }
         },
+        EnglishDescription = "A gnarled, wiry humanoid with bark-brown skin and a mop of tangled hair. Its knobby fingers resemble thin roots, and its narrow face is creased around bright, deep-set eyes.",
         InitialLevel = 6,
-        GenerationWeight = "$branch == 'entrance' ? 0 : 1.0",
+        GenerationWeight = "$branch == 'ruined stronghold' && $depth <= 2 ? 1 : 0",
         Noise = ActorNoiseType.Seduction,
-        Sex = Sex.Female,
-        Weight = 600,
-        PerceptionBonus = -8,
-        MightBonus = -7,
-        SpeedBonus = -5,
-        FocusBonus = -5,
-        MagicResistance = 10,
-        TorsoType = TorsoType.Humanoid,
-        UpperExtremities = ExtremityType.GraspingFingers,
-        LowerExtremities = ExtremityType.Fingers,
-        LocomotionType = LocomotionType.Walking | LocomotionType.Teleportation,
-        Infravisible = true
+        Sex = Sex.Female
     };
 }

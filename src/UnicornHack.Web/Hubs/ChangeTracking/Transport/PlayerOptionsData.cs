@@ -1,5 +1,5 @@
 using MessagePack;
-using UnicornHack.Systems.Actors;
+using UnicornHack.Systems.Levels;
 
 namespace UnicornHack.Hubs.ChangeTracking;
 
@@ -7,7 +7,7 @@ namespace UnicornHack.Hubs.ChangeTracking;
 public class PlayerOptionsData
 {
     [Key(0)]
-    public string Choice { get; set; } = "";
+    public RewardType Choice { get; set; }
 
     [Key(1)]
     public string? Action { get; set; }

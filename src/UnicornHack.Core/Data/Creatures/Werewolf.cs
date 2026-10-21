@@ -6,18 +6,29 @@ public static partial class CreatureData
     {
         Name = "werewolf",
         SpeciesClass = SpeciesClass.ShapeChanger,
+        Weight = 1000,
+        PerceptionBonus = -7,
+        MightBonus = -8,
+        SpeedBonus = -7,
+        FocusBonus = -8,
+        Regeneration = 3,
+        MagicResistance = 10,
+        TorsoType = TorsoType.Humanoid,
+        UpperExtremities = ExtremityType.GraspingFingers,
+        LowerExtremities = ExtremityType.Fingers,
+        Infravisible = true,
         Abilities = new List<Ability>
         {
             new Ability
             {
-                Name = "werewolf ability #1",
+                Name = "savage force",
                 Activation = ActivationType.OnMeleeAttack,
                 Action = AbilityAction.Modifier,
                 Effects = new List<Effect> { new PhysicalDamage { Amount = "50*MightModifier()" } }
             },
             new Ability
             {
-                Name = "werewolf ability #2",
+                Name = "rending strike",
                 Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
@@ -31,7 +42,7 @@ public static partial class CreatureData
             },
             new Ability
             {
-                Name = "werewolf ability #3",
+                Name = "infecting bite",
                 Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
@@ -41,24 +52,14 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 250,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new ConferLycanthropy { CreatureName = "wolfwere" } }
+                Effects = new List<Effect> { new ConferLycanthropy { CreatureName = "werewolf" } }
             }
         },
+        EnglishDescription = "A tall, fur-covered humanoid with a wolf's head, hunched shoulders and long, muscular arms. Its pointed ears stand above a ridged muzzle, and coarse hair thickens along its back and forearms.",
         InitialLevel = 5,
-        GenerationWeight = "$branch == 'entrance' ? 0 : 1.0",
+        GenerationWeight = "$branch == 'ruined stronghold' && $depth >= 2 ? 1 : 0",
         GenerationFlags = CreatureGenerationFlags.NonPolymorphable,
         Noise = ActorNoiseType.Lycanthrope,
-        Weight = 1000,
-        PerceptionBonus = -7,
-        MightBonus = -8,
-        SpeedBonus = -7,
-        FocusBonus = -8,
-        Regeneration = 3,
-        MagicResistance = 10,
-        TorsoType = TorsoType.Humanoid,
-        UpperExtremities = ExtremityType.GraspingFingers,
-        LowerExtremities = ExtremityType.Fingers,
-        Infravisible = true,
-        Lycanthropy = "wolfwere"
+        Lycanthropy = "werewolf"
     };
 }

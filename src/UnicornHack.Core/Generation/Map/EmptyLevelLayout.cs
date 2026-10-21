@@ -16,9 +16,8 @@ public class EmptyLevelLayout : LevelLayout, ICSScriptSerializable
         // EmptyLevelLayout produces a single room that is both the entrance and the exit.
         // The picked fragment is responsible for the level's content; for the surface this
         // is the hand-authored Surface fragment, for tests it's whatever the test registered.
-        room.Features = RoomFeatures.Entrance | RoomFeatures.Exit;
-        var fragment = LevelGenerator.PickFragmentForRoom(
-            level, room.Features, level.GenerationStats);
+        room.FeatureTags = RoomFeatures.Entrance | RoomFeatures.Exit;
+        var fragment = LevelGenerator.PickFragmentForRoom(level, room.FeatureTags);
         using var roomParameters = fragment.GetRoomParameters(branch);
 
         AllocateTerrain(room, roomParameters.RoomWidth, roomParameters.RoomHeight,

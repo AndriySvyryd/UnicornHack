@@ -55,14 +55,16 @@ public class AbilityLoader
 
     public static Dictionary<string, Ability> Prepare(Dictionary<string, Ability> abilities)
     {
-        var dependenciesByAbility = new Dictionary<Ability, IReadOnlyList<Ability>>();
-        foreach (var ability in abilities.Values)
+        Prepare(abilities.Values);
+        return abilities;
+    }
+
+    public static void Prepare(IReadOnlyCollection<Ability> abilities)
+    {
+        Dictionary<string, List<Ability>>? dependentsByName = null;
+        foreach (var ability in abilities)
         {
             ability.ClearLevelExpressionDependents();
-        }
-
-        foreach (var ability in abilities.Values)
-        {
             if (ability.LevelExpression is not { } expression)
             {
                 continue;
@@ -74,47 +76,53 @@ public class AbilityLoader
                     $"Ability '{ability.Name}' has an empty level expression.");
             }
 
-            var prepared = EffectApplicationSystem.CreateLevelExpression(
-                expression, ability.Name);
-            ability.SetLevelFunction(prepared.Function);
-            var dependencies = new List<Ability>();
+            var prepared = EffectApplicationSystem.CreateLevelExpression(expression, ability.Name);
+            ability.SetLevelFunction(prepared.Function, prepared.Dependencies);
             foreach (var dependencyName in prepared.Dependencies)
             {
-                if (!abilities.TryGetValue(dependencyName, out var dependency))
+                dependentsByName ??= new(StringComparer.OrdinalIgnoreCase);
+                if (!dependentsByName.TryGetValue(dependencyName, out var dependents))
                 {
-                    continue;
+                    dependents = [];
+                    dependentsByName.Add(dependencyName, dependents);
                 }
 
-                if (ReferenceEquals(dependency, ability))
+                dependents.Add(ability);
+            }
+        }
+
+        if (dependentsByName == null)
+        {
+            return;
+        }
+
+        foreach (var ability in abilities)
+        {
+            if (!dependentsByName.TryGetValue(ability.Name, out var dependents))
+            {
+                continue;
+            }
+
+            foreach (var dependent in dependents)
+            {
+                if (ReferenceEquals(dependent, ability))
                 {
                     throw new InvalidOperationException(
                         $"Ability '{ability.Name}' cannot depend on its own level.");
                 }
 
-                dependency.AddLevelExpressionDependent(ability);
-                dependencies.Add(dependency);
+                ability.AddLevelExpressionDependent(dependent);
             }
-
-            dependenciesByAbility.Add(ability, dependencies);
         }
 
-        ValidateAcyclic(dependenciesByAbility);
-        return abilities;
-    }
-
-    private static void ValidateAcyclic(
-        IReadOnlyDictionary<Ability, IReadOnlyList<Ability>> dependenciesByAbility)
-    {
         var states = new Dictionary<Ability, byte>();
-        foreach (var ability in dependenciesByAbility.Keys)
+        foreach (var ability in abilities)
         {
-            Visit(ability, states, dependenciesByAbility);
+            Visit(ability, states);
         }
     }
 
-    private static void Visit(
-        Ability ability, Dictionary<Ability, byte> states,
-        IReadOnlyDictionary<Ability, IReadOnlyList<Ability>> dependenciesByAbility)
+    private static void Visit(Ability ability, Dictionary<Ability, byte> states)
     {
         if (states.TryGetValue(ability, out var state))
         {
@@ -128,15 +136,9 @@ public class AbilityLoader
         }
 
         states.Add(ability, 1);
-        if (dependenciesByAbility.TryGetValue(ability, out var dependencies))
+        foreach (var dependent in ability.LevelExpressionDependents)
         {
-            foreach (var dependency in dependencies)
-            {
-                if (dependenciesByAbility.ContainsKey(dependency))
-                {
-                    Visit(dependency, states, dependenciesByAbility);
-                }
-            }
+            Visit(dependent, states);
         }
 
         states[ability] = 2;

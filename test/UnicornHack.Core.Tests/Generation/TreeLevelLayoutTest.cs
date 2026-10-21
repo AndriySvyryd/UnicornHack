@@ -384,7 +384,7 @@ public class TreeLevelLayoutTest
 
         var game = TestHelper.CreateGame(seed);
         var manager = game.Manager;
-        var dungeon = BranchData.Dungeon.Instantiate(game);
+        var dungeon = BranchData.RuinedStronghold.Instantiate(game);
 
         // Try a few seeds in case the placement engine doesn't find a valid arrangement
         // on the first try -- it's the chunk size constraint we're verifying, not generation
@@ -424,13 +424,13 @@ public class TreeLevelLayoutTest
         // a depth-1 special case on the Dungeon branch.
         var game = TestHelper.CreateGame(seed: 1u);
         var manager = game.Manager;
-        var entrance = BranchData.Entrance.Instantiate(game);
+        var entrance = BranchData.OuterWards.Instantiate(game);
 
         var firstLevel = LevelGenerator.CreateEmpty(entrance, depth: 1, seed: 1u, manager);
         LevelGenerator.EnsureGenerated(firstLevel);
 
         Assert.InRange(firstLevel.Rooms.Count, 4, 14);
-        Assert.DoesNotContain(firstLevel.Rooms, r => (r.Features & RoomFeatures.Cursed) != 0);
+        Assert.DoesNotContain(firstLevel.Rooms, r => (r.FeatureTags & RoomFeatures.Cursed) != 0);
         // EntranceLevelLayout sets HiddenConnectionProbability = 0, so no connection is
         // hidden.
         foreach (var room in firstLevel.Rooms)
@@ -443,15 +443,13 @@ public class TreeLevelLayoutTest
     }
 
     [Fact]
-    public void Dungeon_levels_use_default_parameters_at_every_depth()
+    public void Stronghold_levels_use_the_grid_contract_at_every_supported_depth()
     {
-        // Every dungeon level — including depth 1 — should use the full TreeLevelLayout
-        // defaults; the introductory floor is now in the entrance branch.
-        var layout = (TreeLevelLayout)BranchData.Dungeon.Layout;
+        var layout = Assert.IsType<GridLevelLayout>(BranchData.RuinedStronghold.Layout);
 
         var game = TestHelper.CreateGame(seed: 1u);
         var manager = game.Manager;
-        var dungeon = BranchData.Dungeon.Instantiate(game);
+        var dungeon = BranchData.RuinedStronghold.Instantiate(game);
         var firstLevel = LevelGenerator.CreateEmpty(dungeon, depth: 1, seed: 1u, manager);
         LevelGenerator.Generate(firstLevel);
 
@@ -459,8 +457,8 @@ public class TreeLevelLayoutTest
         // queue backlog side effects between runs.
         var deepGame = TestHelper.CreateGame(seed: 1u);
         var deepManager = deepGame.Manager;
-        var deepDungeon = BranchData.Dungeon.Instantiate(deepGame);
-        var deepLevel = LevelGenerator.CreateEmpty(deepDungeon, depth: 5, seed: 1u, deepManager);
+        var deepDungeon = BranchData.RuinedStronghold.Instantiate(deepGame);
+        var deepLevel = LevelGenerator.CreateEmpty(deepDungeon, depth: BranchData.RuinedStronghold.Length, seed: 1u, deepManager);
         LevelGenerator.Generate(deepLevel);
 
         Assert.Equal((byte)7, layout.GridWidth);

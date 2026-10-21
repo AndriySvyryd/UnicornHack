@@ -2,6 +2,7 @@ using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
+using UnicornHack.Systems.Features;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
@@ -176,6 +177,22 @@ public class GameEntity : Entity
             if (value == null)
             {
                 RemoveComponent(EntityComponent.Position);
+            }
+            else
+            {
+                AddComponent(value);
+            }
+        }
+    }
+
+    public FeatureComponent? Feature
+    {
+        get => (FeatureComponent?)FindComponent((int)EntityComponent.Feature);
+        set
+        {
+            if (value == null)
+            {
+                RemoveComponent(EntityComponent.Feature);
             }
             else
             {

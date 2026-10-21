@@ -11,12 +11,89 @@ namespace UnicornHack.Generation;
 /// </summary>
 public class EnsureGeneratedRetryTest
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Populated_attempts_roll_back_entities_and_counts_before_retry_or_recovery(bool throwOnFailure)
+    {
+        var game = TestHelper.CreateGame(seed: 17);
+        var source = BranchData.RuinedStronghold;
+        var layout = new RejectPopulatedAttemptLayout(source.Layout, throwOnFailure);
+        var template = new Branch
+        {
+            Name = source.Name,
+            Length = source.Length,
+            IsTerminal = source.IsTerminal,
+            Layout = layout,
+            RoomLayout = source.RoomLayout,
+            CreatureGenerator = source.CreatureGenerator,
+            ItemGenerator = source.ItemGenerator
+        };
+        ((TestDataProvider)game.Services.Data).Branches.Add(template);
+        var branch = template.Instantiate(game);
+        var level = LevelGenerator.CreateEmpty(branch, 1, 17, game.Manager);
+
+        if (throwOnFailure)
+        {
+            Assert.Throws<Exception>(() => LevelGenerator.EnsureGenerated(level));
+            Assert.DoesNotContain(level.Rooms, room => room.Width != 0);
+            Assert.Empty(level.GenerationStats.CreatureInstancesByName);
+            Assert.Empty(level.GenerationStats.ItemInstancesByName);
+            Assert.Empty(game.GenerationStats.CreatureInstancesByName);
+            Assert.Empty(game.GenerationStats.ItemInstancesByName);
+        }
+
+        Assert.True(LevelGenerator.EnsureGenerated(level));
+        Assert.True(layout.RejectedAttempt);
+        Assert.NotEmpty(layout.AbandonedEntityIds);
+        Assert.All(layout.AbandonedEntityIds, entityId => Assert.Null(game.Manager.FindEntity(entityId)));
+        Assert.Equal(level.GenerationStats.CreatureInstancesByName.OrderBy(entry => entry.Key),
+            game.GenerationStats.CreatureInstancesByName.OrderBy(entry => entry.Key));
+        Assert.Equal(level.GenerationStats.ItemInstancesByName.OrderBy(entry => entry.Key),
+            game.GenerationStats.ItemInstancesByName.OrderBy(entry => entry.Key));
+        Assert.Equal(0, game.Manager.Queue.QueuedCount);
+    }
+
+    private sealed class RejectPopulatedAttemptLayout(LevelLayout source, bool throwOnFailure) : LevelLayout
+    {
+        public bool RejectedAttempt { get; private set; }
+
+        public int[] AbandonedEntityIds { get; private set; } = [];
+
+        public override List<Chunk>? Fill(GameLevel level, Branch branch)
+        {
+            if (RejectedAttempt)
+            {
+                Assert.Empty(level.GenerationStats.CreatureInstancesByName);
+                Assert.Empty(level.GenerationStats.ItemInstancesByName);
+                Assert.Empty(level.Game.GenerationStats.CreatureInstancesByName);
+                Assert.Empty(level.Game.GenerationStats.ItemInstancesByName);
+            }
+
+            var chunks = source.Fill(level, branch);
+            if (chunks == null || RejectedAttempt)
+            {
+                return chunks;
+            }
+
+            AbandonedEntityIds = level.Rooms.SelectMany(room => room.Actors.Values.Concat(room.Items.Values))
+                .Select(entity => entity.Id).ToArray();
+            RejectedAttempt = true;
+            if (throwOnFailure)
+            {
+                throw new InvalidOperationException("Test failure after creature and item placement.");
+            }
+
+            return null;
+        }
+    }
+
     [Fact]
     public void Successful_generation_increments_attempt_counters_once()
     {
         var game = TestHelper.CreateGame(seed: 1u);
         var manager = game.Manager;
-        var dungeon = BranchData.Dungeon.Instantiate(game);
+        var dungeon = BranchData.RuinedStronghold.Instantiate(game);
         var level = LevelGenerator.CreateEmpty(dungeon, depth: 1, seed: 1u, manager);
 
         var generated = LevelGenerator.EnsureGenerated(level);
@@ -33,7 +110,7 @@ public class EnsureGeneratedRetryTest
     {
         var game = TestHelper.CreateGame(seed: 1u);
         var manager = game.Manager;
-        var dungeon = BranchData.Dungeon.Instantiate(game);
+        var dungeon = BranchData.RuinedStronghold.Instantiate(game);
         var level = LevelGenerator.CreateEmpty(dungeon, depth: 1, seed: 1u, manager);
         Assert.True(LevelGenerator.EnsureGenerated(level));
 
@@ -52,8 +129,8 @@ public class EnsureGeneratedRetryTest
         var manager = game.Manager;
         var branch = new Branch
         {
-            Name = BranchData.Dungeon.Name,
-            Length = BranchData.Dungeon.Length,
+            Name = BranchData.RuinedStronghold.Name,
+            Length = BranchData.RuinedStronghold.Length,
             Layout = new AlwaysFailLayout()
         };
         ((TestDataProvider)game.Services.Data).Branches.Add(branch);
@@ -76,9 +153,9 @@ public class EnsureGeneratedRetryTest
         var manager = game.Manager;
         var branch = new Branch
         {
-            Name = BranchData.Dungeon.Name,
-            Length = BranchData.Dungeon.Length,
-            Layout = new FailNTimesLayout(failCount: 2, fallbackLayout: BranchData.Dungeon.Layout)
+            Name = BranchData.RuinedStronghold.Name,
+            Length = BranchData.RuinedStronghold.Length,
+            Layout = new FailNTimesLayout(failCount: 2, fallbackLayout: BranchData.RuinedStronghold.Layout)
         };
         ((TestDataProvider)game.Services.Data).Branches.Add(branch);
         var dungeon = branch.Instantiate(game);

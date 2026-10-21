@@ -51,7 +51,11 @@ public class SensorySystem :
 
     private void ResetVisibility(GameManager manager, BeingComponent sensor)
     {
-        sensor.VisibleTerrainIsCurrent = false;
+        if (sensor.VisibleTerrain != null)
+        {
+            ArrayPool<byte>.Shared.Return(sensor.VisibleTerrain);
+            sensor.VisibleTerrain = null;
+        }
 
         if (sensor.Entity.HasComponent(EntityComponent.Player))
         {
@@ -69,25 +73,18 @@ public class SensorySystem :
         var level = position.RoomEntity.Room!;
 
         var tileCount = level.TileCount;
-        if (sensor.VisibleTerrain == null
-            || sensor.VisibleTerrain.Length < tileCount)
+        if (sensor.VisibleTerrain is { } terrain
+            && terrain.Length >= tileCount)
         {
-            if (sensor.VisibleTerrain != null)
-            {
-                ArrayPool<byte>.Shared.Return(sensor.VisibleTerrain);
-            }
-
-            // TODO: Perf: Use a smaller array
-            sensor.VisibleTerrain = ArrayPool<byte>.Shared.Rent(tileCount);
-        }
-        else
-        {
-            if (sensor.VisibleTerrainIsCurrent)
-            {
-                return sensor.VisibleTerrain;
-            }
+            return terrain;
         }
 
+        if (sensor.VisibleTerrain != null)
+        {
+            ArrayPool<byte>.Shared.Return(sensor.VisibleTerrain);
+        }
+
+        sensor.VisibleTerrain = ArrayPool<byte>.Shared.Rent(tileCount);
         Array.Clear(sensor.VisibleTerrain, 0, tileCount);
 
         if (position.Cell is { } cell
@@ -106,8 +103,6 @@ public class SensorySystem :
                 TileBlocksVisibility,
                 sensor.VisibleTerrain);
         }
-
-        sensor.VisibleTerrainIsCurrent = true;
 
         return sensor.VisibleTerrain;
     }

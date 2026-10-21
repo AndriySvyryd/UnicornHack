@@ -1,3 +1,4 @@
+using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
 
@@ -138,7 +139,7 @@ public sealed class EffectMetadata
     {
         var metadata = Effect.GetMetadata(context.Accumulator.EffectType);
         var statusLevel = metadata.StatusAbilityName is { } abilityName
-            ? EffectApplicationSystem.GetAbilityLevel(context.ActorEntity, abilityName)
+            ? AbilityLevelSystem.GetAbilityLevel(context.ActorEntity, abilityName)
             : 0;
         context.System.RealizeBuildUp(context, decay: 10 * (statusLevel + 1));
     }

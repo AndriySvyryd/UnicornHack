@@ -474,7 +474,6 @@ public class GameHub : Hub
             .Join(dbContext.Games,
                 playerComponent => playerComponent.GameId, game => game.Id,
                 (_, game) => game)
-            .AsNoTracking()
             .FirstOrDefaultAsync()
             .ConfigureAwait(false);
 

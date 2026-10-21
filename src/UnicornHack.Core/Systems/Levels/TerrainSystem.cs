@@ -1,5 +1,3 @@
-using UnicornHack.Systems.Actors;
-
 namespace UnicornHack.Systems.Levels;
 
 public static class TerrainSystem
@@ -17,10 +15,16 @@ public static class TerrainSystem
         }
 
         var feature = room.Terrain[room.PointToIndex![point.X, point.Y]];
+        if (room.Features.TryGetValue(point, out var featureEntity)
+            && featureEntity.Feature!.Rewards.Any(reward => reward.ClaimantEntityId == null))
+        {
+            return pretend || manager.PlayerChoiceSystem.TryPresentReward(actorEntity, room, point);
+        }
+
         return feature switch
         {
             MapFeature.RacePedestal => pretend
-                || manager.PlayerChoiceSystem.TryPresent(actorEntity, PlayerChoiceSystem.RaceChoice),
+                || manager.PlayerChoiceSystem.TryPresent(actorEntity, RewardType.RacePedestal),
             _ => false
         };
     }

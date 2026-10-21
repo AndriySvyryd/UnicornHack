@@ -91,41 +91,8 @@ public static class Program
         return ability;
     }
 
-    private static NormalMapFragment? Transform(NormalMapFragment fragment)
-    {
-        // Transform variants are materialized from their source at load time
-        // (see MapFragmentLoader) and must never be written back as data files;
-        // serialize only the source fragments.
-        if (fragment.Transform != MapFragmentTransform.Identity)
-        {
-            return null;
-        }
-
-        // Emit only the author-declared tags - the size / content / door markers are
-        // re-derived from the payload on every load, so they don't belong in the data.
-        fragment.ReduceTagsToAuthored();
-
-        return fragment;
-    }
-
-    private static DefiningMapFragment? Transform(DefiningMapFragment fragment)
-    {
-        // Transform variants are materialized from their source at load time
-        // (see MapFragmentLoader) and must never be written back as data files;
-        // serialize only the source fragments.
-        if (fragment.Transform != MapFragmentTransform.Identity)
-        {
-            return null;
-        }
-
-        // Emit only the author-declared tags - the size / content / door markers are
-        // re-derived from the payload on every load, so they don't belong in the data.
-        fragment.ReduceTagsToAuthored();
-
-        return fragment;
-    }
-
-    private static ConnectingMapFragment? Transform(ConnectingMapFragment fragment)
+    private static TFragment? Transform<TFragment>(TFragment fragment)
+        where TFragment : MapFragment
     {
         // Transform variants are materialized from their source at load time
         // (see MapFragmentLoader) and must never be written back as data files;
@@ -147,6 +114,7 @@ public static class Program
     {
         Console.WriteLine("Serializing " + typeof(T).Name + " instances...");
 
+        var memberNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var item in loader.GetAll())
         {
             try
@@ -155,6 +123,13 @@ public static class Program
                 if (itemToSerialize == null)
                 {
                     continue;
+                }
+
+                var memberName = CSScriptLoaderHelpers.GenerateIdentifier(itemToSerialize.Name);
+                if (!memberNames.Add(memberName))
+                {
+                    throw new InvalidOperationException(
+                        $"The name '{itemToSerialize.Name}' produces the duplicate C# member '{memberName}' in {loader.DataType.Name}.");
                 }
 
                 var directory = Path.Combine(
@@ -174,9 +149,9 @@ public static class Program
                 else
                 {
                     var code = await _serializer!.SerializeAsync(
-                        itemToSerialize, itemToSerialize.Name, loader.DataType.Namespace!, loader.DataType.Name);
+                        itemToSerialize, memberName, loader.DataType.Namespace!, loader.DataType.Name);
                     await File.WriteAllTextAsync(
-                        Path.Combine(directory, CSScriptLoaderHelpers.GetClassFilename(itemToSerialize.Name)),
+                        Path.Combine(directory, memberName + CSScriptLoaderHelpers.ClassExtension),
                         code);
                 }
 
@@ -340,6 +315,11 @@ public static class Program
         {
             var serializedVariant = script == null ? variant : CSScriptLoaderHelpers.Load<T>(script);
             var name = getName(variant);
+            if (name.Any(character => character > 127))
+            {
+                throw new InvalidOperationException($"Identifier '{name}' must contain only ASCII characters.");
+            }
+
             if (name != getName(serializedVariant))
             {
                 throw new InvalidOperationException(name + " has invalid name.");
@@ -396,13 +376,17 @@ public static class Program
             throw new InvalidOperationException($"Ability on {ownerName} has no name");
         }
 
+        if (ability.Name.Any(character => character > 127))
+        {
+            throw new InvalidOperationException($"Ability identifier '{ability.Name}' on {ownerName} must contain only ASCII characters.");
+        }
+
         if (ability.LevelExpression is { } levelExpression)
         {
-            var ownerParameter = Expression.Parameter(typeof(GameEntity), "owner");
-            var visitor = new UnicornExpressionVisitor(
-                [ownerParameter], ValidateLevelExpressionInvocation);
-            visitor.TranslateExpression<Func<GameEntity, int>, int>(
-                levelExpression, convertResult: false);
+            EffectApplicationSystem.CreateLevelExpression(
+                levelExpression, ability.Name,
+                (function, arguments) => ValidateLevelExpressionInvocation(
+                    function, arguments, owner is Creature creature ? creature : null));
         }
 
         if ((ability.Activation & ActivationType.Slottable) != 0
@@ -517,7 +501,7 @@ public static class Program
     }
 
     private static void ValidateLevelExpressionInvocation(
-        string function, IReadOnlyList<Expression> arguments)
+        string function, IReadOnlyList<Expression> arguments, Creature? owner)
     {
         if (function != "AbilityLevel")
         {
@@ -530,7 +514,10 @@ public static class Program
                 "Function AbilityLevel expects one string-literal argument.");
         }
 
-        if (Ability.Loader.Find(abilityName) == null)
+        if (Ability.Loader.Find(abilityName) == null
+            && !(owner?.Abilities.Any(ability => ability.Name == abilityName) ?? false)
+            && !Creature.Loader.GetAll().Any(creature => creature.GetRaceAbilityName() == abilityName)
+            && !PlayerRace.Loader.GetAll().Any(race => race.GetRaceAbilityName() == abilityName))
         {
             throw new InvalidOperationException(
                 $"AbilityLevel references unknown ability '{abilityName}'.");

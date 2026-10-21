@@ -9,6 +9,7 @@ public class Topple : ResistedEffect
             statusCategory: StatusCategory.Physical,
             resistanceProperty: nameof(Systems.Beings.BeingComponent.ToppleResistance),
             statusAbilityDuration: "100*MightModifier()",
+            durationPolicy: DurationPolicy.Extend,
             defaultAmount: "200*MightModifier()");
 
     [System.Runtime.CompilerServices.ModuleInitializer]

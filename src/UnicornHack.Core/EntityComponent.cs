@@ -14,5 +14,6 @@ public enum EntityComponent
     Position,
     Knowledge,
     ActiveEffects,
+    Feature,
     ComponentCount // Has to be last
 }

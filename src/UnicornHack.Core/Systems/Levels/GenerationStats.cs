@@ -257,6 +257,56 @@ public class GenerationStats : NotificationEntity
     ///     per-tag counters for every tag on the fragment, and the per-feature counters
     ///     for every set bit in <paramref name="roomFeatures" />.
     /// </summary>
+    public GenerationStats CaptureInstanceCounts()
+    {
+        GenerationStats snapshot = this is LevelGenerationStats ? new LevelGenerationStats() : new GenerationStats();
+        CopyInstanceCountsTo(snapshot);
+        return snapshot;
+    }
+
+    public void RestoreInstanceCounts(GenerationStats snapshot)
+    {
+        FragmentInstancesByName.Clear();
+        FragmentInstancesByTag.Clear();
+        FragmentInstancesByFeature.Clear();
+        CreatureInstancesByName.Clear();
+        CreatureInstancesByFlag.Clear();
+        ItemInstancesByName.Clear();
+        ItemInstancesByType.Clear();
+        RoomCountsByFeature.Clear();
+        if (this is LevelGenerationStats level)
+        {
+            level.FragmentInstancesByVariant.Clear();
+        }
+
+        snapshot.CopyInstanceCountsTo(this);
+    }
+
+    private void CopyInstanceCountsTo(GenerationStats target)
+    {
+        Copy(FragmentInstancesByName, target.FragmentInstancesByName);
+        Copy(FragmentInstancesByTag, target.FragmentInstancesByTag);
+        Copy(FragmentInstancesByFeature, target.FragmentInstancesByFeature);
+        Copy(CreatureInstancesByName, target.CreatureInstancesByName);
+        Copy(CreatureInstancesByFlag, target.CreatureInstancesByFlag);
+        Copy(ItemInstancesByName, target.ItemInstancesByName);
+        Copy(ItemInstancesByType, target.ItemInstancesByType);
+        Copy(RoomCountsByFeature, target.RoomCountsByFeature);
+        target.NamedNonBossCreatureCount = NamedNonBossCreatureCount;
+        if (this is LevelGenerationStats sourceLevel && target is LevelGenerationStats targetLevel)
+        {
+            Copy(sourceLevel.FragmentInstancesByVariant, targetLevel.FragmentInstancesByVariant);
+        }
+
+        static void Copy<TKey>(Dictionary<TKey, int> source, Dictionary<TKey, int> destination) where TKey : notnull
+        {
+            foreach (var entry in source)
+            {
+                destination.Add(entry.Key, entry.Value);
+            }
+        }
+    }
+
     public void RecordFragmentInstance(
         string name,
         IEnumerable<string>? tags,

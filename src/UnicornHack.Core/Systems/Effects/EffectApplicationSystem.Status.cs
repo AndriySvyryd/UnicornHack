@@ -1,3 +1,4 @@
+using UnicornHack.Systems.Abilities;
 using System.Globalization;
 using UnicornHack.Services.LogEvents;
 using UnicornHack.Systems.Time;
@@ -299,7 +300,7 @@ public partial class EffectApplicationSystem
     public static (EffectDuration? Event, int? Target) GetStatusAbilityExpiration(
         EffectMetadata metadata, GameEntity targetEntity, int level)
     {
-        if (metadata.Duration is EffectDuration.UntilNextRoom or EffectDuration.UntilNextLevel)
+        if (metadata.Duration is EffectDuration.UntilNextRoom or EffectDuration.UntilNextLevel or EffectDuration.UntilNextBranch)
         {
             return (metadata.Duration, null);
         }
@@ -447,15 +448,14 @@ public partial class EffectApplicationSystem
         if (isPerSource
             && FindPerSourceBuildUpSource(targetEntity, effectType) == null)
         {
-            RemoveAbility(
+            manager.AbilityLevelSystem.RemoveAbility(
                 targetEntity, abilityName, manager, sourceAbilityEntityId: 0);
             return;
         }
 
         var template = manager.Game.Services.Data.Abilities.Get(abilityName);
-        var currentLevel = GetComponentEffectLevel(
-            targetEntity, abilityName, EffectType.AddAbility, sourceAbilityEntityId: 0,
-            onlyUnconditional: true);
+        var currentLevel = AbilityLevelSystem.GetComponentEffectLevel(
+            targetEntity, abilityName, EffectType.AddAbility, sourceAbilityEntityId: 0);
         var levelsToAdd = 0;
 
         if (isBuildUp)
@@ -479,7 +479,7 @@ public partial class EffectApplicationSystem
 
             if (desiredLevel < currentLevel)
             {
-                RemoveAbilityLevels(
+                AbilityLevelSystem.RemoveAbilityLevels(
                     abilityName, currentLevel - desiredLevel, sourceAbilityEntityId: 0,
                     targetEntity, manager);
                 currentLevel = desiredLevel;
@@ -511,9 +511,8 @@ public partial class EffectApplicationSystem
         var newLevel = currentLevel + levelsToAdd;
 
         var existingLevel = 0;
-        foreach (var record in GetOrderedComponentEffectRecords(
-                     abilityName, targetEntity, EffectType.AddAbility, sourceAbilityEntityId: 0,
-                     onlyUnconditional: true))
+        foreach (var record in AbilityLevelSystem.GetOrderedComponentEffectRecords(
+                     abilityName, targetEntity, EffectType.AddAbility, sourceAbilityEntityId: 0))
         {
             existingLevel += record.Level;
             var expiration = GetStatusAbilityExpiration(metadata, targetEntity, existingLevel);
@@ -524,7 +523,7 @@ public partial class EffectApplicationSystem
         for (var level = currentLevel + 1; level <= newLevel; level++)
         {
             var expiration = GetStatusAbilityExpiration(metadata, targetEntity, level);
-            AddComponentEffectRecord(
+            AbilityLevelSystem.AddComponentEffectRecord(
                 targetEntity, EffectType.AddAbility, abilityName,
                 sourceAbilityEntityId: 0, level: 1,
                 expirationTarget: expiration.Target,
@@ -532,16 +531,15 @@ public partial class EffectApplicationSystem
         }
 
         RecomputeNextEffectTick(activeEffects);
-        RelevelAbility(abilityName, targetEntity, manager, template);
+        manager.AbilityLevelSystem.RelevelAbility(abilityName, targetEntity, manager, template);
     }
 
     private void SynchronizeStatusAbilityAmounts(
         EffectType effectType, string abilityName, GameEntity targetEntity, GameManager manager)
     {
         var activeEffects = targetEntity.ActiveEffects!;
-        var record = FindComponentEffect(
-            targetEntity, EffectType.AddAbility, abilityName, sourceAbilityEntityId: 0,
-            onlyUnconditional: true);
+        var record = AbilityLevelSystem.FindComponentEffect(
+            targetEntity, EffectType.AddAbility, abilityName, sourceAbilityEntityId: 0);
 
         if (record == null)
         {
@@ -580,12 +578,12 @@ public partial class EffectApplicationSystem
             return;
         }
 
-        RelevelAbility(
+        manager.AbilityLevelSystem.RelevelAbility(
             abilityName, targetEntity, manager,
             manager.Game.Services.Data.Abilities.Get(abilityName));
     }
 
-    private static (string Amount, string? SecondaryAmount) GetPropagatedStatusAmounts(
+    internal static (string Amount, string? SecondaryAmount) GetPropagatedStatusAmounts(
         EffectType effectType, EffectMetadata metadata, ActiveEffectsComponent activeEffects)
     {
         var amount = metadata.CombinationFunction.IsBuildUp()
@@ -669,7 +667,7 @@ public partial class EffectApplicationSystem
 
                 if (Effect.GetMetadata(status.Status).StatusAbilityName is { } clearedAbilityName)
                 {
-                    RemoveAbility(
+                    manager.AbilityLevelSystem.RemoveAbility(
                         targetEntity, clearedAbilityName, manager,
                         sourceAbilityEntityId: 0);
                 }

@@ -67,7 +67,7 @@ public class TerminalBranchConnectionTest
         var originLevel = LevelGenerator.CreateEmpty(originEntity, depth: 1, seed: 1u, manager);
         LevelGenerator.EnsureGenerated(originLevel);
 
-        var exitRoom = originLevel.Rooms.Single(r => (r.Features & RoomFeatures.Exit) != 0);
+        var exitRoom = originLevel.Rooms.Single(r => (r.FeatureTags & RoomFeatures.Exit) != 0);
 
         var outboundConnections = exitRoom.Connections.Values
             .Select(c => c.Connection!)
@@ -106,7 +106,7 @@ public class TerminalBranchConnectionTest
         var level = LevelGenerator.CreateEmpty(entity, depth: 1, seed: 1u, manager);
         LevelGenerator.EnsureGenerated(level);
 
-        var exitRoom = level.Rooms.Single(r => (r.Features & RoomFeatures.Exit) != 0);
+        var exitRoom = level.Rooms.Single(r => (r.FeatureTags & RoomFeatures.Exit) != 0);
         // No inter-level connection - the only Connections entries (if any) should be
         // intra-level, never spanning to a different GameLevel.
         var outboundInterLevel = exitRoom.Connections.Values

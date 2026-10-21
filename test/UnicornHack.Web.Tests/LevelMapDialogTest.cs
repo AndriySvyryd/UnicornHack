@@ -1,13 +1,108 @@
 using UnicornHack.Data.Branches;
 using UnicornHack.Data.Creatures;
 using UnicornHack.Generation;
-using UnicornHack.Hubs;
+using UnicornHack.Systems.Beings;
+using UnicornHack.Systems.Effects;
+using UnicornHack.Systems.Levels;
+using System.Buffers;
 using Xunit;
 
 namespace UnicornHack.Web.Tests;
 
 public class LevelMapDialogTest
 {
+    [Theory]
+    [InlineData(0, 2)]
+    [InlineData(1, 0)]
+    [InlineData(1, 1)]
+    [InlineData(1, 2)]
+    public void Room_perception_controls_actor_totals_within_non_hidden_graph_range(int perceptionLevel, int range)
+    {
+        var (player, room) = CreateMapObserver();
+        var manager = player.Manager;
+        manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
+            perceptionLevel - player.Being!.RoomPerceptionLevel, nameof(BeingComponent.RoomPerceptionLevel), "test room level", player);
+        manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
+            range - player.Being.RoomPerceptionRange, nameof(BeingComponent.RoomPerceptionRange), "test room range", player);
+        manager.Queue.ProcessQueue(manager);
+        foreach (var candidate in room.Level.Rooms)
+        {
+            candidate.IsVisited = candidate == room;
+        }
+
+        var map = GameQueryProcessor.SerializeLevelMap(player);
+        var expectedIds = new HashSet<int> { room.EntityId };
+        if (perceptionLevel > 0)
+        {
+            for (var distance = 0; distance < range; distance++)
+            {
+                expectedIds.UnionWith(map.Rooms.Where(entry => expectedIds.Contains(entry.Id))
+                    .SelectMany(entry => entry.ConnectedTo).ToArray());
+            }
+        }
+
+        foreach (var entry in map.Rooms)
+        {
+            var candidate = room.Level.Rooms.Single(candidate => candidate.EntityId == entry.Id);
+            Assert.Equal(expectedIds.Contains(entry.Id) ? candidate.Actors.Values.Count(actor => actor != player) : -1,
+                entry.RevealedActorCount);
+            Assert.DoesNotContain("Items:", entry.Tooltip);
+            Assert.DoesNotContain("Hostiles:", entry.Tooltip);
+            Assert.DoesNotContain("Strongest:", entry.Tooltip);
+            if (!expectedIds.Contains(entry.Id))
+            {
+                Assert.Null(entry.EliteName);
+                Assert.DoesNotContain("Elite:", entry.Tooltip);
+            }
+        }
+
+        Assert.Equal(room.Level.Rooms.Count, map.Rooms.Count);
+        Assert.Contains(map.Rooms, entry => entry.RevealedActorCount == -1);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    public void Visited_rooms_retain_full_details_outside_room_perception_range(int perceptionLevel)
+    {
+        var (player, room) = CreateMapObserver();
+        var manager = player.Manager;
+        manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
+            perceptionLevel - player.Being!.RoomPerceptionLevel,
+            nameof(BeingComponent.RoomPerceptionLevel), "test room level", player);
+        manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
+            -player.Being.RoomPerceptionRange, nameof(BeingComponent.RoomPerceptionRange), "test room range", player);
+        manager.Queue.ProcessQueue(manager);
+        foreach (var candidate in room.Level.Rooms)
+        {
+            candidate.IsVisited = true;
+        }
+
+        var map = GameQueryProcessor.SerializeLevelMap(player);
+
+        Assert.Equal(room.Level.Rooms.Count, map.Rooms.Count);
+        foreach (var entry in map.Rooms)
+        {
+            var candidate = room.Level.Rooms.Single(candidate => candidate.EntityId == entry.Id);
+            Assert.Equal(candidate.Actors.Values.Count(actor => actor != player), entry.RevealedActorCount);
+        }
+    }
+
+    private static (GameEntity Player, RoomComponent Room) CreateMapObserver()
+    {
+        var game = TestHelper.CreateGame(42);
+        var branch = BranchData.RuinedStronghold.Instantiate(game);
+        var level = LevelGenerator.CreateEmpty(branch, 1, 42, game.Manager);
+        LevelGenerator.EnsureGenerated(level);
+        var room = level.Rooms.Single(candidate => candidate.FeatureTags.HasFlag(RoomFeatures.Entrance));
+        var cell = room.IndexToPoint!.Take(room.TileCount).First(candidate =>
+            room.Terrain[room.PointToIndex![candidate.X, candidate.Y]].CanMoveTo()
+            && !room.Actors.ContainsKey(candidate) && !room.Connections.ContainsKey(candidate));
+        var player = PlayerRace.InstantiatePlayer("Tester", Sex.Male, room, cell);
+        game.Manager.Queue.ProcessQueue(game.Manager);
+        return (player, room);
+    }
+
     [Fact]
     public void SerializeLevelMap_returns_a_single_entry_for_test_levels()
     {
@@ -25,7 +120,7 @@ public class LevelMapDialogTest
         Assert.Single(result.Rooms);
         var entry = result.Rooms[0];
         Assert.Equal(room.EntityId, entry.Id);
-        Assert.Equal(room.Features, entry.Features);
+        Assert.Equal(room.FeatureTags, entry.Features);
 
         // The server bakes the localized header into the tooltip. The player is standing in
         // this room, so it's the current room.
@@ -33,23 +128,26 @@ public class LevelMapDialogTest
     }
 
     [Fact]
-    public void SerializeLevelMap_prefers_a_named_creature_as_the_strongest_actor()
+    public void SerializeLevelMap_identifies_the_elite_but_not_ordinary_actors_when_details_are_perceived()
     {
         var game = TestHelper.CreateGame();
         var room = TestHelper.BuildRoom(".....", game);
         var manager = game.Manager;
         var player = PlayerRace.InstantiatePlayer(
             "Tester", Sex.Male, room, new Point(0, 0));
-        var named = CreatureData.Cerberous.Instantiate(room, new Point(1, 0));
-        var stronger = CreatureData.RedDragon.Instantiate(room, new Point(2, 0));
+        var named = CreatureData.Cerberus.Instantiate(room, new Point(1, 0));
+        var stronger = CreatureData.Elephant.Instantiate(room, new Point(2, 0));
         manager.Queue.ProcessQueue(manager);
 
         Assert.True(stronger.Being!.HitPointMaximum > named.Being!.HitPointMaximum);
 
         var entry = Assert.Single(GameQueryProcessor.SerializeLevelMap(player).Rooms);
 
-        Assert.Equal("Cerberous", entry.StrongestActorName);
-        Assert.Contains("Strongest: Cerberous", entry.Tooltip);
+        Assert.Equal(2, entry.RevealedActorCount);
+        Assert.Contains("Creatures: 2", entry.Tooltip);
+        Assert.Equal("Cerberus", entry.EliteName);
+        Assert.Contains("Elite: Cerberus", entry.Tooltip);
+        Assert.DoesNotContain("elephant", entry.Tooltip, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -57,7 +155,7 @@ public class LevelMapDialogTest
     {
         var game = TestHelper.CreateGame(seed: 42u);
         var manager = game.Manager;
-        var dungeon = BranchData.Dungeon.Instantiate(game);
+        var dungeon = BranchData.RuinedStronghold.Instantiate(game);
         game.Branches.Add(dungeon);
 
         var gameLevel = LevelGenerator.CreateEmpty(dungeon, depth: 1, seed: 42u, manager);
@@ -88,7 +186,7 @@ public class LevelMapDialogTest
         foreach (var entry in result.Rooms)
         {
             var roomComponent = gameLevel.Rooms.First(r => r.EntityId == entry.Id);
-            Assert.Equal(roomComponent.Features, entry.Features);
+            Assert.Equal(roomComponent.FeatureTags, entry.Features);
             Assert.Equal(roomComponent.GridX, entry.GridX);
             Assert.Equal(roomComponent.GridY, entry.GridY);
 

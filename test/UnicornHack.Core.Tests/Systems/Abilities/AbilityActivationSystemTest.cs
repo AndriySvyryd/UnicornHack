@@ -2,6 +2,7 @@ using System.Reflection;
 using UnicornHack.Data.Abilities;
 using UnicornHack.Data.Creatures;
 using UnicornHack.Data.Items;
+using UnicornHack.Generation.Effects;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
@@ -14,6 +15,176 @@ namespace UnicornHack.Systems.Abilities;
 
 public class AbilityActivationSystemTest
 {
+    [Theory]
+    [InlineData(Direction.East, 1, 3)]
+    [InlineData(Direction.East, 2, 8)]
+    [InlineData(Direction.East, 3, 15)]
+    [InlineData(Direction.Northeast, 1, 3)]
+    [InlineData(Direction.Northeast, 2, 8)]
+    [InlineData(Direction.Northeast, 3, 15)]
+    public void Cone_targeting_is_a_range_bounded_ninety_degree_area(Direction direction, int range, int expectedCells)
+    {
+        var room = TestHelper.BuildRoom("""
+            .......
+            .......
+            .......
+            .......
+            .......
+            .......
+            .......
+            """);
+        var manager = room.Entity.Manager;
+        var origin = new Point(3, 3);
+        var forward = direction.AsVector();
+        var cells = manager.AbilityActivationSystem.GetTargetedCells(
+            origin, origin.Translate(forward), direction, range, TargetingShape.Cone, 1, room);
+
+        Assert.Equal(expectedCells, cells.Count);
+        Assert.All(cells, cell =>
+        {
+            Assert.InRange(origin.DistanceTo(cell.Item1), 1, range);
+            var relative = origin.DifferenceTo(cell.Item1);
+            var projection = relative.X * forward.X + relative.Y * forward.Y;
+            var cross = relative.X * forward.Y - relative.Y * forward.X;
+            Assert.True(projection > 0 && Math.Abs(cross) <= projection);
+            Assert.True(cell.Item2 > 0);
+        });
+        ((List<(Point, byte)>)cells).Clear();
+        manager.PointByteListArrayPool.Return((List<(Point, byte)>)cells);
+    }
+
+    [Fact]
+    public void Cone_targeting_does_not_reveal_targets_behind_solid_cover()
+    {
+        var room = TestHelper.BuildRoom("""
+            .......
+            .......
+            .......
+            ....#..
+            .......
+            .......
+            .......
+            """);
+        var manager = room.Entity.Manager;
+        var cells = manager.AbilityActivationSystem.GetTargetedCells(
+            new Point(3, 3), new Point(4, 3), Direction.East, 3, TargetingShape.Cone, 1, room);
+
+        Assert.DoesNotContain(cells, cell => cell.Item1 == new Point(5, 3));
+        Assert.DoesNotContain(cells, cell => cell.Item1 == new Point(6, 3));
+        ((List<(Point, byte)>)cells).Clear();
+        manager.PointByteListArrayPool.Return((List<(Point, byte)>)cells);
+    }
+
+    [Fact]
+    public void Non_cumulative_leveled_effects_replace_the_granted_stage_ability()
+    {
+        var room = TestHelper.BuildRoom(".");
+        var actor = CreatureData.Boggart.Instantiate(room, new Point(0, 0));
+        var manager = actor.Manager;
+        var template = new LeveledAbility
+        {
+            Name = "test leveled stages",
+            Type = AbilityType.Buff,
+            Cumulative = false,
+            LeveledEffects = new Dictionary<int, IReadOnlyList<Effect>>
+            {
+                [1] = [new AddAbility
+                {
+                    TargetActivator = true,
+                    Ability = new Ability
+                    {
+                        Name = "first granted stage",
+                        Type = AbilityType.RangedAttack,
+                        Activation = ActivationType.Targeted,
+                        Action = AbilityAction.Scream,
+                        Range = 4,
+                        Windup = 100,
+                        Effects = [new Daze { Amount = "1" }]
+                    }
+                }],
+                [2] = [new AddAbility
+                {
+                    TargetActivator = true,
+                    Ability = new Ability
+                    {
+                        Name = "second granted stage",
+                        Type = AbilityType.MeleeAttack,
+                        Activation = ActivationType.Targeted,
+                        Action = AbilityAction.Bite,
+                        Range = 1,
+                        Windup = 200,
+                        Effects = [new PhysicalDamage { Amount = "5" }]
+                    }
+                }]
+            }
+        };
+        manager.AbilityLevelSystem.AddAbilityEffect(actor, template);
+        manager.Queue.ProcessQueue(manager);
+        var first = manager.AffectableAbilitiesIndex[(actor.Id, "first granted stage")]!.Ability!;
+        Assert.Equal(AbilityAction.Scream, first.Action);
+        Assert.Equal(4, first.Range);
+        Assert.Equal(100, first.Windup);
+
+        manager.AbilityLevelSystem.AddAbilityEffect(actor, template);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Null(manager.AffectableAbilitiesIndex[(actor.Id, "first granted stage")]);
+        var second = manager.AffectableAbilitiesIndex[(actor.Id, "second granted stage")]!.Ability!;
+        Assert.Equal(AbilityAction.Bite, second.Action);
+        Assert.Equal(1, second.Range);
+        Assert.Equal(200, second.Windup);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Teleport_attack_composes_movement_and_damage_without_mutating_the_preview(bool rooted)
+    {
+        var room = TestHelper.BuildRoom("""
+            .....
+            .....
+            .....
+            """);
+        var actor = CreatureData.Boggart.Instantiate(room, new Point(0, 1));
+        var target = CreatureData.Boggart.Instantiate(room, new Point(4, 1));
+        var manager = actor.Manager;
+        var ability = new Ability
+        {
+            Name = "test teleport attack",
+            Type = AbilityType.MeleeAttack,
+            Activation = ActivationType.Targeted,
+            Trigger = ActivationType.OnMeleeAttack,
+            Action = AbilityAction.Hit,
+            Range = 4,
+            SuccessCondition = AbilitySuccessCondition.Always,
+            EnergyPointCost = 5,
+            Delay = "100",
+            Effects = [new Teleport { TargetActivator = true }, new PhysicalDamage { Amount = "5" }]
+        }.AddToAffectable(actor);
+        if (rooted)
+        {
+            manager.AbilityLevelSystem.AddAbilityEffect(actor, AbilityData.Bound, 2);
+        }
+
+        manager.Queue.ProcessQueue(manager);
+        ability.Slot = 2;
+        var initialEnergy = actor.Being!.EnergyPoints;
+        var initialHealth = target.Being!.HitPoints;
+        var activation = ActivateAbilityMessage.Create(ability.Entity, actor, target);
+        var error = manager.AbilityActivationSystem.CanActivateAbility(activation);
+
+        Assert.Equal(new Point(0, 1), actor.Position!.Cell);
+        Assert.Equal(initialEnergy, actor.Being.EnergyPoints);
+        Assert.Equal(initialHealth, target.Being.HitPoints);
+        Assert.Null(error);
+        manager.Enqueue(activation);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(new Point(3, 1), actor.Position.Cell);
+        Assert.Equal(initialEnergy - 5, actor.Being.EnergyPoints);
+        Assert.True(target.Being.HitPoints < initialHealth);
+    }
+
     private static readonly FieldInfo ReferenceCountField = typeof(Entity).GetField(
         "_referenceCount", BindingFlags.Instance | BindingFlags.NonPublic)!;
 
@@ -282,7 +453,7 @@ public class AbilityActivationSystemTest
         var manager = level.Entity.Manager;
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(2, 0));
         playerEntity.Position!.Heading = Direction.West;
-        manager.EffectApplicationSystem.AddAbilityEffect(playerEntity, AbilityData.Conjuration);
+        manager.AbilityLevelSystem.AddAbilityEffect(playerEntity, AbilityData.Conjuration);
         manager.Queue.ProcessQueue(manager);
 
         var target = CreatureData.Undine.Instantiate(level, new Point(2, 2));
@@ -300,7 +471,7 @@ public class AbilityActivationSystemTest
         manager.EffectApplicationSystem.ApplyStatus(EffectApplicationContext.CreateStatus(
             EffectType.Expose, target, amount: 134));
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(target, AbilityData.Exposed.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(target, AbilityData.Exposed.Name));
         Assert.Equal(baseStatusResistance - 25, target.Being.PhysicalStatusResistance);
         Assert.Equal(
             missChanceBefore,
@@ -310,7 +481,7 @@ public class AbilityActivationSystemTest
         manager.EffectApplicationSystem.ApplyStatus(EffectApplicationContext.CreateStatus(
             EffectType.Expose, target, amount: 134));
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(target, AbilityData.Exposed.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(target, AbilityData.Exposed.Name));
         Assert.Equal(baseEvasion / 2, target.Being.Evasion);
         Assert.Equal(baseEvasion / 2, AbilityActivationSystem.GetEvasion(target));
         Assert.Contains(
@@ -326,7 +497,7 @@ public class AbilityActivationSystemTest
         manager.EffectApplicationSystem.ApplyStatus(EffectApplicationContext.CreateStatus(
             EffectType.Expose, target, amount: 134));
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(3, EffectApplicationSystem.GetAbilityLevel(target, AbilityData.Exposed.Name));
+        Assert.Equal(3, AbilityLevelSystem.GetAbilityLevel(target, AbilityData.Exposed.Name));
         Assert.Equal(0, target.Being.Evasion);
         Assert.Equal(0, AbilityActivationSystem.GetEvasion(target));
 
@@ -342,7 +513,7 @@ public class AbilityActivationSystemTest
         var level = TestHelper.BuildRoom(TestMap);
         var manager = level.Entity.Manager;
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(2, 0));
-        manager.EffectApplicationSystem.AddAbilityEffect(playerEntity, AbilityData.Conjuration);
+        manager.AbilityLevelSystem.AddAbilityEffect(playerEntity, AbilityData.Conjuration);
         var target = CreatureData.Undine.Instantiate(level, new Point(2, 2));
         manager.Queue.ProcessQueue(manager);
 
@@ -382,7 +553,7 @@ public class AbilityActivationSystemTest
         var level = TestHelper.BuildRoom(TestMap);
         var manager = level.Entity.Manager;
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(2, 0));
-        manager.EffectApplicationSystem.AddAbilityEffect(playerEntity, AbilityData.Conjuration);
+        manager.AbilityLevelSystem.AddAbilityEffect(playerEntity, AbilityData.Conjuration);
         var target = CreatureData.Undine.Instantiate(level, new Point(2, 2));
         manager.Queue.ProcessQueue(manager);
 
@@ -414,7 +585,7 @@ public class AbilityActivationSystemTest
         var level = TestHelper.BuildRoom(TestMap);
         var manager = level.Entity.Manager;
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(2, 0));
-        manager.EffectApplicationSystem.AddAbilityEffect(playerEntity, AbilityData.Conjuration);
+        manager.AbilityLevelSystem.AddAbilityEffect(playerEntity, AbilityData.Conjuration);
         var target = CreatureData.Undine.Instantiate(level, new Point(2, 2));
         manager.Queue.ProcessQueue(manager);
 
@@ -447,27 +618,27 @@ public class AbilityActivationSystemTest
     {
         var level = TestHelper.BuildRoom(TestMap);
         var manager = level.Entity.Manager;
-        var attacker = CreatureData.Naga.Instantiate(level, new Point(0, 0));
+        var attacker = CreatureData.Rakshasa.Instantiate(level, new Point(0, 0));
         var target = CreatureData.Undine.Instantiate(level, new Point(2, 2));
         manager.Queue.ProcessQueue(manager);
 
-        var bite = attacker.ActiveEffects!.Abilities.Single(a => a.Ability!.Action == AbilityAction.Bite);
-        var spit = attacker.ActiveEffects!.Abilities.Single(a => a.Ability!.Action == AbilityAction.Spit);
-        var biteAccuracy = manager.AbilityActivationSystem.GetAccuracy(bite.Ability!, attacker);
-        var spitAccuracy = manager.AbilityActivationSystem.GetAccuracy(spit.Ability!, attacker);
+        var melee = attacker.ActiveEffects!.Abilities.Single(a => a.Ability!.Name == "close-quarters strike");
+        var ranged = attacker.ActiveEffects!.Abilities.Single(a => a.Ability!.Action == AbilityAction.Shoot);
+        var meleeAccuracy = manager.AbilityActivationSystem.GetAccuracy(melee.Ability!, attacker);
+        var rangedAccuracy = manager.AbilityActivationSystem.GetAccuracy(ranged.Ability!, attacker);
 
         var meleeMissBefore = manager.AbilityActivationSystem.GetEvasionProbability(
-            bite, attacker, target, BeveledVisibilityCalculator.MaxVisibility, biteAccuracy);
+            melee, attacker, target, BeveledVisibilityCalculator.MaxVisibility, meleeAccuracy);
         var rangedMissBefore = manager.AbilityActivationSystem.GetEvasionProbability(
-            spit, attacker, target, BeveledVisibilityCalculator.MaxVisibility, spitAccuracy);
+            ranged, attacker, target, BeveledVisibilityCalculator.MaxVisibility, rangedAccuracy);
         Assert.True(meleeMissBefore > 0);
 
         ApplyUnstable(target, amount, manager);
 
         var meleeMissAfter = manager.AbilityActivationSystem.GetEvasionProbability(
-            bite, attacker, target, BeveledVisibilityCalculator.MaxVisibility, biteAccuracy);
+            melee, attacker, target, BeveledVisibilityCalculator.MaxVisibility, meleeAccuracy);
         var rangedMissAfter = manager.AbilityActivationSystem.GetEvasionProbability(
-            spit, attacker, target, BeveledVisibilityCalculator.MaxVisibility, spitAccuracy);
+            ranged, attacker, target, BeveledVisibilityCalculator.MaxVisibility, rangedAccuracy);
 
         // Directly reduced evasion makes the target easier to hit through either attack type.
         Assert.True(meleeMissAfter < meleeMissBefore);
@@ -479,30 +650,30 @@ public class AbilityActivationSystemTest
     {
         var level = TestHelper.BuildRoom(TestMap);
         var manager = level.Entity.Manager;
-        var attacker = CreatureData.Naga.Instantiate(level, new Point(0, 0));
+        var attacker = CreatureData.Rakshasa.Instantiate(level, new Point(0, 0));
         var target = CreatureData.Undine.Instantiate(level, new Point(2, 2));
         manager.Queue.ProcessQueue(manager);
 
-        var bite = attacker.ActiveEffects!.Abilities.Single(a => a.Ability!.Action == AbilityAction.Bite);
-        var spit = attacker.ActiveEffects!.Abilities.Single(a => a.Ability!.Action == AbilityAction.Spit);
-        var biteAccuracy = manager.AbilityActivationSystem.GetAccuracy(bite.Ability!, attacker);
-        var spitAccuracy = manager.AbilityActivationSystem.GetAccuracy(spit.Ability!, attacker);
+        var melee = attacker.ActiveEffects!.Abilities.Single(a => a.Ability!.Name == "close-quarters strike");
+        var ranged = attacker.ActiveEffects!.Abilities.Single(a => a.Ability!.Action == AbilityAction.Shoot);
+        var meleeAccuracy = manager.AbilityActivationSystem.GetAccuracy(melee.Ability!, attacker);
+        var rangedAccuracy = manager.AbilityActivationSystem.GetAccuracy(ranged.Ability!, attacker);
 
         var meleeMissBefore = manager.AbilityActivationSystem.GetEvasionProbability(
-            bite, attacker, target, BeveledVisibilityCalculator.MaxVisibility, biteAccuracy);
+            melee, attacker, target, BeveledVisibilityCalculator.MaxVisibility, meleeAccuracy);
         var rangedMissBefore = manager.AbilityActivationSystem.GetEvasionProbability(
-            spit, attacker, target, BeveledVisibilityCalculator.MaxVisibility, spitAccuracy);
+            ranged, attacker, target, BeveledVisibilityCalculator.MaxVisibility, rangedAccuracy);
         Assert.True(meleeMissBefore < 100);
 
         ApplyUnstable(attacker, amount: 200, manager);
 
-        biteAccuracy = manager.AbilityActivationSystem.GetAccuracy(bite.Ability!, attacker);
-        spitAccuracy = manager.AbilityActivationSystem.GetAccuracy(spit.Ability!, attacker);
+        meleeAccuracy = manager.AbilityActivationSystem.GetAccuracy(melee.Ability!, attacker);
+        rangedAccuracy = manager.AbilityActivationSystem.GetAccuracy(ranged.Ability!, attacker);
 
         var meleeMissAfter = manager.AbilityActivationSystem.GetEvasionProbability(
-            bite, attacker, target, BeveledVisibilityCalculator.MaxVisibility, biteAccuracy);
+            melee, attacker, target, BeveledVisibilityCalculator.MaxVisibility, meleeAccuracy);
         var rangedMissAfter = manager.AbilityActivationSystem.GetEvasionProbability(
-            spit, attacker, target, BeveledVisibilityCalculator.MaxVisibility, spitAccuracy);
+            ranged, attacker, target, BeveledVisibilityCalculator.MaxVisibility, rangedAccuracy);
 
         // Level 2 directly halves accuracy for either attack type.
         Assert.True(meleeMissAfter > meleeMissBefore);
@@ -523,8 +694,8 @@ public class AbilityActivationSystemTest
         var level = TestHelper.BuildRoom("...");
         var manager = level.Entity.Manager;
         var attacker = CreatureData.Naga.Instantiate(level, new Point(0, 0));
-        var ghost = CreatureData.Ghost.Instantiate(level, new Point(1, 0));
-        var other = CreatureData.HumanWarrior.Instantiate(level, new Point(2, 0));
+        var ghost = CreatureData.Psukhe.Instantiate(level, new Point(1, 0));
+        var other = CreatureData.Manusya.Instantiate(level, new Point(2, 0));
         manager.Queue.ProcessQueue(manager);
 
         var bite = attacker.ActiveEffects!.Abilities.Single(a => a.Ability!.Action == AbilityAction.Bite);
@@ -541,7 +712,7 @@ public class AbilityActivationSystemTest
             EffectType.Frighten, attacker, amount: 200, ghostGaze.Id));
 
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(attacker, AbilityData.Frightened.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(attacker, AbilityData.Frightened.Name));
 
         var missVsGhostAfter = manager.AbilityActivationSystem.GetEvasionProbability(
             bite, attacker, ghost, BeveledVisibilityCalculator.MaxVisibility, biteAccuracy);
@@ -560,7 +731,7 @@ public class AbilityActivationSystemTest
         var manager = level.Entity.Manager;
         var attacker = CreatureData.Naga.Instantiate(level, new Point(0, 0));
         var taunter = CreatureData.Bugbear.Instantiate(level, new Point(1, 0));
-        var other = CreatureData.HumanWarrior.Instantiate(level, new Point(2, 0));
+        var other = CreatureData.Manusya.Instantiate(level, new Point(2, 0));
         manager.Queue.ProcessQueue(manager);
 
         var bite = attacker.ActiveEffects!.Abilities.Single(a => a.Ability!.Action == AbilityAction.Bite);
@@ -575,7 +746,7 @@ public class AbilityActivationSystemTest
         manager.EffectApplicationSystem.ApplyStatus(EffectApplicationContext.CreateStatus(
             EffectType.Taunt, attacker, amount: 300, taunt.Id));
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(attacker, AbilityData.Taunted.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(attacker, AbilityData.Taunted.Name));
 
         var message = ActivateAbilityMessage.Create(manager);
         message.AbilityEntity = bite;
@@ -606,7 +777,7 @@ public class AbilityActivationSystemTest
         manager.EffectApplicationSystem.ApplyStatus(EffectApplicationContext.CreateStatus(
             EffectType.Taunt, attacker, amount: 400, taunt.Id));
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(3, EffectApplicationSystem.GetAbilityLevel(attacker, AbilityData.Taunted.Name));
+        Assert.Equal(3, AbilityLevelSystem.GetAbilityLevel(attacker, AbilityData.Taunted.Name));
 
         var message = ActivateAbilityMessage.Create(manager);
         message.AbilityEntity = bite;
@@ -658,19 +829,19 @@ public class AbilityActivationSystemTest
     {
         var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
-        var npc = CreatureData.HumanWarrior.Instantiate(level, new Point(0, 0));
+        var npc = CreatureData.Manusya.Instantiate(level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
         var baseResistance = npc.Being!.MentalStatusResistance;
 
         EffectTestHelper.ApplyStatus(npc, EffectType.Fascinate, duration: 100, manager);
 
-        Assert.True((EffectApplicationSystem.GetAbilityLevel(npc, "fascinated") > 0));
+        Assert.True((AbilityLevelSystem.GetAbilityLevel(npc, "fascinated") > 0));
         Assert.Equal(baseResistance - 25, npc.Being.MentalStatusResistance);
 
-        manager.EffectApplicationSystem.RemoveAbility(npc, "fascinated", manager);
+        manager.AbilityLevelSystem.RemoveAbility(npc, "fascinated", manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.False((EffectApplicationSystem.GetAbilityLevel(npc, "fascinated") > 0));
+        Assert.False((AbilityLevelSystem.GetAbilityLevel(npc, "fascinated") > 0));
         Assert.Equal(baseResistance, npc.Being.MentalStatusResistance);
     }
 
@@ -685,7 +856,7 @@ public class AbilityActivationSystemTest
 
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(2, 0));
         playerEntity.Position!.Heading = Direction.West;
-        manager.EffectApplicationSystem.AddAbilityEffect(playerEntity, AbilityData.Conjuration);
+        manager.AbilityLevelSystem.AddAbilityEffect(playerEntity, AbilityData.Conjuration);
 
         manager.Queue.ProcessQueue(manager);
 
@@ -817,7 +988,7 @@ public class AbilityActivationSystemTest
 
         manager.Queue.ProcessQueue(manager);
 
-        manager.EffectApplicationSystem.AddAbilityEffect(
+        manager.AbilityLevelSystem.AddAbilityEffect(
             playerEntity, manager.Game.Services.Data.PlayerRaces.Get("human").GetRaceAbilityTemplate(), level: 2);
         manager.Queue.ProcessQueue(manager);
 
@@ -853,7 +1024,7 @@ public class AbilityActivationSystemTest
         Assert.Equal(400, toggledAbility.Ability.CooldownTick);
         Assert.Equal(0, playerEntity.Being.ReservedEnergyPoints);
 
-        manager.EffectApplicationSystem.RemoveAbility(
+        manager.AbilityLevelSystem.RemoveAbility(
             playerEntity, AbilityData.Slowed.Name, manager);
         manager.Queue.ProcessQueue(manager);
         Assert.Equal(200, toggledAbility.Ability.CooldownTick);

@@ -121,7 +121,7 @@ public class ProjectionSerializationPerfTest
                         continue;
                     }
 
-                    _creatures.Add(CreatureData.HumanWarrior.Instantiate(_room, cell));
+                    _creatures.Add(CreatureData.Manusya.Instantiate(_room, cell));
                 }
             }
         }

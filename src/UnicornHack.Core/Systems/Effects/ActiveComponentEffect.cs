@@ -6,8 +6,6 @@ namespace UnicornHack.Systems.Effects;
 /// </summary>
 public class ActiveComponentEffect : ActiveEffect
 {
-    internal const int LevelExpressionConditionValue = int.MinValue;
-
     private int _sourceAbilityEntityId;
     private int _carrierId;
     private int? _conditionValue;
@@ -36,8 +34,7 @@ public class ActiveComponentEffect : ActiveEffect
 
     /// <summary>
     ///     Effect-specific condition data. A type-wide <see cref="EffectType.DecreaseAbilityLevel" /> stores
-    ///     its target <see cref="AbilityType" /> value here; an expression-derived
-    ///     <see cref="EffectType.AddAbility" /> stores <see cref="LevelExpressionConditionValue" />.
+    ///     its target <see cref="AbilityType" /> value here.
     /// </summary>
     public int? ConditionValue
     {

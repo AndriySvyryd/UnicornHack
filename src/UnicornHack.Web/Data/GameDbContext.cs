@@ -11,6 +11,7 @@ using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
+using UnicornHack.Systems.Features;
 
 namespace UnicornHack.Data;
 
@@ -136,6 +137,7 @@ public class GameDbContext : DbContext, IRepository
                 .Include(entity => entity.Room!).ThenInclude(room => room.Level).ThenInclude(level => level.Branch)
                 .Include(entity => entity.Position)
                 .Include(entity => entity.Connection)
+                .Include(entity => entity.Feature)
                 .Include(entity => entity.Being)
                 .Include(entity => entity.Player)
                 .Include(entity => entity.AI)
@@ -280,6 +282,8 @@ public class GameDbContext : DbContext, IRepository
         set;
     } = null!;
 
+    public DbSet<FeatureComponent> FeatureComponents { get; set; } = null!;
+
     public DbSet<PositionComponent> PositionComponents
     {
         get;
@@ -324,6 +328,8 @@ public class GameDbContext : DbContext, IRepository
             eb.Navigation(g => g.Options).IsRequired();
             eb.OwnsOne(g => g.GenerationStats, ConfigureGenerationStats);
             eb.Navigation(g => g.GenerationStats).IsRequired();
+            eb.OwnsOne(g => g.Stats);
+            eb.Navigation(g => g.Stats).IsRequired();
             eb.HasMany(g => g.Branches)
                 .WithOne(l => l.Game)
                 .HasForeignKey(l => l.GameId);
@@ -378,6 +384,10 @@ public class GameDbContext : DbContext, IRepository
                 .WithOne()
                 .HasForeignKey(e => e.GameId)
                 .OnDelete(DeleteBehavior.Restrict);
+            eb.HasMany<FeatureComponent>()
+                .WithOne()
+                .HasForeignKey(e => e.GameId)
+                .OnDelete(DeleteBehavior.Restrict);
             eb.HasMany<RoomComponent>()
                 .WithOne()
                 .HasForeignKey(e => e.GameId)
@@ -408,6 +418,8 @@ public class GameDbContext : DbContext, IRepository
             eb.Navigation(l => l.GenerationRandom).IsRequired();
             eb.OwnsOne(l => l.GenerationStats, ConfigureLevelGenerationStats);
             eb.Navigation(l => l.GenerationStats).IsRequired();
+            eb.OwnsOne(l => l.Stats);
+            eb.Navigation(l => l.Stats).IsRequired();
             eb.HasMany(l => l.Rooms)
                 .WithOne(r => r.Level)
                 .HasForeignKey(r => new { r.GameId, r.BranchName, r.Depth })
@@ -443,6 +455,8 @@ public class GameDbContext : DbContext, IRepository
                 .HasForeignKey<BeingComponent>(c => new { c.GameId, c.EntityId });
             eb.HasOne(e => e.Connection).WithOne(c => c.Entity)
                 .HasForeignKey<ConnectionComponent>(c => new { c.GameId, c.EntityId });
+            eb.HasOne(e => e.Feature).WithOne(c => c.Entity)
+                .HasForeignKey<FeatureComponent>(c => new { c.GameId, c.EntityId });
             eb.HasOne(e => e.Effect).WithOne(c => c.Entity)
                 .HasForeignKey<EffectComponent>(c => new { c.GameId, c.EntityId });
             eb.HasOne(e => e.Item).WithOne(c => c.Entity)
@@ -498,6 +512,8 @@ public class GameDbContext : DbContext, IRepository
             eb.Ignore(c => c.Items);
             eb.Ignore(c => c.HitPointMaximum);
             eb.Ignore(c => c.EnergyPointMaximum);
+            eb.Ignore(c => c.RoomPerceptionLevel);
+            eb.Ignore(c => c.RoomPerceptionRange);
             eb.Ignore(c => c.Perception);
             eb.Ignore(c => c.Might);
             eb.Ignore(c => c.Speed);
@@ -562,7 +578,6 @@ public class GameDbContext : DbContext, IRepository
             eb.Ignore(c => c.Infravision);
             eb.Ignore(c => c.InvisibilityDetection);
             eb.Ignore(c => c.VisibleTerrain);
-            eb.Ignore(c => c.VisibleTerrainIsCurrent);
             eb.HasKey(c => new { c.GameId, c.EntityId });
         });
 
@@ -651,6 +666,7 @@ public class GameDbContext : DbContext, IRepository
             eb.Ignore(l => l.Actors);
             eb.Ignore(l => l.Items);
             eb.Ignore(l => l.Connections);
+            eb.Ignore(l => l.Features);
             eb.Ignore(l => l.IncomingConnections);
             eb.Ignore(l => l.KnownActors);
             eb.Ignore(l => l.KnownItems);
@@ -677,6 +693,21 @@ public class GameDbContext : DbContext, IRepository
                 .HasConversion(DirectionFlagsArrayConverter, DirectionFlagsArrayComparer);
 
             eb.HasKey(l => new { l.GameId, l.EntityId });
+        });
+
+        modelBuilder.Entity<FeatureComponent>(eb =>
+        {
+            eb.HasKey(feature => new { feature.GameId, feature.EntityId });
+            eb.OwnsMany(feature => feature.Rewards, reward =>
+            {
+                reward.ToTable("FeatureRewards");
+                reward.WithOwner().HasForeignKey("GameId", nameof(Reward.FeatureId));
+                reward.HasKey("GameId", nameof(Reward.FeatureId), nameof(Reward.Id));
+                reward.Property(value => value.Id).ValueGeneratedNever();
+                reward.Property(value => value.Title).IsRequired();
+                reward.Property(value => value.Type).IsRequired();
+                reward.Property(value => value.Names).IsRequired();
+            });
         });
 
         modelBuilder.Entity<PositionComponent>(eb =>
@@ -967,6 +998,7 @@ public class GameDbContext : DbContext, IRepository
         await ExecuteDelete(ItemComponents.Where(component => component.GameId == gameId), useAsync, cancellationToken);
         await ExecuteDelete(KnowledgeComponents.Where(component => component.GameId == gameId), useAsync, cancellationToken);
         await ExecuteDelete(ConnectionComponents.Where(component => component.GameId == gameId), useAsync, cancellationToken);
+        await ExecuteDelete(FeatureComponents.Where(component => component.GameId == gameId), useAsync, cancellationToken);
         await ExecuteDelete(PositionComponents.Where(component => component.GameId == gameId), useAsync, cancellationToken);
         await ExecuteDelete(ActiveEffectsComponents.Where(component => component.GameId == gameId), useAsync, cancellationToken);
         await ExecuteDelete(Entities.Where(entity => entity.GameId == gameId), useAsync, cancellationToken);

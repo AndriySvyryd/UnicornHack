@@ -149,7 +149,7 @@ public class ManyToManyEntityRelationshipTest
         var level = TestHelper.BuildRoom("..");
         var manager = level.Entity.Manager;
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
-        var creature = CreatureData.HumanWarrior.Instantiate(level, new Point(1, 0));
+        var creature = CreatureData.Manusya.Instantiate(level, new Point(1, 0));
         manager.Queue.ProcessQueue(manager);
 
         var relationship = manager.AppliedEffectsToSourceAbilityRelationship;
@@ -172,7 +172,7 @@ public class ManyToManyEntityRelationshipTest
         var level = TestHelper.BuildRoom("..");
         var manager = level.Entity.Manager;
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
-        var creature = CreatureData.HumanWarrior.Instantiate(level, new Point(1, 0));
+        var creature = CreatureData.Manusya.Instantiate(level, new Point(1, 0));
         manager.Queue.ProcessQueue(manager);
 
         const int missingPrincipal = 987654321;

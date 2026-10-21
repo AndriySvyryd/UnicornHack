@@ -49,6 +49,9 @@ public static class LevelGenerator
         for (var attempt = 0; attempt < maxAttempts; attempt++)
         {
             stats.LevelAttempts++;
+            var gameCheckpoint = level.Game.GenerationStats.CaptureInstanceCounts();
+            var levelCheckpoint = stats.CaptureInstanceCounts();
+            var committed = false;
             try
             {
                 stats.RoomGraphAttempts++;
@@ -62,16 +65,14 @@ public static class LevelGenerator
                     // self-contained.
                     var manager = level.Game.Manager;
                     manager.Queue.ProcessQueue(manager);
+                    committed = true;
                     return true;
                 }
 
                 stats.ValidationFailures++;
-                ResetGeneratedState(level);
             }
             catch (Exception e)
             {
-                RollbackCreatureInstances(level);
-
                 // TODO: Log parameters if failed
                 var msg = $@"Error while generating level '{level.BranchName}:{level.Depth}', initial seed {level.Game.Options.InitialSeed}:
 ";
@@ -80,10 +81,29 @@ public static class LevelGenerator
                 Console.WriteLine(e);
                 throw new Exception(msg, e);
             }
+            finally
+            {
+                if (!committed)
+                {
+                    try
+                    {
+                        ResetGeneratedState(level);
+                        var manager = level.Game.Manager;
+                        manager.Queue.ProcessQueue(manager);
+                    }
+                    finally
+                    {
+                        level.Game.GenerationStats.RestoreInstanceCounts(gameCheckpoint);
+                        stats.RestoreInstanceCounts(levelCheckpoint);
+                    }
+                }
+            }
         }
 
         throw new InvalidOperationException(
-            $"Failed to generate a valid graph for '{level.BranchName}:{level.Depth}' after {maxAttempts} attempts");
+            $"Failed to generate a valid graph for '{level.BranchName}:{level.Depth}' after {maxAttempts} attempts. "
+            + $"Unmet doorways: {stats.RoomLayoutInsufficientDoorways}; unbound features: {stats.RoomLayoutUnboundFeatures}; "
+            + $"room failures: {string.Join(", ", stats.FragmentRoomFailures.Select(entry => $"{entry.Key}={entry.Value}"))}.");
     }
 
     /// <summary>
@@ -97,26 +117,17 @@ public static class LevelGenerator
     /// </summary>
     public static DefiningMapFragment PickFragmentForRoom(
         GameLevel level,
-        RoomFeatures roomFeatures,
-        LevelGenerationStats stats)
+        RoomFeatures roomFeatures)
     {
+        var stats = level.GenerationStats;
         stats.FragmentSelectionAttempts++;
 
-        var game = level.Game;
-        var gameStats = game.GenerationStats;
-        var picked = level.GenerationRandom.Pick(
-            game.Services.Data.DefiningMapFragments.GetAsList(),
-            f => f.GetWeight(
-                level.BranchName, level.Depth, roomFeatures,
-                fragmentInstancesByName: stats.FragmentInstancesByName,
-                globalFragmentInstancesByName: gameStats.FragmentInstancesByName,
-                tagInstances: stats.FragmentInstancesByTag,
-                globalTagInstances: gameStats.FragmentInstancesByTag,
-                globalFeatureInstances: gameStats.FragmentInstancesByFeature));
+        var picked = level.GenerationRandom.WeightedOrder(level.Game.Services.Data.DefiningMapFragments.GetAsList(),
+                fragment => fragment.GetWeight(level, roomFeatures)).FirstOrDefault()
+            ?? throw new InvalidOperationException(
+                $"No eligible defining fragment for '{level.BranchName}:{level.Depth}' with room features '{roomFeatures}'.");
 
-        stats.RecordFragmentInstance(picked.SourceName, picked.Tags, roomFeatures);
-        gameStats.RecordFragmentInstance(picked.SourceName, picked.Tags, roomFeatures);
-        stats.RecordFragmentVariant(picked.Name);
+        picked.IncrementInstanceCounts(level, roomFeatures);
         return picked;
     }
 
@@ -130,8 +141,8 @@ public static class LevelGenerator
     ///     <c>IncomingConnectionsToRoomRelationship</c> cleanup which detaches the
     ///     neighbor's outbound connection (its <see cref="PositionComponent" />)
     ///     from its source room, breaking the cross-level link permanently. A
-    ///     placeholder is identified by having at least one entry in
-    ///     <see cref="RoomComponent.IncomingConnections" />; attempt 1 may have
+    ///     placeholder is identified by an incoming connection from another level;
+    ///     attempt 1 may have
     ///     allocated terrain on it (so the <c>Width == 0</c> half of
     ///     <see cref="LevelLayout.GetEmptyEntranceRoom" />'s discriminator no
     ///     longer holds), and <c>ResetToPlaceholder</c> re-establishes the zero-width
@@ -143,7 +154,13 @@ public static class LevelGenerator
 
         foreach (var room in gameLevel.Rooms.ToList())
         {
-            if (room.IncomingConnections.Count > 0)
+            foreach (var feature in room.Features.Values.ToArray())
+            {
+                feature.Position = null;
+            }
+
+            if (room.IncomingConnections.Any(connection =>
+                connection.Position?.RoomEntity.Room is { } sourceRoom && sourceRoom.Level != gameLevel))
             {
                 room.Reset();
                 continue;

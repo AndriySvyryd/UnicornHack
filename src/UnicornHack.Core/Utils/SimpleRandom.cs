@@ -154,6 +154,7 @@ public class SimpleRandom : NotificationEntity
         }
 
         var cumulativeWeights = new float[items.Count];
+        var weights = new float[items.Count];
         var sum = 0f;
         var indexToProcess = 0;
         while (true)
@@ -174,6 +175,7 @@ public class SimpleRandom : NotificationEntity
                     weight = 0;
                 }
 
+                weights[indexToProcess] = weight;
                 sum += weight;
                 cumulativeWeights[indexToProcess] = sum;
             }
@@ -191,26 +193,19 @@ public class SimpleRandom : NotificationEntity
 
             yield return selector(items[selectedIndex], selectedIndex);
 
-            var selectedWeight = cumulativeWeights[selectedIndex];
-            if (selectedIndex > 0)
-            {
-                selectedWeight = selectedWeight - cumulativeWeights[selectedIndex - 1];
-            }
-
             if (selectedIndex == indexToProcess)
             {
-                cumulativeWeights[indexToProcess] = sum;
                 indexToProcess++;
             }
-            else
-            {
-                for (var i = selectedIndex; i < items.Count; i++)
-                {
-                    cumulativeWeights[i] -= selectedWeight;
-                }
-            }
 
-            sum -= selectedWeight;
+            // Rebuild from individual weights to avoid subtraction drift and preserve tiny remaining weights.
+            weights[selectedIndex] = 0;
+            sum = 0;
+            for (var i = 0; i < indexToProcess; i++)
+            {
+                sum += weights[i];
+                cumulativeWeights[i] = sum;
+            }
         }
     }
 
@@ -223,37 +218,17 @@ public class SimpleRandom : NotificationEntity
         while (first < last)
         {
             var midPoint = (first + last) / 2;
-            var midValue = numbers[midPoint];
-
-            // ReSharper disable once CompareOfFloatsByEqualityOperator
-
-            if (target > midValue)
-            {
-                first = midPoint + 1;
-            }
-            else if (target < midValue)
+            if (target < numbers[midPoint])
             {
                 last = midPoint;
             }
             else
             {
-                break;
+                first = midPoint + 1;
             }
         }
 
-        // ReSharper disable once CompareOfFloatsByEqualityOperator
-        while (first < numbers.Length && numbers[first] == 0)
-        {
-            first++;
-        }
-
-        // ReSharper disable once CompareOfFloatsByEqualityOperator
-        while (first > 0 && target == numbers[first - 1])
-        {
-            first--;
-        }
-
-        return first == numbers.Length ? first - 1 : first;
+        return first;
     }
 
     /// <summary>
@@ -279,7 +254,8 @@ public class SimpleRandom : NotificationEntity
             return minValue;
         }
 
-        return minValue + IntToFloat * (NextInt() - 1) * range;
+        // Rounding can produce maxValue; preserve the exclusive upper bound.
+        return Math.Min(minValue + IntToFloat * (NextInt() - 1) * range, MathF.BitDecrement(maxValue));
     }
 
     private int NextInt() => (int)(int.MaxValue & NextUInt());

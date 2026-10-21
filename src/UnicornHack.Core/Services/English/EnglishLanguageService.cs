@@ -53,12 +53,12 @@ public class EnglishLanguageService : ILanguageService
     }
 
     public string GetPlayerChoiceText(
-        string choice,
+        RewardType choice,
         PlayerChoiceText text,
         string? action = null,
         string? option = null)
     {
-        if (choice != PlayerChoiceSystem.RaceChoice)
+        if (choice != RewardType.RacePedestal)
         {
             return "Unknown choice.";
         }
@@ -237,6 +237,8 @@ public class EnglishLanguageService : ILanguageService
     private static string? GetStatusLevelBehaviorDescription(string abilityName, int level)
         => (abilityName, level) switch
         {
+            ("stable", 1) => "Suppresses one Unstable level while Stable remains active",
+            ("stable", 2) => "Suppresses two Unstable levels while Stable remains active",
             ("frightened", 1) => "Accuracy against the source is halved",
             ("frightened", 2) => "Cannot move closer to a perceived source",
             ("frightened", 3) => "Must make a random legal escape move away from the source",
@@ -278,6 +280,25 @@ public class EnglishLanguageService : ILanguageService
     private static string GetBaseAbilityDescription(string abilityName)
         => abilityName switch
         {
+            "Ankou trophies" => "Armor increases by 2 after six deaths on this level. "
+                                + "The level total persists while this creature's room is unloaded.",
+            "Ankou scythe" => "A forecast reverse-facing scythe sweep. Its reach increases from 1 to 2 after four deaths on this level; "
+                              + "damage gains 2 at two, four and six deaths.",
+            "elf-shot" => "Telegraphs a line with 100 extra ticks before its next action, then fires physical damage "
+                          + "with 3 Armor penetration and Cripple buildup. Move out of the line or use cover before it resolves.",
+            "Set the Foot" or "Gold clasp: Set the Foot" => "While equipped, suppresses one Unstable level "
+                                                        + "and adds 10 Hindrance for 200 ticks. "
+                                                        + "Stable suppresses one additional Unstable level until it ends. "
+                                                        + "Takes 100 ticks.",
+            "stable" => "Suppresses one Unstable level per level. "
+                        + "Unstable effects can return when Stable ends.",
+            "Wrap" or "Green mantle: Wrap" => "While equipped, suppresses up to two Burning levels "
+                                             + "and adds 10 Hindrance for 300 ticks. Takes 100 ticks; cooldown is 200 XP. "
+                                             + "The mantle's cold resistance remains active.",
+            "Furrow's Reserve" => "Maximum health increases by 10 until you enter another branch.",
+            "Patient Vigor" => "Maximum energy increases by 10 until you enter another branch.",
+            "Hive-sense" => "Room perception range increases by 1. Room perception reveals actor totals and named elites, "
+                            + "not ordinary identities or positions. Ends when you enter another branch.",
             // Status conditions - what carrying the condition does to the afflicted being.
             "stunned" => "Skipping your next action and unable to evade.",
             "paralyzed" => "Physical status resistance falls; at level 2 you cannot act or evade.",
@@ -414,7 +435,8 @@ public class EnglishLanguageService : ILanguageService
             EffectType.Activate => "Activates another ability, weapon or projectile effect.",
             EffectType.EquipItem => "Equips the specified item in a compatible slot.",
             EffectType.RemoveItem => "Consumes and removes one item from its stack.",
-            EffectType.Move => "Moves the specified item to the target creature or location.",
+            EffectType.Move => "Moves an item to a creature or location.",
+            EffectType.Push => $"Pushes an actor away and builds {AbilityRef(AbilityData.Unstable.Name)} on the target.",
             EffectType.Teleport => "Teleports the target to another location.",
             EffectType.LevelTeleport => "Teleports the target to another level.",
             // Curses / transformation / misc afflictions
@@ -453,6 +475,8 @@ public class EnglishLanguageService : ILanguageService
             nameof(BeingComponent.Speed) => "How quickly you act and move.",
             nameof(BeingComponent.Focus) => "Mental discipline - drives energy and spellcasting.",
             nameof(BeingComponent.Perception) => "Awareness - drives accuracy and noticing hidden things.",
+            nameof(BeingComponent.RoomPerceptionLevel) => "At level 1 or higher, reveals actor totals and named elites in rooms within range.",
+            nameof(BeingComponent.RoomPerceptionRange) => "The number of non-hidden room connections through which actor totals are perceived.",
             // Offense & defense
             nameof(BeingComponent.Accuracy) => "How likely your attacks are to land.",
             nameof(BeingComponent.Evasion) => "How likely you are to avoid incoming attacks.",
@@ -869,6 +893,9 @@ public class EnglishLanguageService : ILanguageService
                 break;
             case AbilityAction.Slash:
                 verb = "slash";
+                break;
+            case AbilityAction.Stab:
+                verb = "stab";
                 break;
             case AbilityAction.Poke:
                 verb = "poke";
@@ -1478,8 +1505,7 @@ public class EnglishLanguageService : ILanguageService
         bool isCurrent,
         bool isVisited,
         int revealedActorCount,
-        int revealedItemCount,
-        string? strongestActorName)
+        string? eliteName)
     {
         var sb = new StringBuilder();
 
@@ -1499,14 +1525,9 @@ public class EnglishLanguageService : ILanguageService
             sb.AppendLine().Append("Creatures: ").Append(revealedActorCount.ToString(Culture));
         }
 
-        if (revealedItemCount >= 0)
+        if (eliteName != null)
         {
-            sb.AppendLine().Append("Items: ").Append(revealedItemCount.ToString(Culture));
-        }
-
-        if (!string.IsNullOrEmpty(strongestActorName))
-        {
-            sb.AppendLine().Append("Strongest: ").Append(strongestActorName);
+            sb.AppendLine().Append("Elite: ").Append(eliteName);
         }
 
         return sb.ToString();

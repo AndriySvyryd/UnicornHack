@@ -351,14 +351,14 @@ public class BeingComponent : GameComponent
     [Property<bool>(DefaultCombinationFunction = ValueCombinationFunction.Override)]
     public bool InvisibilityDetection => Entity.ActiveEffects!.ResolveBool(nameof(InvisibilityDetection));
 
-    /// <summary>The per-tile visibility the being currently perceives; transient (pooled array), not persisted.</summary>
-    public byte[]? VisibleTerrain
-    {
-        get;
-        set;
-    }
+    [Property<int>(DefaultValue = 1, MinValue = 0)]
+    public int RoomPerceptionLevel => Entity.ActiveEffects!.ResolveInt(nameof(RoomPerceptionLevel));
 
-    public bool VisibleTerrainIsCurrent
+    [Property<int>(DefaultValue = 1, MinValue = 0)]
+    public int RoomPerceptionRange => Entity.ActiveEffects!.ResolveInt(nameof(RoomPerceptionRange));
+
+    /// <summary>Cached per-tile visibility; null when stale. Transient pooled array, not persisted.</summary>
+    public byte[]? VisibleTerrain
     {
         get;
         set;
@@ -512,7 +512,6 @@ public class BeingComponent : GameComponent
         }
 
         VisibleTerrain = default;
-        VisibleTerrainIsCurrent = default;
 
         base.Clean();
     }

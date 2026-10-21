@@ -4,6 +4,48 @@ namespace UnicornHack.Utils
 {
     public class SimpleRandomTest
     {
+        [Theory]
+        [InlineData(-1f)]
+        [InlineData(0f)]
+        [InlineData(1f)]
+        [InlineData(16777216f)]
+        public void NextSingle_keeps_adjacent_float_upper_bounds_exclusive(float minimum)
+        {
+            var random = new SimpleRandom { Seed = 0x40000000 };
+            var maximum = MathF.BitIncrement(minimum);
+
+            var value = random.NextSingle(minimum, maximum);
+
+            Assert.Equal(minimum, value);
+            Assert.True(value < maximum);
+        }
+
+        [Fact]
+        public void WeightedOrder_fractional_weights_yield_every_positive_item_exactly_once()
+        {
+            float[] weights = [0, 0.1f, 0.15f, 0.4f, 1, 1e9f, float.Epsilon];
+            var expected = Enumerable.Range(0, weights.Length).Where(index => weights[index] > 0).ToArray();
+            for (uint seed = 1; seed <= 200; seed++)
+            {
+                var random = new SimpleRandom { Seed = seed };
+                var actual = random.WeightedOrder(weights, weight => weight, (_, index) => index)
+                    .Take(weights.Length + 1).ToArray();
+
+                Assert.Equal(expected, actual.Order().ToArray());
+            }
+        }
+
+        [Fact]
+        public void WeightedOrder_preserves_infinite_priority_without_duplicating_fractional_items()
+        {
+            float[] weights = [0.1f, float.PositiveInfinity, 0.15f, float.PositiveInfinity, 0.4f];
+            var random = new SimpleRandom { Seed = 42 };
+            var actual = random.WeightedOrder(weights, weight => weight, (_, index) => index).ToArray();
+
+            Assert.Equal(new[] { 1, 3 }, actual.Take(2));
+            Assert.Equal(Enumerable.Range(0, weights.Length), actual.Order());
+        }
+
         [Fact]
         public void Pick_uniform()
         {

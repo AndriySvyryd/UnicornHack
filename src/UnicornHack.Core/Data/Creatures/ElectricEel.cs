@@ -6,11 +6,26 @@ public static partial class CreatureData
     {
         Name = "electric eel",
         SpeciesClass = SpeciesClass.Aquatic,
+        MovementDelay = 20,
+        TurningDelay = 20,
+        Size = 8,
+        Weight = 600,
+        PerceptionBonus = -6,
+        MightBonus = -6,
+        SpeedBonus = -6,
+        FocusBonus = -6,
+        Armor = 6,
+        ElectricityResistance = 75,
+        UpperExtremities = ExtremityType.None,
+        LowerExtremities = ExtremityType.None,
+        RespirationType = RespirationType.Water,
+        LocomotionType = LocomotionType.Swimming,
+        SlotCapacity = 0,
         Abilities = new List<Ability>
         {
             new Ability
             {
-                Name = "electric eel ability #1",
+                Name = "shocking bite",
                 Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
@@ -24,7 +39,7 @@ public static partial class CreatureData
             },
             new Ability
             {
-                Name = "electric eel ability #2",
+                Name = "coiling bind",
                 Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
@@ -37,23 +52,8 @@ public static partial class CreatureData
                 Effects = new List<Effect> { new Bind() }
             }
         },
+        EnglishDescription = "A long, smooth-bodied fish with a blunt head, a dark back and a paler underside. A continuous fin ripples along its belly as its muscular body bends through the water.",
         InitialLevel = 7,
-        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 1.0",
-        PreviousStageName = "giant eel",
-        Size = 8,
-        Weight = 600,
-        MovementDelay = 20,
-        TurningDelay = 20,
-        PerceptionBonus = -6,
-        MightBonus = -6,
-        SpeedBonus = -6,
-        FocusBonus = -6,
-        Armor = 6,
-        ElectricityResistance = 75,
-        UpperExtremities = ExtremityType.None,
-        LowerExtremities = ExtremityType.None,
-        RespirationType = RespirationType.Water,
-        LocomotionType = LocomotionType.Swimming,
-        SlotCapacity = 0
+        GenerationWeight = "0"
     };
 }

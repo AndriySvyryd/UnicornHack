@@ -39,6 +39,11 @@ public static class CSScriptLoaderHelpers
         var isFirstCharacterInWord = true;
         foreach (var c in name)
         {
+            if (c is '\'' or '\u2019')
+            {
+                continue;
+            }
+
             var isNotLetterOrDigit = !char.IsLetterOrDigit(c);
             if (isNotLetterOrDigit || char.IsUpper(c))
             {
@@ -53,6 +58,11 @@ public static class CSScriptLoaderHelpers
                 ? char.ToUpperInvariant(c)
                 : char.ToLowerInvariant(c));
             isFirstCharacterInWord = false;
+        }
+
+        if (candidateStringBuilder.Length == 0 || char.IsDigit(candidateStringBuilder[0]))
+        {
+            candidateStringBuilder.Insert(0, '_');
         }
 
         return candidateStringBuilder.ToString();

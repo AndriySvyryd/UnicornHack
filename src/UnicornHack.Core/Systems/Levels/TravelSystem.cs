@@ -1,27 +1,19 @@
+using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
-using UnicornHack.Systems.Beings;
-using UnicornHack.Systems.Effects;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Levels;
 
 public class TravelSystem :
     IGameSystem<TravelMessage>,
-    IGameSystem<TraveledMessage>,
-    IGameSystem<DiedMessage>
+    IGameSystem<TraveledMessage>
 {
     public bool CanTravel(TravelMessage message, GameManager manager)
-    {
-        var traveled = TryTravel(message, manager, pretend: true);
-        var successful = traveled.Successful;
-        message.ActorEntity.Manager.ReturnMessage(traveled);
-        return successful;
-    }
+        => Travel(message, manager, pretend: true);
 
     public MessageProcessingResult Process(TravelMessage message, GameManager manager)
     {
-        var traveled = TryTravel(message, manager);
-        EnqueueTraveled(traveled, manager);
+        Travel(message, manager);
         return MessageProcessingResult.ContinueProcessing;
     }
 
@@ -31,13 +23,18 @@ public class TravelSystem :
             || message.Entity.Player == null
             || message.Entity.Position?.RoomEntity.Room is not { } playerDestination
             || message.InitialLevel.Room is not { } initialRoom
-            || initialRoom == playerDestination
-            || initialRoom.Level != playerDestination.Level)
+            || initialRoom == playerDestination)
         {
             return MessageProcessingResult.ContinueProcessing;
         }
 
-        RelocateRoamingCreature(initialRoom.Level, playerDestination, manager);
+        var level = playerDestination.Level;
+        if (initialRoom.Level == level)
+        {
+            RelocateRoamingCreature(level, playerDestination, manager);
+        }
+
+        CleanupAbandonedRoom(initialRoom, playerDestination, manager);
         return MessageProcessingResult.ContinueProcessing;
     }
 
@@ -49,6 +46,22 @@ public class TravelSystem :
         }
 
         manager.Enqueue(message);
+    }
+
+    private bool Travel(TravelMessage message, GameManager manager, bool pretend = false)
+    {
+        var traveled = TryTravel(message, manager, pretend);
+        var successful = traveled.Successful;
+        if (pretend)
+        {
+            manager.ReturnMessage(traveled);
+        }
+        else
+        {
+            EnqueueTraveled(traveled, manager);
+        }
+
+        return successful;
     }
 
     private TraveledMessage TryTravel(TravelMessage message, GameManager manager, bool pretend = false)
@@ -103,7 +116,7 @@ public class TravelSystem :
             }
         }
 
-        if (position.MovementDelay == 0)
+        if (position.MovementDelay == 0 && !message.Forced)
         {
             return traveledMessage;
         }
@@ -131,7 +144,7 @@ public class TravelSystem :
         }
 
         // A rooted actor may turn, but it can't move to a different cell.
-        if (!message.ActorEntity.Being!.CanMove)
+        if (!message.ActorEntity.Being!.CanMove && !message.Forced)
         {
             return traveledMessage;
         }
@@ -342,16 +355,6 @@ public class TravelSystem :
         return traveledMessage;
     }
 
-    public MessageProcessingResult Process(DiedMessage message, GameManager manager)
-    {
-        if (!message.BeingEntity.HasComponent(EntityComponent.Player))
-        {
-            DeleteEntityMessage.Enqueue(message.BeingEntity, manager);
-        }
-
-        return MessageProcessingResult.ContinueProcessing;
-    }
-
     /// <summary>
     /// Moves an actor from its current room to an adjacent room via the connection that
     /// targets <paramref name="targetRoomId"/>. The actor lands on the connection's target
@@ -360,7 +363,7 @@ public class TravelSystem :
     /// </summary>
     public bool TravelToRoom(GameEntity actorEntity, int targetRoomId, GameManager manager)
     {
-        if (EffectApplicationSystem.GetAbilityLevel(actorEntity, AbilityData.Engulfed.Name) > 0
+        if (AbilityLevelSystem.GetAbilityLevel(actorEntity, AbilityData.Engulfed.Name) > 0
             || manager.EngulferToVictimRelationship.GetVictim(actorEntity) != null)
         {
             return false;
@@ -384,7 +387,7 @@ public class TravelSystem :
         // standing on the specific connection tile that leads to the target room.
         // TODO: Check hostility
         var hasHostiles = currentRoom.Actors.Values
-            .Any(a => a.HasComponent(EntityComponent.AI));
+            .Any(AISystem.IsHostileToPlayers);
         if (hasHostiles)
         {
             var connectionTile = connectionToTarget.Entity.Position!.Cell;
@@ -398,25 +401,14 @@ public class TravelSystem :
 
         var targetRoomEntity = manager.Game.LoadRoom(targetRoomId)!;
         var targetDoorCell = connectionToTarget.TargetCell!.Value;
-
-        var initialRoomEntity = position.RoomEntity;
-        var initialCell = position.Cell!.Value;
-        var initialHeading = position.Heading!.Value;
+        var traveledMessage = CreateTraveledMessage(
+            actorEntity, position, position.Heading!.Value, targetDoorCell, manager);
 
         EnterRoom(actorEntity, position, currentRoom, targetRoomEntity, targetDoorCell, manager);
 
         // Notify downstream systems (SensorySystem, KnowledgeSystem, ItemMovingSystem)
         // so visibility, the actor's own knowledge entity and pickup-on-move-over all
         // run for the new position.
-        var traveledMessage = TraveledMessage.Create(manager);
-        traveledMessage.Entity = actorEntity;
-        traveledMessage.InitialLevel = initialRoomEntity;
-        traveledMessage.InitialBranchName = currentRoom.BranchName;
-        traveledMessage.InitialDepth = currentRoom.Depth;
-        traveledMessage.InitialHeading = initialHeading;
-        traveledMessage.InitialLevelCell = initialCell;
-        traveledMessage.TargetHeading = position.Heading!.Value;
-        traveledMessage.TargetCell = targetDoorCell;
         traveledMessage.Successful = true;
         traveledMessage.Delay = position.MovementDelay;
         EnqueueTraveled(traveledMessage, manager);
@@ -479,7 +471,6 @@ public class TravelSystem :
         GameEntity targetRoomEntity, Point targetCell, GameManager manager)
     {
         var newRoom = targetRoomEntity.Room!;
-        var isIntraLevel = newRoom.Level == currentRoom.Level;
 
         position.SetRoomPosition(targetRoomEntity.Id, targetCell);
 
@@ -503,11 +494,14 @@ public class TravelSystem :
         //     same branch        -> delete the whole abandoned level, keeping the rooms that still
         //                           lead to other reachable levels;
         //   * different branch   -> delete the entire previous branch, every level and all.
-        if (actorEntity.HasComponent(EntityComponent.Player)
-            && !manager.PlayerSystem.IsPlayerInRoom(currentRoom.Entity.Id, manager))
+    }
+
+    private void CleanupAbandonedRoom(RoomComponent currentRoom, RoomComponent newRoom, GameManager manager)
+    {
+        if (!manager.PlayerSystem.IsPlayerInRoom(currentRoom.EntityId, manager))
         {
             var currentLevel = currentRoom.Level;
-            if (isIntraLevel)
+            if (newRoom.Level == currentLevel)
             {
                 DeleteRoomContents(currentRoom, manager, preserveRoamingCreatures: true);
             }
@@ -544,7 +538,7 @@ public class TravelSystem :
             }
         }
 
-        if (roamingCreature?.Position is not { Cell: { } initialCell } roamingPosition
+        if (roamingCreature?.Position is not { Cell: not null } roamingPosition
             || manager.EngulferToVictimRelationship.GetVictim(roamingCreature) != null
             || manager.EngulferToVictimRelationship.GetEngulfer(roamingCreature) != null)
         {
@@ -567,26 +561,16 @@ public class TravelSystem :
         if (!TryFindRoamingCreatureCell(
                 destinationRoom.Room,
                 destinationRoom.PreferredCell,
-                manager,
                 out var targetCell))
         {
             return;
         }
 
-        var initialRoomEntity = roamingPosition.RoomEntity;
-        var initialHeading = roamingPosition.Heading!.Value;
+        var traveledMessage = CreateTraveledMessage(
+            roamingCreature, roamingPosition, roamingPosition.Heading!.Value, targetCell, manager);
         roamingPosition.SetRoomPosition(destinationRoom.Room.EntityId, targetCell);
         PropagateRoomId(roamingCreature, destinationRoom.Room.EntityId, manager);
 
-        var traveledMessage = TraveledMessage.Create(manager);
-        traveledMessage.Entity = roamingCreature;
-        traveledMessage.InitialLevel = initialRoomEntity;
-        traveledMessage.InitialBranchName = currentRoom.BranchName;
-        traveledMessage.InitialDepth = currentRoom.Depth;
-        traveledMessage.InitialHeading = initialHeading;
-        traveledMessage.InitialLevelCell = initialCell;
-        traveledMessage.TargetHeading = initialHeading;
-        traveledMessage.TargetCell = targetCell;
         traveledMessage.Successful = true;
         manager.EffectApplicationSystem.ExtendEffectsOnMovement(roamingCreature, manager);
         manager.Enqueue(traveledMessage);
@@ -631,10 +615,10 @@ public class TravelSystem :
             .ToList();
     }
 
-    private static bool TryFindRoamingCreatureCell(
-        RoomComponent room, Point preferredCell, GameManager manager, out Point targetCell)
+    private bool TryFindRoamingCreatureCell(
+        RoomComponent room, Point preferredCell, out Point targetCell)
     {
-        if (IsFreeRoamingCreatureCell(room, preferredCell, manager))
+        if (IsActorFreeCell(preferredCell, room))
         {
             targetCell = preferredCell;
             return true;
@@ -648,7 +632,7 @@ public class TravelSystem :
             for (byte x = 0; x < room.Width; x++)
             {
                 var candidate = new Point(x, y);
-                if (!IsFreeRoamingCreatureCell(room, candidate, manager))
+                if (!IsActorFreeCell(candidate, room))
                 {
                     continue;
                 }
@@ -667,10 +651,6 @@ public class TravelSystem :
 
         return found;
     }
-
-    private static bool IsFreeRoamingCreatureCell(
-        RoomComponent room, Point cell, GameManager manager)
-        => manager.TravelSystem.IsActorFreeCell(cell, room);
 
     private readonly struct RoamingCreatureDestinationRoom
     {
@@ -771,6 +751,73 @@ public class TravelSystem :
         level.Rooms.Remove(room);
     }
 
+    public bool TeleportActor(GameEntity actor, Point targetCell, GameManager manager)
+    {
+        if (actor.Position is not { Cell: not null } position
+            || actor.Being is not { IsAlive: true }
+            || !IsActorFreeCell(targetCell, position.RoomEntity.Room!)
+            || manager.EngulferToVictimRelationship.GetVictim(actor) != null
+            || manager.EngulferToVictimRelationship.GetEngulfer(actor) != null)
+        {
+            return false;
+        }
+
+        var traveled = MoveActor(actor, position.RoomEntity, targetCell, delay: 0, manager);
+        EnqueueTraveled(traveled, manager);
+        return true;
+    }
+
+    public int PushActor(GameEntity actor, GameEntity source, int force, GameManager manager)
+    {
+        if (actor.Position is not { Cell: { } actorCell } position
+            || source.Position is not { Cell: { } sourceCell } sourcePosition
+            || sourcePosition.RoomId != position.RoomId || force <= 0)
+        {
+            return 0;
+        }
+
+        var offset = new Vector(Math.Sign(actorCell.X - sourceCell.X), Math.Sign(actorCell.Y - sourceCell.Y));
+        if (offset.X == 0 && offset.Y == 0)
+        {
+            return 0;
+        }
+
+        var resistance = Math.Max(1, actor.Physical!.Weight);
+        if (force < resistance)
+        {
+            return 0;
+        }
+
+        var distance = force / resistance;
+        var room = position.RoomEntity.Room!;
+        var moved = 0;
+        for (var step = 0; step < distance; step++)
+        {
+            var destination = position.Cell!.Value.Translate(offset);
+            if (!IsActorFreeCell(destination, room) || room.Connections.ContainsKey(destination))
+            {
+                break;
+            }
+
+            var travel = TravelMessage.Create(manager);
+            travel.ActorEntity = actor;
+            travel.TargetCell = destination;
+            travel.TargetHeading = position.Heading ?? Direction.East;
+            travel.SuppressDelay = true;
+            travel.Forced = true;
+            Process(travel, manager);
+            manager.ReturnMessage(travel);
+            if (position.Cell != destination)
+            {
+                break;
+            }
+
+            moved++;
+        }
+
+        return moved;
+    }
+
     private bool MoveOffCell(GameEntity entity, GameManager manager, bool pretend = false)
     {
         var position = entity.Position!;
@@ -792,17 +839,7 @@ public class TravelSystem :
         travelMessage.TargetHeading = position.Heading!.Value;
         travelMessage.TargetCell = position.Cell!.Value;
 
-        var traveledMessage = TryTravel(travelMessage, manager, pretend);
-        var successful = traveledMessage.Successful;
-        if (!pretend)
-        {
-            EnqueueTraveled(traveledMessage, manager);
-        }
-        else
-        {
-            manager.ReturnMessage(traveledMessage);
-        }
-
+        var successful = Travel(travelMessage, manager, pretend);
         manager.ReturnMessage(travelMessage);
         return successful;
     }

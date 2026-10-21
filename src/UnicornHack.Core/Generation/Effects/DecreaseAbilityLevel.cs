@@ -46,7 +46,7 @@ public class DecreaseAbilityLevel : Effect
                 $"{nameof(DecreaseAbilityLevel)} amount must be positive, but was {amount}.");
         }
 
-        context.System.ApplyDecreaseAbilityLevel(context, amount);
+        context.Manager.AbilityLevelSystem.ApplyDecreaseAbilityLevel(context, amount);
     }
 
     protected override void ConfigureEffect(EffectComponent effect, string? secondaryAmountOverride)

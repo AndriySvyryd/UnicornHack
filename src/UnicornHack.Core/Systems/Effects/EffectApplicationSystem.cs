@@ -66,7 +66,8 @@ public partial class EffectApplicationSystem :
         var currentRoom = currentRoomEntity.Room!;
         var levelChanged = message.InitialBranchName != currentRoom.BranchName
                    || message.InitialDepth != currentRoom.Depth;
-        ExpireTransitionEffects(message.Entity, levelChanged, manager);
+        ExpireTransitionEffects(message.Entity, levelChanged, manager,
+            branchChanged: message.InitialBranchName != currentRoom.BranchName);
 
         return MessageProcessingResult.ContinueProcessing;
     }
@@ -95,6 +96,12 @@ public partial class EffectApplicationSystem :
 
         var manager = message.ActivatorEntity.Manager;
         var successfulApplication = message.Outcome == ApplicationOutcome.Success;
+        if (!pretend && message.ActivatorEntity.Player != null && message.TargetEntity?.AI is { } targetAI
+            && AbilityActivationSystem.IsAttack(ability))
+        {
+            targetAI.Behavior &= ~(AIBehavior.Peaceful | AIBehavior.RangedPeaceful);
+        }
+
         EffectResultMessage? result;
         if (ability.OwnerEntity?.Item != null
             && (ability.Activation & ActivationType.Slottable) != 0
@@ -295,7 +302,7 @@ public partial class EffectApplicationSystem :
         }
     }
 
-    public void ExpireTransitionEffects(GameEntity entity, bool levelChanged, GameManager manager)
+    public void ExpireTransitionEffects(GameEntity entity, bool levelChanged, GameManager manager, bool branchChanged = false)
     {
         if (entity.ActiveEffects is not { } activeEffects)
         {
@@ -307,7 +314,8 @@ public partial class EffectApplicationSystem :
         {
             var expirationEvent = propertyEffects[i].ExpirationEvent;
             if (expirationEvent != EffectDuration.UntilNextRoom
-                && (!levelChanged || expirationEvent != EffectDuration.UntilNextLevel))
+                && (!levelChanged || expirationEvent != EffectDuration.UntilNextLevel)
+                && (!branchChanged || expirationEvent != EffectDuration.UntilNextBranch))
             {
                 continue;
             }
@@ -328,13 +336,14 @@ public partial class EffectApplicationSystem :
 
             var record = componentEffects[i];
             if (record.ExpirationEvent != EffectDuration.UntilNextRoom
-                && (!levelChanged || record.ExpirationEvent != EffectDuration.UntilNextLevel))
+                && (!levelChanged || record.ExpirationEvent != EffectDuration.UntilNextLevel)
+                && (!branchChanged || record.ExpirationEvent != EffectDuration.UntilNextBranch))
             {
                 continue;
             }
 
             var statusType = GetTimedStatusType(record);
-            DetachComponentCarrier(record, entity, manager);
+            AbilityLevelSystem.DetachComponentCarrier(record, entity, manager);
             if (statusType != null)
             {
                 EnsureStatusAbility(statusType.Value, entity, manager);
@@ -385,7 +394,7 @@ public partial class EffectApplicationSystem :
             return default;
         }
 
-        if (duration is EffectDuration.UntilNextRoom or EffectDuration.UntilNextLevel)
+        if (duration is EffectDuration.UntilNextRoom or EffectDuration.UntilNextLevel or EffectDuration.UntilNextBranch)
         {
             return new EffectExpiration(duration);
         }
@@ -416,7 +425,7 @@ public partial class EffectApplicationSystem :
         throw new ArgumentOutOfRangeException(nameof(duration), duration, null);
     }
 
-    private EffectExpiration GetExpiration(
+    internal EffectExpiration GetExpiration(
         EffectComponent effect, GameEntity activatorEntity, GameEntity targetEntity, GameManager manager)
     {
         var durationAmount = effect.Duration is EffectDuration.UntilTimeout or EffectDuration.UntilXPGained
@@ -425,7 +434,7 @@ public partial class EffectApplicationSystem :
         return ComputeExpiration(effect.Duration, targetEntity, durationAmount, manager);
     }
 
-    private static EffectExpiration GetExpiration(in EffectApplicationContext context)
+    internal static EffectExpiration GetExpiration(in EffectApplicationContext context)
     {
         var duration = context.Effect.Duration;
         var durationAmount = duration is EffectDuration.UntilTimeout or EffectDuration.UntilXPGained
@@ -520,7 +529,7 @@ public partial class EffectApplicationSystem :
             if (newExpiration < 0)
             {
                 var statusType = GetTimedStatusType(record);
-                DetachComponentCarrier(record, playerEntity, manager);
+                AbilityLevelSystem.DetachComponentCarrier(record, playerEntity, manager);
                 if (statusType != null)
                 {
                     EnsureStatusAbility(statusType.Value, playerEntity, manager);
@@ -621,7 +630,7 @@ public partial class EffectApplicationSystem :
             }
 
             var statusType = GetTimedStatusType(record);
-            DetachComponentCarrier(record, entity, manager);
+            AbilityLevelSystem.DetachComponentCarrier(record, entity, manager);
             if (statusType != null)
             {
                 EnsureStatusAbility(statusType.Value, entity, manager);
@@ -639,7 +648,7 @@ public partial class EffectApplicationSystem :
             : null;
 
     // Advances NextEffectTick to surface an earlier due tick so TemporalEntitiesIndex reindexes the owner.
-    private static void AdvanceNextEffectTick(
+    internal static void AdvanceNextEffectTick(
         ActiveEffectsComponent activeEffects, EffectExpiration expiration)
     {
         if (expiration is { Event: EffectDuration.UntilTimeout, Target: { } value }
@@ -683,9 +692,4 @@ public partial class EffectApplicationSystem :
         activeEffects.NextEffectTick = next;
     }
 
-    private readonly struct EffectExpiration(EffectDuration? expirationEvent, int? target = null)
-    {
-        public EffectDuration? Event { get; } = expirationEvent;
-        public int? Target { get; } = target;
-    }
 }

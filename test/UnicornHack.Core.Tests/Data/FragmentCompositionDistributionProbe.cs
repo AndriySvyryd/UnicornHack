@@ -61,7 +61,7 @@ public class FragmentCompositionDistributionProbe(ITestOutputHelper output)
         for (var s = 1u; s <= seedCount; s++)
         {
             var game = TestHelper.CreateGame(s);
-            var dungeon = BranchData.Dungeon.Instantiate(game);
+            var dungeon = BranchData.RuinedStronghold.Instantiate(game);
             for (byte d = 1; d <= depthsPerSeed; d++)
             {
                 var level = LevelGenerator.CreateEmpty(dungeon, depth: d, s, game.Manager);

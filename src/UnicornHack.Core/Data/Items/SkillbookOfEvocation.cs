@@ -16,7 +16,6 @@ public static partial class ItemData
             }
         },
         Type = ItemType.SkillBook,
-        Material = Material.Paper,
-        Weight = 1
+        Material = Material.Paper
     };
 }

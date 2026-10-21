@@ -44,23 +44,8 @@ public class NormalMapFragment : MapFragment
 
     public float GetWeight(RoomComponent room, in LotPlacementContext ctx)
     {
-        // Cheapest gates first. The doorway-capability check is two field reads
-        // against an integer demand; the demand multiplier is a tag/feature scan with
-        // no geometric queries. Only when both pass do we run the expensive edge-match
-        // anchor sweep that drives the geometric partition / interval-tree queries.
-        if (PossibleDoorwayCount < ctx.MinDoorways && !HasOpenPerimeter)
-        {
-            return 0;
-        }
-
-        var demandMultiplier = GetDemandMultiplier(room, ctx);
-        if (demandMultiplier == 0f)
-        {
-            return 0;
-        }
-
-        var edgeMultiplier = GetEdgeMatchMultiplier(room, ctx);
-        if (edgeMultiplier == 0f)
+        var placementMultiplier = GetPlacementMultiplier(room, ctx);
+        if (placementMultiplier == 0f)
         {
             return 0;
         }
@@ -77,26 +62,13 @@ public class NormalMapFragment : MapFragment
             gameStats.FragmentInstancesByTag,
             gameStats.FragmentInstancesByFeature);
 
-        if (baseWeight <= 0f)
-        {
-            // A fragment the author disabled here (DSL weight 0) stays disabled — the size
-            // bonus must never resurrect it.
-            return 0f;
-        }
-
-        // Bias selection toward larger authored fragments so rooms are filled with fewer,
-        // bigger chunks: add the static payload's tile count (scaled by SizeWeightBonus) to
-        // the base weight. Dynamic fragments have an empty static payload (area 0) and are
-        // unaffected. VariantMultiplier normalizes the D4 orbit so the source fragment's
-        // total pick probability is unchanged by the expansion.
-        var sizeBonus = PayloadArea.Width * PayloadArea.Height * SizeWeightBonus;
-        return (baseWeight + sizeBonus) * edgeMultiplier * demandMultiplier * VariantMultiplier;
+        return GetPlacementWeight(baseWeight, placementMultiplier);
     }
 
     /// <summary>
     ///     Evaluates the raw <see cref="MapFragment.GenerationWeight" /> DSL for this
-    ///     fragment against the supplied stats, lazy-parsing on first use and
-    ///     multiplying by <see cref="MapFragment.VariantMultiplier" />. No room/placement
+    ///     fragment against the supplied stats, lazy-parsing on first use. No size bonus,
+    ///     variant scaling, or room/placement
     ///     gating is applied — placement code should prefer the room/context overload
     ///     so the cheap geometric gates run before the DSL evaluation. Used by
     ///     diagnostic probes that sample raw weights across many fragments without

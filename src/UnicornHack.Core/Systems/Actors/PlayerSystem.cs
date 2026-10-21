@@ -139,8 +139,9 @@ public class PlayerSystem :
         }
 
         var performedAction = action.Value;
+        var queuedAction = player.QueuedAction;
 
-        if (!player.QueuedAction)
+        if (!queuedAction)
         {
             player.CommandHistory.Add(new PlayerCommand
             {
@@ -369,7 +370,12 @@ public class PlayerSystem :
                 manager.Enqueue(setSlotMessage);
                 break;
             case ActorActionType.UseAbilitySlot:
+                player.QueuedAction = queuedAction;
                 ActivateAbility(playerEntity, target, target2, manager);
+                if (player.NextAction == null)
+                {
+                    player.QueuedAction = false;
+                }
                 break;
             case ActorActionType.TravelToRoom:
                 if (!playerEntity.Being!.CanMove

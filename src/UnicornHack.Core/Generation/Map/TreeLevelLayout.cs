@@ -4,7 +4,7 @@ using UnicornHack.Utils;
 namespace UnicornHack.Generation.Map;
 
 /// <summary>
-///     A <see cref="GridLevelLayout" /> tuned for the classic dungeon backbone: rooms placed
+///     A <see cref="GridLevelLayout" /> tuned for the classic level backbone: rooms placed
 ///     column-by-column from a single entrance at column 0 to a single exit at column
 ///     <see cref="GridLevelLayout.GridWidth" /> - 1, with optional fork branches into adjacent
 ///     rows. <see cref="GridLevelLayout.Interconnectedness" /> adds extra cross-connections beyond
@@ -107,7 +107,8 @@ public class TreeLevelLayout : GridLevelLayout, ICSScriptSerializable
         { nameof(RewardRoomProbability), (_, v) => (float)v! != DefaultRewardRoomProbability },
         { nameof(CurseRoomProbability), (_, v) => (float)v! != DefaultCurseRoomProbability },
         { nameof(HiddenConnectionProbability), (_, v) => (float)v! != DefaultHiddenConnectionProbability },
-        { nameof(MinRooms), (_, v) => (byte)v! != DefaultMinRooms }
+        { nameof(MinRooms), (_, v) => (byte)v! != DefaultMinRooms },
+        { nameof(RewardWeights), (_, v) => v is Dictionary<RoomFeatures, string> { Count: > 0 } }
         // ReSharper restore CompareOfFloatsByEqualityOperator
     };
 }

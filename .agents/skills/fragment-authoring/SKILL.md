@@ -36,7 +36,7 @@ this skill points you at the right sections and patterns.
 8. Use `Tags` to add `secret` / `cursed` / `challenge` / `boss` for non-placeable room
    features, and `!{feature}` to opt out. Most tags are auto-derived — don't duplicate the
    auto set.
-9. Validate with `dotnet test test\UnicornHack.Core.Tests --nologo` — loader and weight
+9. Validate with `dotnet test --project test/UnicornHack.Core.Tests --nologo` — loader and weight
    tests catch most authoring errors at load.
 
 ## Quick reference

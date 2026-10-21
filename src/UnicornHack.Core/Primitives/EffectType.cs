@@ -71,5 +71,6 @@ public enum EffectType
     Recharge,
     Move,
     LevelTeleport,
-    Teleport
+    Teleport,
+    Push
 }

@@ -42,6 +42,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="OpenTelemetry.Api" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\UnicornHack.Core\UnicornHack.Core.csproj" />

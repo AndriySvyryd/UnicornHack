@@ -6,11 +6,25 @@ public static partial class CreatureData
     {
         Name = "lion",
         SpeciesClass = SpeciesClass.Feline,
+        MovementDelay = -20,
+        TurningDelay = -20,
+        Size = 8,
+        Weight = 600,
+        PerceptionBonus = -6,
+        MightBonus = -6,
+        SpeedBonus = -6,
+        FocusBonus = -6,
+        Armor = 2,
+        TorsoType = TorsoType.Quadruped,
+        UpperExtremities = ExtremityType.None,
+        LowerExtremities = ExtremityType.Claws,
+        SlotCapacity = 1,
+        Infravisible = true,
         Abilities = new List<Ability>
         {
             new Ability
             {
-                Name = "lion ability #1",
+                Name = "mauling bite",
                 Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
@@ -24,7 +38,7 @@ public static partial class CreatureData
             },
             new Ability
             {
-                Name = "lion ability #2",
+                Name = "left claw",
                 Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
@@ -38,7 +52,7 @@ public static partial class CreatureData
             },
             new Ability
             {
-                Name = "lion ability #3",
+                Name = "right claw",
                 Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
@@ -49,24 +63,26 @@ public static partial class CreatureData
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
                 Effects = new List<Effect> { new PhysicalDamage { Amount = "30*MightModifier()" } }
+            },
+            new Ability
+            {
+                Name = "territorial roar",
+                Type = AbilityType.RangedAttack,
+                Activation = ActivationType.Targeted,
+                Trigger = ActivationType.OnRangedAttack,
+                Range = 3,
+                Action = AbilityAction.Scream,
+                SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                Accuracy = "5+PerceptionModifier()",
+                Cooldown = 300,
+                Delay = "100*SpeedModifier()",
+                Effects = new List<Effect> { new Frighten() }
             }
         },
+        EnglishDescription = "A large, tawny cat with a broad muzzle and a thick mane around its neck and shoulders. Its muscular body narrows toward the hindquarters, and a dark tuft caps its long tail.",
         InitialLevel = 6,
-        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 1.0",
-        Noise = ActorNoiseType.Growl,
-        Size = 8,
-        Weight = 600,
-        MovementDelay = -20,
-        TurningDelay = -20,
-        PerceptionBonus = -6,
-        MightBonus = -6,
-        SpeedBonus = -6,
-        FocusBonus = -6,
-        Armor = 2,
-        TorsoType = TorsoType.Quadruped,
-        UpperExtremities = ExtremityType.None,
-        LowerExtremities = ExtremityType.Claws,
-        SlotCapacity = 1,
-        Infravisible = true
+        GenerationWeight = "0",
+        Behavior = AIBehavior.Wandering,
+        Noise = ActorNoiseType.Growl
     };
 }

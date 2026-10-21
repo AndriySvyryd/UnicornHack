@@ -3,7 +3,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
-using UnicornHack.Systems.Effects;
+using UnicornHack.Systems.Abilities;
 using static System.Linq.Expressions.Expression;
 
 namespace UnicornHack.Generation;
@@ -48,8 +48,44 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
     private static readonly MethodInfo _featureDictionaryTryGetValue = typeof(IReadOnlyDictionary<RoomFeatures, int>)
         .GetMethod(nameof(IReadOnlyDictionary<RoomFeatures, int>.TryGetValue))!;
 
-    internal static MethodInfo AbilityLevelMethod { get; } = typeof(EffectApplicationSystem)
-        .GetMethod(nameof(EffectApplicationSystem.GetAbilityLevel), [typeof(GameEntity), typeof(string)])!;
+    internal static MethodInfo AbilityLevelMethod { get; } = typeof(AbilityLevelSystem)
+        .GetMethod(nameof(AbilityLevelSystem.GetAbilityLevel), [typeof(GameEntity), typeof(string)])!;
+
+    private static readonly UnicornExpressionVisitor GenerationWeightTranslator = new(
+    [
+        Parameter(typeof(string), "branch"),
+        Parameter(typeof(int), "depth"),
+        Parameter(typeof(int), "instances")
+    ]);
+
+    public static Func<string, int, int, float> CreateGenerationWeightFunction(string expression)
+        => GenerationWeightTranslator.Translate<Func<string, int, int, float>, float>(expression);
+
+    internal static float EvaluateGenerationWeight(
+        ref Func<string, int, int, float>? function, string expression, string name,
+        string branchName, int depth, int instances)
+    {
+        if (function == null)
+        {
+            try
+            {
+                function = CreateGenerationWeightFunction(expression);
+            }
+            catch (Exception exception)
+            {
+                throw new InvalidOperationException("Error while parsing the GenerationWeight for " + name, exception);
+            }
+        }
+
+        try
+        {
+            return function(branchName, depth, instances);
+        }
+        catch (Exception exception)
+        {
+            throw new InvalidOperationException("Error while evaluating the Weight for " + name, exception);
+        }
+    }
 
     public UnicornExpressionVisitor(IEnumerable<ParameterExpression> parameters)
     {
@@ -81,7 +117,7 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
 
     public UnicornExpressionVisitor(
         IEnumerable<ParameterExpression> parameters,
-        Action<string, IReadOnlyList<Expression>> invocationValidator)
+        Action<string, IReadOnlyList<Expression>>? invocationValidator)
         : this(parameters)
         => _invocationValidator = invocationValidator;
 
@@ -100,13 +136,18 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
         where T : Delegate
     {
         var inputStream = new AntlrInputStream(expression);
-        var unicornLexer = new UnicornExpressionLexer(inputStream);
-        var commonTokenStream = new CommonTokenStream(unicornLexer);
         var outputWriter = new StringWriter();
         var errorWriter = new StringWriter();
+        var unicornLexer = new UnicornExpressionLexer(inputStream, outputWriter, errorWriter);
+        var commonTokenStream = new CommonTokenStream(unicornLexer);
         var unicornParser = new UnicornExpressionParser(commonTokenStream, outputWriter, errorWriter);
 
         var context = unicornParser.expression();
+        var syntaxErrors = errorWriter.ToString();
+        if (unicornParser.NumberOfSyntaxErrors != 0 || syntaxErrors.Length != 0 || commonTokenStream.LA(1) != TokenConstants.EOF)
+        {
+            throw new InvalidOperationException($"Invalid expression '{expression}': {syntaxErrors}");
+        }
 
         Expression result;
         try
@@ -394,7 +435,7 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
         var function = context.Function.Text;
         _invocationValidator?.Invoke(function, children);
 
-        var commonType = children.Count == 0
+        var commonType = function == "HasFeature" || children.Count == 0
             ? typeof(object)
             : children.Count > 1
                 ? GetCommonType(children[0], children[1])
@@ -411,6 +452,31 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
             return Call(
                 AbilityLevelMethod,
                 [Parameters["owner"], .. children]);
+        }
+
+        if (function == "HasFeature")
+        {
+            var arguments = children.ToArray();
+            if (arguments.Length is < 1 or > 2 || arguments[^1] is not ConstantExpression { Value: string name }
+                || !Enum.TryParse<RoomFeatures>(name, out var feature))
+            {
+                throw new InvalidOperationException(
+                    "HasFeature expects a named room feature, optionally preceded by a feature mask: "
+                    + "HasFeature('Boss') or HasFeature($roomFeatures, 'Boss').");
+            }
+
+            Expression roomFeatures;
+            if (arguments.Length == 2)
+            {
+                roomFeatures = arguments[0];
+            }
+            else if (!Parameters.TryGetValue("roomFeatures", out roomFeatures!))
+            {
+                throw new InvalidOperationException("HasFeature requires a roomFeatures expression context.");
+            }
+
+            var mask = Constant((long)feature);
+            return Equal(And(Convert(roomFeatures, typeof(long)), mask), mask);
         }
 
         MethodInfo method;

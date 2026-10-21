@@ -52,13 +52,8 @@ public class ConnectingMapFragment : MapFragment
 
     public float GetWeight(RoomComponent room, in LotPlacementContext ctx, ConnectionComponent? target)
     {
-        var edgeMultiplier = GetEdgeMatchMultiplier(room, ctx);
-        if (edgeMultiplier == 0f)
-        {
-            return 0;
-        }
-
-        if (PossibleDoorwayCount < ctx.MinDoorways && !HasOpenPerimeter)
+        var placementMultiplier = GetPlacementMultiplier(room, ctx);
+        if (placementMultiplier == 0f)
         {
             return 0;
         }
@@ -76,14 +71,7 @@ public class ConnectingMapFragment : MapFragment
                 stats.FragmentInstancesByTag, gameStats.FragmentInstancesByTag,
                 gameStats.FragmentInstancesByFeature, target);
 
-            if (baseWeight <= 0f)
-            {
-                return 0f;
-            }
-
-            var sizeBonus = PayloadArea.Width * PayloadArea.Height * SizeWeightBonus;
-            return (baseWeight + sizeBonus)
-                * edgeMultiplier * GetDemandMultiplier(room, ctx) * VariantMultiplier;
+            return GetPlacementWeight(baseWeight, placementMultiplier);
         }
         catch (Exception e)
         {

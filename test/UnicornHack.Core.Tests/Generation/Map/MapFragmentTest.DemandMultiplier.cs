@@ -14,7 +14,7 @@ public partial class MapFragmentTest
     public void Returns_one_when_room_has_no_outstanding_feature_demand()
     {
         var (room, _) = BuildRoom();
-        room.Features = RoomFeatures.Normal;
+        room.FeatureTags = RoomFeatures.Normal;
         // A fragment with no static feature glyphs and no advertised feature tag must
         // pass through with weight 1 when there's no demand to satisfy.
         var fragment = NewFragment(tags: ["custom"]);
@@ -26,7 +26,7 @@ public partial class MapFragmentTest
     public void Excludes_fragment_whose_static_map_places_an_undemanded_feature()
     {
         var (room, _) = BuildRoom();
-        room.Features = RoomFeatures.Normal;
+        room.FeatureTags = RoomFeatures.Normal;
         // The `{` glyph commits a SmallFountain MapFeature into the room. Placing this
         // fragment would saddle a Normal room with a fountain it never asked for, so
         // GetDemandMultiplier hard-excludes it via the `small-fountain` feature tag.
@@ -46,7 +46,7 @@ public partial class MapFragmentTest
         // Room demands SmallFountain only; the fragment statically places both a fountain
         // (`{`) and a weapon stand (`)`), so it overcommits the room and must be excluded
         // regardless of the partial overlap.
-        room.Features = RoomFeatures.SmallFountain;
+        room.FeatureTags = RoomFeatures.SmallFountain;
         var fragment = NewFragment("""
             ####
             #{)#
@@ -60,7 +60,7 @@ public partial class MapFragmentTest
     public void Allows_fragment_when_static_features_match_demand()
     {
         var (room, _) = BuildRoom();
-        room.Features = RoomFeatures.SmallFountain;
+        room.FeatureTags = RoomFeatures.SmallFountain;
         var fragment = NewFragment("""
             ###
             #{#
@@ -74,7 +74,7 @@ public partial class MapFragmentTest
     public void Tag_advertisement_triggers_exclusion_for_undemanded_feature()
     {
         var (room, _) = BuildRoom();
-        room.Features = RoomFeatures.Normal;
+        room.FeatureTags = RoomFeatures.Normal;
         // After the StaticPlaceableFeatures removal, the canonical feature tag is the
         // sole source of truth for "this fragment commits the feature into the room".
         // Any fragment advertising a placeable feature the room didn't demand is now
@@ -90,7 +90,7 @@ public partial class MapFragmentTest
         var (room, _) = BuildRoom();
         // A wildcard-tagged fragment is intentionally generic (it does not pin a specific
         // feature) so a room with no demand must still accept it at neutral weight.
-        room.Features = RoomFeatures.Normal;
+        room.FeatureTags = RoomFeatures.Normal;
         var fragment = NewFragment(tags: [MapFragment.WildcardFeatureTag]);
 
         Assert.Equal(1f, fragment.GetDemandMultiplier(room, Ctx()));
@@ -100,7 +100,7 @@ public partial class MapFragmentTest
     public void Boosts_fragment_with_matching_feature_tag()
     {
         var (room, _) = BuildRoom();
-        room.Features = RoomFeatures.SmallFountain;
+        room.FeatureTags = RoomFeatures.SmallFountain;
         var fragment = NewFragment(tags: ["small-fountain"]);
 
         Assert.Equal(Bonus, fragment.GetDemandMultiplier(room, Ctx()));
@@ -110,7 +110,7 @@ public partial class MapFragmentTest
     public void Wildcard_tag_matches_any_outstanding_placeable_feature()
     {
         var (room, _) = BuildRoom();
-        room.Features = RoomFeatures.SmallFountain | RoomFeatures.WeaponStand;
+        room.FeatureTags = RoomFeatures.SmallFountain | RoomFeatures.WeaponStand;
         var fragment = NewFragment(tags: [MapFragment.WildcardFeatureTag]);
 
         // Two outstanding bits: the bonus accumulates linearly, not exponentially.
@@ -121,7 +121,7 @@ public partial class MapFragmentTest
     public void Penalises_fragment_with_anti_tag_matching_demanded_feature()
     {
         var (room, _) = BuildRoom();
-        room.Features = RoomFeatures.SmallFountain;
+        room.FeatureTags = RoomFeatures.SmallFountain;
         var fragment = NewFragment(tags: ["custom"], antiTags: ["small-fountain"]);
 
         Assert.Equal(Penalty, fragment.GetDemandMultiplier(room, Ctx()));
@@ -131,7 +131,7 @@ public partial class MapFragmentTest
     public void Multiple_anti_tags_stack_linearly()
     {
         var (room, _) = BuildRoom();
-        room.Features = RoomFeatures.SmallFountain | RoomFeatures.WeaponStand;
+        room.FeatureTags = RoomFeatures.SmallFountain | RoomFeatures.WeaponStand;
         var fragment = NewFragment(tags: ["custom"], antiTags: ["small-fountain", "weapon-stand"]);
 
         // Two anti-tag matches: the penalty deepens linearly (reciprocal), not exponentially.
@@ -142,7 +142,7 @@ public partial class MapFragmentTest
     public void Already_bound_feature_does_not_boost()
     {
         var (room, _) = BuildRoom();
-        room.Features = RoomFeatures.SmallFountain;
+        room.FeatureTags = RoomFeatures.SmallFountain;
         room.BoundPlaceableFeatures = RoomFeatures.SmallFountain;
         var fragment = NewFragment(tags: ["small-fountain"]);
 
@@ -153,7 +153,7 @@ public partial class MapFragmentTest
     public void Door_direction_tag_boosts_for_demanded_doorway()
     {
         var (room, _) = BuildRoom();
-        room.Features = RoomFeatures.Normal;
+        room.FeatureTags = RoomFeatures.Normal;
         var fragment = NewFragment(tags: ["door-n"]);
 
         Assert.Equal(Bonus, fragment.GetDemandMultiplier(room, Ctx(DirectionFlags.North)));
@@ -163,7 +163,7 @@ public partial class MapFragmentTest
     public void Door_direction_tag_irrelevant_when_no_demand_on_that_edge()
     {
         var (room, _) = BuildRoom();
-        room.Features = RoomFeatures.Normal;
+        room.FeatureTags = RoomFeatures.Normal;
         var fragment = NewFragment(tags: ["door-n"]);
 
         Assert.Equal(1f, fragment.GetDemandMultiplier(room, Ctx(DirectionFlags.South)));
@@ -173,7 +173,7 @@ public partial class MapFragmentTest
     public void Multiple_demands_stack_linearly()
     {
         var (room, _) = BuildRoom();
-        room.Features = RoomFeatures.SmallFountain;
+        room.FeatureTags = RoomFeatures.SmallFountain;
         var fragment = NewFragment(tags: ["small-fountain", "door-e"]);
 
         // A feature match and a doorway match: two demands accumulate linearly.

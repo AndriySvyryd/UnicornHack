@@ -15,6 +15,98 @@ public class PlayerSystemTest
 {
     private const string PickupItemAbilityName = "Drink";
 
+    [Fact]
+    public void Player_windup_does_not_start_when_ability_validation_fails()
+    {
+        var room = TestHelper.BuildRoom(".");
+        var playerEntity = PlayerRace.InstantiatePlayer("Tester", Sex.Male, room, new Point(0, 0));
+        var manager = playerEntity.Manager;
+        var ability = new Ability
+        {
+            Name = "test unavailable player windup",
+            Activation = ActivationType.Manual,
+            Windup = 100,
+            Delay = "100",
+            EnergyPointCost = 1000,
+            Effects = [new Heal { Amount = "10" }]
+        }.AddToAffectable(playerEntity);
+        manager.Queue.ProcessQueue(manager);
+        var setSlot = SetAbilitySlotMessage.Create(playerEntity, manager);
+        setSlot.AbilityEntity = ability.Entity;
+        setSlot.Slot = 2;
+        manager.Enqueue(setSlot);
+        manager.Queue.ProcessQueue(manager);
+        var player = playerEntity.Player!;
+        var initialTick = player.NextActionTick;
+        var initialEp = playerEntity.Being!.EnergyPoints;
+        player.NextAction = ActorActionType.UseAbilitySlot;
+        player.NextActionTarget = 2;
+        player.NextActionTarget2 = new Vector(0, 0).ToInt32();
+
+        TestHelper.PerformTurn(playerEntity, manager);
+
+        Assert.Null(player.NextAction);
+        Assert.False(player.QueuedAction);
+        Assert.Equal(initialTick, player.NextActionTick);
+        Assert.Equal(initialEp, playerEntity.Being.EnergyPoints);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Player_windup_queues_once_and_resolves_without_duplicate_command_or_resource_payment(bool alreadyQueued)
+    {
+        var room = TestHelper.BuildRoom(".");
+        var playerEntity = PlayerRace.InstantiatePlayer("Tester", Sex.Male, room, new Point(0, 0));
+        var manager = playerEntity.Manager;
+        var ability = new Ability
+        {
+            Name = "test player windup",
+            Activation = ActivationType.Manual,
+            Windup = 100,
+            Delay = "100",
+            EnergyPointCost = 1,
+            Effects = [new Heal { Amount = "10" }]
+        }.AddToAffectable(playerEntity);
+        manager.Queue.ProcessQueue(manager);
+        var setSlot = SetAbilitySlotMessage.Create(playerEntity, manager);
+        setSlot.AbilityEntity = ability.Entity;
+        setSlot.Slot = 2;
+        manager.Enqueue(setSlot);
+        manager.Queue.ProcessQueue(manager);
+        playerEntity.Being!.HitPoints -= 20;
+        manager.Queue.ProcessQueue(manager);
+        var initialHp = playerEntity.Being.HitPoints;
+        var initialEp = playerEntity.Being.EnergyPoints;
+        var player = playerEntity.Player!;
+        player.CommandHistory.Clear();
+        player.NextAction = ActorActionType.UseAbilitySlot;
+        player.NextActionTarget = 2;
+        player.NextActionTarget2 = new Vector(0, 0).ToInt32();
+        player.QueuedAction = alreadyQueued;
+
+        TestHelper.PerformTurn(playerEntity, manager);
+
+        if (!alreadyQueued)
+        {
+            Assert.True(player.QueuedAction);
+            Assert.Equal(ActorActionType.UseAbilitySlot, player.NextAction);
+            Assert.Equal(100, player.NextActionTick);
+            Assert.Equal(initialHp, playerEntity.Being.HitPoints);
+            Assert.Equal(initialEp, playerEntity.Being.EnergyPoints);
+            Assert.Single(player.CommandHistory);
+
+            TestHelper.PerformTurn(playerEntity, manager);
+        }
+
+        Assert.False(player.QueuedAction);
+        Assert.Null(player.NextAction);
+        Assert.Equal(alreadyQueued ? 100 : 200, player.NextActionTick);
+        Assert.Equal(initialHp + 10, playerEntity.Being.HitPoints);
+        Assert.Equal(initialEp - 1, playerEntity.Being.EnergyPoints);
+        Assert.Equal(alreadyQueued ? 0 : 1, player.CommandHistory.Count);
+    }
+
     [Theory]
     [InlineData(AbilityType.MeleeAttack, AbilityAction.Punch, null, 100)]
     [InlineData(AbilityType.RangedSpell, AbilityAction.Spell, null, 100)]
@@ -70,7 +162,7 @@ public class PlayerSystemTest
         manager.EffectApplicationSystem.ApplyStatus(
             EffectApplicationContext.CreateStatus(EffectType.Confuse, playerEntity, amount: 400));
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(playerEntity, AbilityData.Confused.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(playerEntity, AbilityData.Confused.Name));
 
         var random = (TestRandom)manager.Game.Random;
         random.EnqueueNext(roll);
@@ -88,9 +180,9 @@ public class PlayerSystemTest
     {
         var game = TestHelper.CreateGame(seed: 1u);
         var room = TestHelper.BuildRoom("...", game);
-        var firstTarget = CreatureData.HumanWarrior.Instantiate(room, new Point(0, 0));
+        var firstTarget = CreatureData.Manusya.Instantiate(room, new Point(0, 0));
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(1, 0));
-        var secondTarget = CreatureData.HumanWarrior.Instantiate(room, new Point(2, 0));
+        var secondTarget = CreatureData.Manusya.Instantiate(room, new Point(2, 0));
         var manager = playerEntity.Manager;
         manager.Queue.ProcessQueue(manager);
 
@@ -118,7 +210,7 @@ public class PlayerSystemTest
         manager.EffectApplicationSystem.ApplyStatus(
             EffectApplicationContext.CreateStatus(EffectType.Confuse, playerEntity, amount: 600));
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(3, EffectApplicationSystem.GetAbilityLevel(playerEntity, AbilityData.Confused.Name));
+        Assert.Equal(3, AbilityLevelSystem.GetAbilityLevel(playerEntity, AbilityData.Confused.Name));
 
         // The original target is excluded; select the other creature after the caster itself.
         ((TestRandom)manager.Game.Random).EnqueueNext(1);
@@ -204,7 +296,7 @@ public class PlayerSystemTest
     {
         var room = TestHelper.BuildRoom("...");
         var manager = room.Entity.Manager;
-        var engulfer = CreatureData.GelatinousCube.Instantiate(room, new Point(0, 0));
+        var engulfer = CreatureData.Sylph.Instantiate(room, new Point(0, 0));
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(1, 0));
         manager.Queue.ProcessQueue(manager);
 
@@ -471,7 +563,7 @@ public class PlayerSystemTest
         manager.EffectApplicationSystem.ApplyStatus(EffectApplicationContext.CreateStatus(
             EffectType.Taunt, playerEntity, amount: 600, taunt.Id));
         manager.Queue.ProcessQueue(manager);
-        Assert.Equal(3, EffectApplicationSystem.GetAbilityLevel(playerEntity, AbilityData.Taunted.Name));
+        Assert.Equal(3, AbilityLevelSystem.GetAbilityLevel(playerEntity, AbilityData.Taunted.Name));
 
         var player = playerEntity.Player!;
         player.LogEntries.Clear();
@@ -492,7 +584,7 @@ public class PlayerSystemTest
     {
         var room = TestHelper.BuildRoom("...");
         var manager = room.Entity.Manager;
-        var source = CreatureData.Ghost.Instantiate(room, new Point(0, 0));
+        var source = CreatureData.Psukhe.Instantiate(room, new Point(0, 0));
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(1, 0));
         manager.Queue.ProcessQueue(manager);
 

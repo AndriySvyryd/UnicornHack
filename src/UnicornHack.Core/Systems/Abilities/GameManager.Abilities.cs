@@ -57,6 +57,12 @@ public partial class GameManager
         private set;
     } = null!;
 
+    public AbilityLevelSystem AbilityLevelSystem
+    {
+        get;
+        private set;
+    } = null!;
+
     private void InitializeAbilities(SequentialMessageQueue<GameEntity> queue)
     {
         Add<AbilityComponent>(EntityComponent.Ability, poolSize: 4096, maxPoolSize: 8192);
@@ -167,6 +173,16 @@ public partial class GameManager
             },
             (_, carrier) => carrier.RemoveComponent((int)EntityComponent.Ability),
             getPrincipalRemovedComponent: carrier => carrier.Ability);
+
+        AbilityLevelSystem = new AbilityLevelSystem();
+        Beings.AddListener(AbilityLevelSystem);
+        queue.Register<DiedMessage>(AbilityLevelSystem, DiedMessage.Name, 6);
+        queue.Register<PropertyValueChangedMessage<GameEntity, int>>(AbilityLevelSystem,
+            AbilitiesToAffectableRelationship.Dependents.GetPropertyValueChangedMessageName(nameof(AbilityComponent.Level)), 0);
+        queue.Register<EntityAddedMessage<GameEntity>>(AbilityLevelSystem,
+            AbilitiesToAffectableRelationship.Dependents.GetEntityAddedMessageName(), 3);
+        queue.Register<EntityRemovedMessage<GameEntity>>(AbilityLevelSystem,
+            AbilitiesToAffectableRelationship.Dependents.GetEntityRemovedMessageName(), 1);
 
         AbilityActivationSystem = new AbilityActivationSystem();
         queue.Register<ActivateAbilityMessage>(AbilityActivationSystem,

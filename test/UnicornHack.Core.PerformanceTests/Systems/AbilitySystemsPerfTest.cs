@@ -25,7 +25,7 @@ public class AbilitySystemsPerfTest
         _actors = new GameEntity[DeathOperations];
         for (var actorIndex = 0; actorIndex < _actors.Length; actorIndex++)
         {
-            var actor = CreatureData.HumanWarrior.Instantiate(
+            var actor = CreatureData.Manusya.Instantiate(
                 _room, new Point((byte)actorIndex, 0));
             _manager = actor.Manager;
             _manager.Queue.ProcessQueue(_manager);
@@ -72,7 +72,7 @@ public class AbilitySystemsPerfTest
     {
         for (var i = 0; i < Count; i++)
         {
-            CreatureData.HumanWarrior.Instantiate(
+            CreatureData.Manusya.Instantiate(
                 _room, new Point((byte)(i % 16), (byte)(i / 16)));
         }
 

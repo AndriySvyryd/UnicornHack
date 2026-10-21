@@ -4,6 +4,57 @@ namespace UnicornHack.Generation.Map;
 
 public partial class MapFragmentTest
 {
+    [Fact]
+    public void Named_glyph_spawns_the_exact_zero_weight_creature_and_records_its_instance()
+    {
+        var game = TestHelper.CreateGame();
+        var fragment = new DefiningMapFragment
+        {
+            Map = "B",
+            NoRandomDoorways = true,
+            Creatures = new Dictionary<char, string> { ['B'] = "Cerberus" },
+            CreatureGenerator = new CreatureGenerator { ExpectedInitialCount = 0 },
+            ItemGenerator = new ItemGenerator { ExpectedInitialCount = 0 }
+        };
+
+        var (room, chunks) = TestHelper.BuildRoom(fragment, game);
+        game.Manager.Queue.ProcessQueue(game.Manager);
+
+        Assert.Equal(0, game.Services.Data.Creatures.Get("Cerberus").GetWeight(room));
+        Assert.Equal("Cerberus", Creature.GetTemplate(Assert.Single(room.Actors).Value)!.Name);
+        Assert.Equal("Cerberus", Assert.Single(Assert.Single(chunks).CreaturePoints).CreatureName);
+        Assert.Equal(1, game.GenerationStats.CreatureInstancesByName["Cerberus"]);
+        Assert.Equal(1, room.Level.GenerationStats.CreatureInstancesByName["Cerberus"]);
+    }
+
+    [Theory]
+    [InlineData("%B")]
+    [InlineData("B%")]
+    public void Mixed_creature_points_preserve_exact_spawn_priority(string map)
+    {
+        var game = TestHelper.CreateGame();
+        var fragment = new DefiningMapFragment
+        {
+            Map = map,
+            NoRandomDoorways = true,
+            Creatures = new Dictionary<char, string> { ['B'] = "Cerberus" },
+            CreatureGenerator = new CreatureGenerator { ExpectedInitialCount = 0, MaximumInitialCount = 1 },
+            ItemGenerator = new ItemGenerator { ExpectedInitialCount = 0 }
+        };
+
+        var (room, chunks) = TestHelper.BuildRoom(fragment, game);
+        game.Manager.Queue.ProcessQueue(game.Manager);
+
+        var creaturePoints = Assert.Single(chunks).CreaturePoints;
+        Assert.Equal(2, creaturePoints.Count);
+        Assert.Single(creaturePoints, spawn => spawn.CreatureName is null);
+        var exactSpawn = Assert.Single(creaturePoints, spawn => spawn.CreatureName is not null);
+        Assert.Equal("Cerberus", exactSpawn.CreatureName);
+        var actor = Assert.Single(room.Actors).Value;
+        Assert.Equal("Cerberus", Creature.GetTemplate(actor)!.Name);
+        Assert.Equal(exactSpawn.Point, actor.Position!.Cell);
+    }
+
     /// <summary>
     ///     Builds a minimal <see cref="RoomParameters" /> suitable for unit tests that
     ///     drive placement primitives directly (no real defining-fragment metadata).
@@ -231,7 +282,7 @@ PP
     }
 
     [Fact]
-    public void Creature_wildcard_records_position_separately()
+    public void Creature_wildcard_records_position_with_null_name()
     {
         var fragment = NewFeatureFragment("""
             ###
@@ -244,7 +295,9 @@ PP
 
         Assert.Empty(chunk!.FeaturePoints);
         var origin = chunk.BoundingRectangle.TopLeft;
-        Assert.Equal([new Point((byte)(origin.X + 1), (byte)(origin.Y + 1))], chunk.CreaturePoints);
+        var creaturePoint = Assert.Single(chunk.CreaturePoints);
+        Assert.Equal(new Point((byte)(origin.X + 1), (byte)(origin.Y + 1)), creaturePoint.Point);
+        Assert.Null(creaturePoint.CreatureName);
     }
 
     [Fact]
@@ -317,7 +370,7 @@ PP
             #####
             """);
         var (room, lot, rp) = BuildFloorRoom(7);
-        room.Features = RoomFeatures.DeityAltar | RoomFeatures.SmallFountain;
+        room.FeatureTags = RoomFeatures.DeityAltar | RoomFeatures.SmallFountain;
         var chunk = fragment.TryPlace(room, new LotPlacementContext(lot, rp));
         Assert.NotNull(chunk);
 
@@ -343,7 +396,7 @@ PP
             #####
             """);
         var (room, lot, rp) = BuildFloorRoom(7);
-        room.Features = RoomFeatures.DeityAltar | RoomFeatures.SmallFountain;
+        room.FeatureTags = RoomFeatures.DeityAltar | RoomFeatures.SmallFountain;
         var chunk = fragment.TryPlace(room, new LotPlacementContext(lot, rp));
 
         var wildcard = chunk!.FeaturePoints.Single(p => p.Point.X == chunk.BoundingRectangle.TopLeft.X + 3);
@@ -359,7 +412,7 @@ PP
             #####
             """);
         var (room, lot, rp) = BuildFloorRoom(7);
-        room.Features = RoomFeatures.SmallFountain;
+        room.FeatureTags = RoomFeatures.SmallFountain;
         var chunk = fragment.TryPlace(room, new LotPlacementContext(lot, rp));
 
         var boundCount = chunk!.FeaturePoints.Count(p => p.Feature.HasValue);
@@ -376,7 +429,7 @@ PP
             ###
             """);
         var (room, lot, rp) = BuildFloorRoom(7);
-        room.Features = RoomFeatures.Normal;
+        room.FeatureTags = RoomFeatures.Normal;
         var chunk = fragment.TryPlace(room, new LotPlacementContext(lot, rp));
 
         Assert.All(chunk!.FeaturePoints, p => Assert.Null(p.Feature));
@@ -416,7 +469,8 @@ PP
 
         // Source '%' at (1,2) → rotated CW lands at (4-1-2, 1) = (1, 1).
         var creaturePoint = Assert.Single(chunk.CreaturePoints);
-        Assert.Equal(new Point((byte)(origin.X + 1), (byte)(origin.Y + 1)), creaturePoint);
+        Assert.Equal(new Point((byte)(origin.X + 1), (byte)(origin.Y + 1)), creaturePoint.Point);
+        Assert.Null(creaturePoint.CreatureName);
     }
 
     /// <summary>

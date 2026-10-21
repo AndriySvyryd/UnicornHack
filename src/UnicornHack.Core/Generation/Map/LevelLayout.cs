@@ -1,4 +1,6 @@
 using System.Buffers;
+using System.Collections.Concurrent;
+using System.Linq.Expressions;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Utils;
 
@@ -43,6 +45,48 @@ public abstract class LevelLayout
 
     /// <summary>Per-room probability of receiving a reward feature.</summary>
     public float RewardRoomProbability { get; init; } = 0.3f;
+
+    public Dictionary<RoomFeatures, string>? RewardWeights { get; init; }
+
+    private static readonly IReadOnlyDictionary<RoomFeatures, string> DefaultRewardWeights =
+        new Dictionary<RoomFeatures, string>
+        {
+            [RoomFeatures.Shortcut] = "$hidden ? Min(48.0, Max(4.0, $difficulty * 4.0)) / ((2 + $globalCount) >> 1) : 0.0",
+            [RoomFeatures.SmallFountain] = "72.0 / ((2 + $globalCount) >> 1)",
+            [RoomFeatures.SkillPedestal] = "48.0 / ((2 + $globalCount) >> 1)",
+            [RoomFeatures.TraitPedestal] = "48.0 / ((2 + $globalCount) >> 1)",
+            [RoomFeatures.FeatPedestal] = "48.0 / ((2 + $globalCount) >> 1)",
+            [RoomFeatures.WeaponStand] = "32.0 / ((2 + $globalCount) >> 1) * ($hidden ? 1.5 : 1.0)",
+            [RoomFeatures.ArmorStand] = "32.0 / ((2 + $globalCount) >> 1) * ($hidden ? 1.5 : 1.0)",
+            [RoomFeatures.ItemCase] = "20.0 / ((2 + $globalCount) >> 1) * ($hidden ? 1.5 : 1.0)",
+            [RoomFeatures.MinorShrine] = "16.0 / ((2 + $globalCount) >> 1) * ($hidden ? 1.5 : 1.0)",
+            [RoomFeatures.DeityAltar] = "($difficulty > 1 || $count < 1 ? 32.0 : 0.0)"
+                                       + " / ((2 + $globalCount) >> 1) * ($hidden ? 1.5 : 1.0)",
+            [RoomFeatures.RacePedestal] = "($difficulty > 1 || $count < 1 ? 24.0 : 0.0)"
+                                         + " / ((2 + $globalCount) >> 1) * ($hidden ? 1.5 : 1.0)",
+            [RoomFeatures.BigFountain] = "Min(32.0, Max(0.0, ($difficulty - 1) * 4.0))"
+                                        + " / ((2 + $globalCount) >> 1) * ($hidden ? 3.0 : 1.0)",
+            [RoomFeatures.MajorShrine] = "Min(24.0, Max(0.0, ($difficulty - 1) / 2 * 4.0))"
+                                        + " / ((2 + $globalCount) >> 1) * ($hidden ? 3.0 : 1.0)",
+            [RoomFeatures.GildedArmorStand] = "Min(24.0, Max(0.0, ($difficulty - 1) / 2 * 4.0))"
+                                             + " / ((2 + $globalCount) >> 1) * ($hidden ? 3.0 : 1.0)",
+            [RoomFeatures.GildedItemCase] = "Min(18.0, Max(0.0, ($difficulty - 1) / 2 * 3.0))"
+                                           + " / ((2 + $globalCount) >> 1) * ($hidden ? 3.0 : 1.0)",
+            [RoomFeatures.GildedWeaponStand] = "Min(24.0, Max(0.0, ($difficulty - 1) / 2 * 4.0))"
+                                              + " / ((2 + $globalCount) >> 1) * ($hidden ? 3.0 : 1.0)",
+            [RoomFeatures.RitualShrine] = "Min(16.0, Max(0.0, ($difficulty - 3) / 3 * 4.0))"
+                                         + " / ((2 + $globalCount) >> 1) * ($hidden ? 4.0 : 1.0)"
+        };
+
+    private static readonly ParameterExpression[] RewardWeightParameters =
+    [
+        Expression.Parameter(typeof(int), "count"),
+        Expression.Parameter(typeof(int), "globalCount"),
+        Expression.Parameter(typeof(int), "difficulty"),
+        Expression.Parameter(typeof(bool), "hidden")
+    ];
+
+    private static readonly ConcurrentDictionary<string, Func<int, int, int, bool, float>> RewardWeightFunctions = new();
 
     /// <summary>Per-room probability of receiving the cursed feature.</summary>
     public float CurseRoomProbability { get; init; } = 0.1f;
@@ -1527,6 +1571,11 @@ public abstract class LevelLayout
         {
             if ((node.Features & (RoomFeatures.Entrance | RoomFeatures.Exit)) != 0)
             {
+                if ((node.Features & RoomFeatures.Exit) != 0)
+                {
+                    node.Features |= RoomFeatures.Boss;
+                }
+      
                 stats.RecordRoomFeature(node.Features);
                 gameStats.RecordRoomFeature(node.Features);
                 continue;
@@ -1652,9 +1701,7 @@ public abstract class LevelLayout
     /// <summary>
     ///     The reward <see cref="RoomFeatures" /> flags that <see cref="PickRewardFeature" />
     ///     can assign, in the canonical order it iterates them when sampling a weighted pick.
-    ///     <see cref="RoomFeatures.Shortcut" /> is reward-only and selectable exclusively for
-    ///     concealed (hidden) rooms — <see cref="GetRewardFeatureWeight" /> returns 0 for it
-    ///     on a visible room.
+    ///     The default Shortcut expression makes it selectable only in concealed rooms.
     /// </summary>
     private static readonly RoomFeatures[] RewardFeatureCandidates =
     [
@@ -2189,46 +2236,9 @@ public abstract class LevelLayout
                     hidden)));
 
     /// <summary>
-    ///     Relative "quality" of each reward feature, used to skew a concealed (hidden)
-    ///     room's reward draw toward better finds — a secret room should reward the detour.
-    ///     Higher is rarer / more desirable. Applied as a multiplier on the base weight only
-    ///     when the room is hidden; visible rooms use the unmodified base distribution.
-    ///     <see cref="RoomFeatures.Shortcut" /> is weighted directly in
-    ///     <see cref="GetRewardFeatureWeight" /> and isn't listed here.
-    /// </summary>
-    private static float GetHiddenRewardMultiplier(RoomFeatures feature)
-        => feature switch
-        {
-            RoomFeatures.RitualShrine => 4f,
-            RoomFeatures.MajorShrine => 3f,
-            RoomFeatures.BigFountain => 3f,
-            RoomFeatures.GildedArmorStand => 3f,
-            RoomFeatures.GildedItemCase => 3f,
-            RoomFeatures.GildedWeaponStand => 3f,
-            RoomFeatures.DeityAltar => 1.5f,
-            RoomFeatures.RacePedestal => 1.5f,
-            RoomFeatures.MinorShrine => 1.5f,
-            RoomFeatures.ItemCase => 1.5f,
-            RoomFeatures.WeaponStand => 1.5f,
-            RoomFeatures.ArmorStand => 1.5f,
-            _ => 1f
-        };
-
-    /// <summary>
-    ///     Returns the relative selection weight for <paramref name="feature" /> on the
-    ///     current reward draw. Weights scale with <see cref="LayoutParameters.Difficulty" />
-    ///     so deeper levels see more deep-tier features (BigFountain, MajorShrine,
-    ///     RitualShrine) while shallow levels stay focused on simpler rewards. The
-    ///     <paramref name="countSoFar" /> argument is the per-level count (lets caps
-    ///     express themselves as zero weights — e.g. DeityAltar / RacePedestal cap at
-    ///     one per level on early floors). <paramref name="globalCountSoFar" /> is the
-    ///     game-wide count across all levels generated so far, useful for soft-throttling
-    ///     repeat appearances of premium features. When <paramref name="hidden" /> the
-    ///     room is concealed on the map: the <see cref="RoomFeatures.Shortcut" /> reward
-    ///     becomes available (and scales with difficulty) and every other feature's weight
-    ///     is multiplied by <see cref="GetHiddenRewardMultiplier" /> so premium finds dominate.
-    ///     Subclasses can override to skew the distribution further; negative return
-    ///     values are treated as 0.
+    ///     Evaluates the feature's authored expression, or its default when not overridden.
+    ///     Expressions receive $count (level placements), $globalCount (game placements),
+    ///     $difficulty and $hidden, and return the complete nonnegative finite selection weight.
     /// </summary>
     protected virtual float GetRewardFeatureWeight(
         RoomFeatures feature,
@@ -2237,51 +2247,26 @@ public abstract class LevelLayout
         LayoutParameters parameters,
         bool hidden)
     {
-        var difficulty = parameters.Difficulty;
-
-        // Shortcut is a hidden-only reward (a concealed inter-level passage that skips a
-        // level). It scales with difficulty so deeper dungeons hold more shortcuts, and is
-        // soft-throttled on repeats like every other premium reward.
-        if (feature == RoomFeatures.Shortcut)
+        var expression = RewardWeights?.TryGetValue(feature, out var authoredExpression) == true
+            ? authoredExpression
+            : DefaultRewardWeights.GetValueOrDefault(feature, "0");
+        try
         {
-            return hidden
-                ? Math.Clamp(difficulty * 4f, 4f, 48f) / ((2 + globalCountSoFar) >> 1)
-                : 0f;
+            var function = RewardWeightFunctions.GetOrAdd(expression,
+                static value => new UnicornExpressionVisitor(RewardWeightParameters)
+                    .Translate<Func<int, int, int, bool, float>, float>(value));
+            var weight = function(countSoFar, globalCountSoFar, parameters.Difficulty, hidden);
+            if (!float.IsFinite(weight) || weight < 0)
+            {
+                throw new InvalidOperationException($"Invalid evaluated reward weight: {weight}.");
+            }
+
+            return weight;
         }
-
-        // TODO: Allow this to be overridden in the branch definition
-        var baseWeight = feature switch
+        catch (Exception exception)
         {
-            // Common shallow rewards — available everywhere.
-            RoomFeatures.SmallFountain => 72f,
-            RoomFeatures.SkillPedestal => 48f,
-            RoomFeatures.TraitPedestal => 48f,
-            RoomFeatures.FeatPedestal => 48f,
-            RoomFeatures.WeaponStand => 32f,
-            RoomFeatures.ArmorStand => 32f,
-            RoomFeatures.ItemCase => 20f,
-            RoomFeatures.MinorShrine => 16f,
-            // Unique-per-level on the introductory floors so the first altar / race choice
-            // doesn't immediately duplicate; the cap relaxes once the dungeon proper begins.
-            RoomFeatures.DeityAltar => difficulty > 1 || countSoFar < 1 ? 32f : 0f,
-            RoomFeatures.RacePedestal => difficulty > 1 || countSoFar < 1 ? 24f : 0f,
-            // Deep-tier rewards — progressively unlocked with difficulty.
-            RoomFeatures.BigFountain => Math.Clamp((difficulty - 1) * 4f, 0f, 32f),
-            RoomFeatures.MajorShrine => Math.Clamp((difficulty - 1) / 2 * 4f, 0f, 24f),
-            RoomFeatures.GildedArmorStand => Math.Clamp((difficulty - 1) / 2 * 4f, 0f, 24f),
-            RoomFeatures.GildedItemCase => Math.Clamp((difficulty - 1) / 2 * 3f, 0f, 18f),
-            RoomFeatures.GildedWeaponStand => Math.Clamp((difficulty - 1) / 2 * 4f, 0f, 24f),
-            RoomFeatures.RitualShrine => Math.Clamp((difficulty - 3) / 3 * 4f, 0f, 16f),
-            _ => 0f
-        };
-
-        // Soft-throttle repeat appearances across the run: each prior placement halves the
-        // effective base weight. The (2 + n) >> 1 shape keeps the first two placements at
-        // full weight, then decays by integer halving — and never divides by zero.
-        var weight = baseWeight / ((2 + globalCountSoFar) >> 1);
-
-        // A concealed room rewards the detour: bias its draw toward rarer, premium features.
-        return hidden ? weight * GetHiddenRewardMultiplier(feature) : weight;
+            throw new InvalidOperationException($"Error evaluating reward weight for {feature}: '{expression}'.", exception);
+        }
     }
 
     /// <summary>
@@ -2343,15 +2328,16 @@ public abstract class LevelLayout
                 RoomParameters? roomParameters = null;
                 for (var roomAttempt = 0; roomAttempt < maxRoomAttempts; roomAttempt++)
                 {
+                    var levelCheckpoint = stats.CaptureInstanceCounts();
+                    var gameCheckpoint = gameLevel.Game.GenerationStats.CaptureInstanceCounts();
                     room.GridX = node.GridX;
                     room.GridY = node.GridY;
-                    room.Features = node.Features;
+                    room.FeatureTags = node.Features;
                     node.Room = room;
 
                     // Per-room fragment selection. Throws if no fragment matches the room's
                     // RoomFeatures — a data-set bug.
-                    var roomFragment = LevelGenerator.PickFragmentForRoom(
-                        gameLevel, node.Features, stats);
+                    var roomFragment = LevelGenerator.PickFragmentForRoom(gameLevel, node.Features);
                     roomParameters = roomFragment.GetRoomParameters(branch);
 
                     AllocateTerrain(room, roomParameters.RoomWidth, roomParameters.RoomHeight,
@@ -2370,6 +2356,8 @@ public abstract class LevelLayout
                     // explicitly before retrying or bailing (the finally block returns the rest).
                     roomParameters.Dispose();
                     roomParameters = null;
+                    stats.RestoreInstanceCounts(levelCheckpoint);
+                    gameLevel.Game.GenerationStats.RestoreInstanceCounts(gameCheckpoint);
 
                     if (room.Connections.Count > 0)
                     {
@@ -2437,7 +2425,8 @@ public abstract class LevelLayout
                 CarveArchway(targetRoom, targetDoor);
 
                 var sourceOrientation = CardinalDirectionFromDoor(sourceRoom, sourceDoor);
-                CreateIntraLevelConnection(sourceRoom, sourceDoor, targetRoom, targetDoor, sourceOrientation, edge.Hidden, manager);
+                LevelConnection.CreateConnection(sourceRoom, sourceDoor, targetRoom.EntityId, targetDoor,
+                    Directionality.Source, sourceOrientation, edge.Hidden);
             }
 
             // Carving inter-room archways above turned perimeter walls into walkable cells, which
@@ -2824,28 +2813,6 @@ public abstract class LevelLayout
             : dy >= 0 ? Direction.South : Direction.North;
     }
 
-    protected static void CreateIntraLevelConnection(
-        RoomComponent sourceRoom, Point sourceDoor,
-        RoomComponent targetRoom, Point targetDoor,
-        Direction direction, bool hidden, GameManager manager)
-    {
-        using var connectionEntityReference = manager.CreateEntity();
-        var connectionEntity = connectionEntityReference.Referenced;
-
-        var position = manager.CreateComponent<PositionComponent>(EntityComponent.Position);
-        position.RoomEntity = sourceRoom.Entity;
-        position.Cell = sourceDoor;
-        connectionEntity.Position = position;
-
-        var connection = manager.CreateComponent<ConnectionComponent>(EntityComponent.Connection);
-        connection.TargetRoomId = targetRoom.EntityId;
-        connection.TargetCell = targetDoor;
-        connection.Directionality = Directionality.Source;
-        connection.Orientation = direction;
-        connection.Hidden = hidden;
-        connectionEntity.Connection = connection;
-    }
-
     /// <summary>
     ///     Creates a <see cref="RoomComponent" /> attached to <paramref name="gameLevel" />.
     ///     The component is constructed with empty (zero-length) terrain placeholders; the
@@ -2885,7 +2852,7 @@ public abstract class LevelLayout
             // level's entrance.
             if (existing.Width == 0 && existing.IncomingConnections.Count > 0)
             {
-                existing.Features |= RoomFeatures.Entrance;
+                existing.FeatureTags |= RoomFeatures.Entrance;
                 return existing;
             }
         }

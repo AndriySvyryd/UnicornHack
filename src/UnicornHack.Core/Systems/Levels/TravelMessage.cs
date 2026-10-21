@@ -52,6 +52,8 @@ public class TravelMessage : IMessage
         set;
     }
 
+    public bool Forced { get; set; }
+
     string IMessage.MessageName
     {
         get => Name;
@@ -66,5 +68,6 @@ public class TravelMessage : IMessage
         Distance = default;
         MoveOffConflicting = default;
         SuppressDelay = default;
+        Forced = false;
     }
 }

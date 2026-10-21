@@ -12,6 +12,7 @@ public class GameLevel : NotificationEntity
     private int _difficulty;
     private SimpleRandom? _generationRandom;
     private LevelGenerationStats? _generationStats;
+    private LevelStats? _stats;
 
     public int GameId
     {
@@ -56,13 +57,18 @@ public class GameLevel : NotificationEntity
     }
 
     /// <summary>
-    ///     Diagnostic counters captured during level generation. Populated by
-    ///     <see cref="LevelGenerator" /> and accessed by weight functions.
+    ///     Generation diagnostics populated by <see cref="LevelGenerator" /> and accessed by weight expressions.
     /// </summary>
     public LevelGenerationStats GenerationStats
     {
         get => _generationStats ??= new LevelGenerationStats();
         set => SetWithNotify(value, ref _generationStats);
+    }
+
+    public LevelStats Stats
+    {
+        get => _stats ??= new LevelStats();
+        set => SetWithNotify(value, ref _stats);
     }
 
     public ICollection<RoomComponent> Rooms

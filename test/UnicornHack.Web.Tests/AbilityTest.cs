@@ -46,7 +46,7 @@ public class AbilityTest
 
         if (withNpc)
         {
-            CreatureData.HumanWarrior.Instantiate(level, new Point(3, 2));
+            CreatureData.Manusya.Instantiate(level, new Point(3, 2));
             manager.Queue.ProcessQueue(manager);
         }
 
@@ -116,8 +116,10 @@ public class AbilityTest
         });
     }
 
-    [Fact]
-    public void Ability_details_include_possible_expression_grants()
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    public void Ability_details_include_possible_expression_grants(int maxLevel)
     {
         var (player, _, services, manager) = SetupGame(withNpc: false);
         var source = new LeveledAbility
@@ -129,18 +131,18 @@ public class AbilityTest
                 [1] = [], [2] = [], [3] = []
             }
         };
-        var dependent = new Ability
+        var dependent = new LeveledAbility
         {
             Name = "detail expression dependent",
             Type = AbilityType.RangedSpell,
             LevelExpression =
                 "AbilityLevel('detail expression source') >= 2"
                 + " ? AbilityLevel('detail expression source') : 0",
-            Effects = []
+            LeveledEffects = new Dictionary<int, IReadOnlyList<Effect>> { [maxLevel] = [] }
         };
         ((TestDataProvider)services.Data).AddAbilities(source, dependent);
 
-        manager.EffectApplicationSystem.AddAbilityEffect(player.Entity, source);
+        manager.AbilityLevelSystem.AddAbilityEffect(player.Entity, source);
         manager.Queue.ProcessQueue(manager);
         var sourceEntity = manager.AffectableAbilitiesIndex[(player.Entity.Id, source.Name)]!;
         var context = new SerializationContext(null!, player.Entity, services);
@@ -152,13 +154,13 @@ public class AbilityTest
         Assert.Equal(0, unavailable.Level);
         Assert.Equal(dependent.LevelExpression, unavailable.LevelExpression);
 
-        manager.EffectApplicationSystem.AddAbilityEffect(player.Entity, source);
+        manager.AbilityLevelSystem.AddAbilityEffect(player.Entity, source);
         manager.Queue.ProcessQueue(manager);
 
         var available = Assert.Single(
             GameQueryProcessor.SerializeAbilityAttributes(
                 sourceEntity, player.Entity, context).ConditionalGrants);
-        Assert.Equal(2, available.Level);
+        Assert.Equal(Math.Min(2, maxLevel), available.Level);
     }
 
     [Fact]
@@ -188,7 +190,7 @@ public class AbilityTest
         ItemData.Shortbow.Instantiate(playerEntity);
 
         // Place NPC further away
-        CreatureData.HumanWarrior.Instantiate(level, new Point(3, 1));
+        CreatureData.Manusya.Instantiate(level, new Point(3, 1));
         manager.Queue.ProcessQueue(manager);
 
         var listener = WebTestHelper.SetupListeners(manager);
@@ -314,7 +316,7 @@ public class AbilityTest
     public void Continuous_energy_reservation_is_sent_in_player_changes()
     {
         var (player, listener, services, manager) = SetupGame(withNpc: false);
-        manager.EffectApplicationSystem.AddAbilityEffect(
+        manager.AbilityLevelSystem.AddAbilityEffect(
             player.Entity, services.Data.PlayerRaces.Get("human").GetRaceAbilityTemplate(), level: 2);
         manager.Queue.ProcessQueue(manager);
 
@@ -384,7 +386,7 @@ public class AbilityTest
         var (player, listener, services, manager) = SetupGame(withNpc: false, consumables: true);
 
         // Place NPC south
-        CreatureData.HumanWarrior.Instantiate(
+        CreatureData.Manusya.Instantiate(
             manager.FindEntity(player.Entity.Position!.RoomId)!.Room!, new Point(3, 4));
         manager.Queue.ProcessQueue(manager);
 

@@ -169,9 +169,7 @@ public class CSClassSerializer : CSScriptSerializer
                                     FieldDeclaration(
                                             VariableDeclaration(GetTypeSyntax(obj.GetType()))
                                                 .WithVariables(SingletonSeparatedList(
-                                                    VariableDeclarator(Identifier(
-                                                            CSScriptLoaderHelpers.GenerateIdentifier(
-                                                                targetPropertyName)))
+                                                    VariableDeclarator(Identifier(targetPropertyName))
                                                         .WithInitializer(
                                                             EqualsValueClause(GetCreationExpression(obj))))))
                                         .WithModifiers(

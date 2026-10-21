@@ -90,24 +90,6 @@ public sealed class PersistedGame : IDisposable
 
     private void Seed(string playerName, uint seed)
     {
-        try
-        {
-            SeedCore(playerName, seed);
-        }
-        catch (Exception exception) when (IsSchemaMismatch(exception))
-        {
-            using (var context = CreateContext())
-            {
-                context.Database.EnsureDeleted();
-                context.Database.EnsureCreated();
-            }
-
-            SeedCore(playerName, seed);
-        }
-    }
-
-    private void SeedCore(string playerName, uint seed)
-    {
         var game = new Game
         {
             Options = { InitialSeed = seed },
@@ -121,8 +103,8 @@ public sealed class PersistedGame : IDisposable
         var wired = false;
         try
         {
+            context.Database.EnsureDeleted();
             context.Database.EnsureCreated();
-            CleanOrRecreateDatabase(context);
 
             WireDbContext(context, game);
             wired = true;
@@ -179,15 +161,23 @@ public sealed class PersistedGame : IDisposable
     ///     mirroring <c>GameHub.TryLoadSessionFromDb</c>. After this returns, <see cref="Game" /> and
     ///     <see cref="Context" /> refer to the reloaded instances.
     /// </summary>
-    public void Reload() => Reload(useAsync: false).GetAwaiter().GetResult();
+    public void Reload(Action<TestDataProvider>? configureData = null)
+        => Reload(useAsync: false, configureData: configureData).GetAwaiter().GetResult();
 
     public ValueTask ReloadAsync() => Reload(useAsync: true);
 
-    private async ValueTask Reload(bool useAsync)
+    public void ReloadRooms(IReadOnlyList<int> roomIds)
+        => Reload(useAsync: false, roomIds).GetAwaiter().GetResult();
+
+    private async ValueTask Reload(
+        bool useAsync, IReadOnlyList<int>? roomIds = null, Action<TestDataProvider>? configureData = null)
     {
-        foreach (var entry in Context.ChangeTracker.Entries().ToList())
+        var tracked = Context.ChangeTracker.Entries()
+            .Select(entry => entry.Entity).OfType<ITrackable>().ToArray();
+        Context.ChangeTracker.Clear();
+        foreach (var entity in tracked)
         {
-            entry.State = EntityState.Detached;
+            entity.StopTracking(Context.ChangeTracker);
         }
 
         Unwire(Context);
@@ -202,16 +192,28 @@ public sealed class PersistedGame : IDisposable
 
         var context = CreateContext();
         var loadedGame = useAsync
-            ? await context.Games.AsNoTracking().FirstAsync()
-            : context.Games.AsNoTracking().First();
+            ? await context.Games.FirstAsync()
+            : context.Games.First();
 
         InitializeGame(loadedGame);
+        configureData?.Invoke((TestDataProvider)loadedGame.Services.Data);
         WireDbContext(context, loadedGame);
         EntityAttacher.Attach(loadedGame, context);
 
-        loadedGame = useAsync
-            ? await context.LoadGameAsync(loadedGame.Id)
-            : context.LoadGame(loadedGame.Id);
+        if (roomIds == null)
+        {
+            loadedGame = useAsync
+                ? await context.LoadGameAsync(loadedGame.Id)
+                : context.LoadGame(loadedGame.Id);
+        }
+        else if (useAsync)
+        {
+            await context.LoadRoomsAsync(roomIds);
+        }
+        else
+        {
+            context.LoadRooms(roomIds);
+        }
 
         Context = context;
         Game = loadedGame;
@@ -229,58 +231,6 @@ public sealed class PersistedGame : IDisposable
             .UseSqlServer(connectionString, sql => sql.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))
             .AddInterceptors(PooledMaterializationInterceptor.Instance)
             .Options;
-
-    private static void CleanOrRecreateDatabase(GameDbContext context)
-    {
-        try
-        {
-            _ = context.PlayerComponents
-                .Select(player => new
-                {
-                    player.PendingChoice!.ChoiceType,
-                    player.PendingChoice.PendingChoiceAction,
-                    player.PendingChoice.PendingChoiceOptions
-                })
-                .FirstOrDefault();
-
-            while (context.Games.FirstOrDefault() is { } game)
-            {
-                context.Clean(game);
-            }
-        }
-        catch (Exception exception) when (IsSchemaMismatch(exception))
-        {
-            context.ChangeTracker.Clear();
-            context.Database.EnsureDeleted();
-            context.Database.EnsureCreated();
-        }
-    }
-    private static bool IsSchemaMismatch(Exception exception)
-    {
-        for (var current = exception; current != null; current = current.InnerException)
-        {
-            if (current is not SqlException sqlException)
-            {
-                continue;
-            }
-
-            foreach (SqlError error in sqlException.Errors)
-            {
-                if (error.Number is 206 // Operand type clash
-                    or 207 // Invalid column name
-                    or 208 // Invalid object name
-                    or 213 // Supplied values don't match the table definition
-                    or 515 // Cannot insert NULL
-                    or 8144 // Too many arguments
-                    or 8145) // Unknown argument
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
 
     private static void InitializeGame(Game game)
     {
@@ -356,11 +306,11 @@ public sealed class PersistedGame : IDisposable
         try
         {
             using var cleanup = CreateContext();
-            CleanOrRecreateDatabase(cleanup);
+            cleanup.Database.EnsureDeleted();
         }
         catch
         {
-            // Best-effort cleanup of the reusable per-test-class database.
+            // Best-effort cleanup of the disposable per-test-class database.
         }
     }
 }

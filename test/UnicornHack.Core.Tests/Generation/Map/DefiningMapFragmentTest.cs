@@ -6,6 +6,50 @@ public class DefiningMapFragmentTest
 
     private static readonly IReadOnlyDictionary<RoomFeatures, int> EmptyFeatures = new Dictionary<RoomFeatures, int>();
 
+    [Theory]
+    [InlineData(RoomFeatures.Cursed)]
+    [InlineData(RoomFeatures.SmallFountain)]
+    [InlineData(RoomFeatures.Cursed | RoomFeatures.Challenge)]
+    public void Defining_anti_tags_use_the_shared_room_demand_penalty(RoomFeatures features)
+    {
+        var room = TestHelper.BuildRoom(".");
+        room.FeatureTags = features;
+        var fragment = new DefiningMapFragment
+        {
+            Name = "test defining anti tags",
+            Map = ".",
+            GenerationWeight = "8",
+            NoTransform = true,
+            Tags = ["!cursed", "!challenge", "!small-fountain"]
+        };
+        fragment.EnsureInitialized();
+        using var parameters = TestHelper.CreateRoomParameters(room);
+        var context = new LotPlacementContext(room.BoundingRectangle, parameters);
+
+        var weight = fragment.GetWeight(room.Level, features);
+
+        Assert.Equal(8f * fragment.GetDemandMultiplier(room, context), weight);
+        Assert.True(weight > 0 && weight < fragment.GetWeight(room.Level, RoomFeatures.Normal));
+    }
+
+    [Fact]
+    public void Defining_boss_eligibility_remains_required_when_anti_tags_match()
+    {
+        var room = TestHelper.BuildRoom(".");
+        var fragment = new DefiningMapFragment
+        {
+            Name = "test boss anti tag",
+            Map = ".",
+            GenerationWeight = "8",
+            Tags = ["boss", "!cursed"]
+        };
+        fragment.EnsureInitialized();
+
+        Assert.Equal(0, fragment.GetWeight(room.Level, RoomFeatures.Cursed));
+        Assert.True(fragment.GetWeight(room.Level, RoomFeatures.Boss | RoomFeatures.Cursed)
+                    < fragment.GetWeight(room.Level, RoomFeatures.Boss));
+    }
+
     [Fact]
     public void ConstantWeight()
     {

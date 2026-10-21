@@ -1,6 +1,7 @@
 using UnicornHack.Data.Abilities;
 using UnicornHack.Data.Creatures;
 using UnicornHack.Data.Items;
+using UnicornHack.Generation.Effects;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
@@ -10,6 +11,23 @@ namespace UnicornHack.Systems.Knowledge;
 
 public class XPSystemTest
 {
+    [Fact]
+    public void Building_a_runtime_race_template_does_not_mutate_authored_effect_levels()
+    {
+        var effects = new Dictionary<int, IReadOnlyList<Effect>>
+        {
+            [3] = [new ChangeProperty<int> { PropertyName = "Armor", Amount = "1" }]
+        };
+        var race = new PlayerRace { Name = "test immutable authored race", MightBonus = 1, Effects = effects };
+
+        var template = race.GetRaceAbilityTemplate();
+
+        Assert.Same(template, race.GetRaceAbilityTemplate());
+        Assert.Equal(3, Assert.Single(race.Effects).Key);
+        Assert.Same(effects[3], race.Effects[3]);
+        Assert.True(Assert.IsType<LeveledAbility>(template).LeveledEffects.ContainsKey(1));
+    }
+
     [Fact]
     public void Xp_gained_on_exploration()
     {
@@ -113,6 +131,68 @@ public class XPSystemTest
         Assert.True(hitPointMaximumEffect.MagnitudePrimary > initialMagnitude);
     }
 
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(0, 150)]
+    [InlineData(75, 150)]
+    [InlineData(75, -75)]
+    [InlineData(75, -100)]
+    public void GainXP_changes_the_creatures_kill_reward_without_awarding_players_early(int explicitReward, int change)
+    {
+        var room = TestHelper.BuildRoom("..");
+        var creature = CreatureData.Undine.Instantiate(room, new Point(0, 0));
+        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(1, 0));
+        var manager = player.Manager;
+        manager.Queue.ProcessQueue(manager);
+        if (explicitReward != 0)
+        {
+            creature.Being!.ExperiencePoints = explicitReward;
+        }
+
+        var initialReward = creature.Being!.ExperiencePoints;
+        var initialXp = player.Being!.ExperiencePoints;
+        var ability = new Ability
+        {
+            Name = "test kill reward adjustment",
+            Activation = ActivationType.Manual,
+            Effects = [new GainXP { Amount = change.ToString(System.Globalization.CultureInfo.InvariantCulture) }]
+        }.AddToAffectable(player);
+        manager.Queue.ProcessQueue(manager);
+        TestHelper.ApplyEffect(Assert.Single(ability.Effects), player, creature, manager);
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(initialReward + change, creature.Being.ExperiencePoints);
+        Assert.Equal(initialXp, player.Being.ExperiencePoints);
+
+        creature.Being.HitPoints = 0;
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(initialXp + Math.Max(0, initialReward + change), player.Being.ExperiencePoints);
+    }
+
+    [Theory]
+    [InlineData(25)]
+    [InlineData(-25)]
+    public void GainXP_supports_signed_player_resource_changes(int change)
+    {
+        var room = TestHelper.BuildRoom(".");
+        var player = PlayerRace.InstantiatePlayer("Tester", Sex.Male, room, new Point(0, 0));
+        var manager = player.Manager;
+        manager.Queue.ProcessQueue(manager);
+        player.Being!.ExperiencePoints = 100;
+        var ability = new Ability
+        {
+            Name = "test signed experience",
+            Activation = ActivationType.Manual,
+            Effects = [new GainXP { Amount = change.ToString(System.Globalization.CultureInfo.InvariantCulture) }]
+        }.AddToAffectable(player);
+        manager.Queue.ProcessQueue(manager);
+
+        TestHelper.ApplyEffect(Assert.Single(ability.Effects), player, player, manager);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(100 + change, player.Being.ExperiencePoints);
+    }
+
     [Fact]
     public void Player_race_applies_shared_being_properties()
     {
@@ -152,7 +232,7 @@ public class XPSystemTest
             InvisibilityDetection = true
         };
 
-        manager.EffectApplicationSystem.AddAbilityEffect(
+        manager.AbilityLevelSystem.AddAbilityEffect(
             player, race.GetRaceAbilityTemplate());
         manager.Queue.ProcessQueue(manager);
 

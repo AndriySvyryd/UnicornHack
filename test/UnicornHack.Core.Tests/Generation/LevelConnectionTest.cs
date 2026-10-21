@@ -25,8 +25,8 @@ public class LevelConnectionTest
         var manager = game.Manager;
 
         var surfaceBranch = BranchData.Surface.Instantiate(game);
-        BranchData.Entrance.Instantiate(game);
-        BranchData.Dungeon.Instantiate(game);
+        BranchData.OuterWards.Instantiate(game);
+        BranchData.RuinedStronghold.Instantiate(game);
 
         var surfaceLevel = LevelGenerator.CreateEmpty(surfaceBranch, depth: 1, seed: 1u, manager);
         LevelGenerator.EnsureGenerated(surfaceLevel);
@@ -39,7 +39,7 @@ public class LevelConnectionTest
 
         foreach (var room in entranceLevel.Rooms)
         {
-            if ((room.Features & RoomFeatures.Exit) != 0)
+            if ((room.FeatureTags & RoomFeatures.Exit) != 0)
             {
                 continue;
             }
@@ -54,12 +54,12 @@ public class LevelConnectionTest
                 .ToList();
 
             Assert.True(sourcedInterLevel.Count == 0,
-                $"Non-exit room (features={room.Features}) at grid ({room.GridX},{room.GridY}) "
+                $"Non-exit room (features={room.FeatureTags}) at grid ({room.GridX},{room.GridY}) "
                 + $"sources inter-level connections: {string.Join(", ", sourcedInterLevel)}");
         }
 
         // The exit room still sources exactly one inter-level connection to the dungeon.
-        var exitRoom = entranceLevel.Rooms.Single(r => (r.Features & RoomFeatures.Exit) != 0);
+        var exitRoom = entranceLevel.Rooms.Single(r => (r.FeatureTags & RoomFeatures.Exit) != 0);
         var exitOutbound = exitRoom.Connections.Values
             .Select(c => c.Connection!)
             .Where(c => c.Orientation == Direction.Down
@@ -82,8 +82,8 @@ public class LevelConnectionTest
         var manager = game.Manager;
 
         var surfaceBranch = BranchData.Surface.Instantiate(game);
-        BranchData.Entrance.Instantiate(game);
-        BranchData.Dungeon.Instantiate(game);
+        BranchData.OuterWards.Instantiate(game);
+        BranchData.RuinedStronghold.Instantiate(game);
 
         var surfaceLevel = LevelGenerator.CreateEmpty(surfaceBranch, depth: 1, seed: 1u, manager);
         LevelGenerator.EnsureGenerated(surfaceLevel);
@@ -93,18 +93,18 @@ public class LevelConnectionTest
         var preCreatedRoom = surfaceConnection.TargetRoomEntity.Room!;
 
         // It carries the Entrance flag from creation, before the entrance level is generated.
-        Assert.True((preCreatedRoom.Features & RoomFeatures.Entrance) != 0);
+        Assert.True((preCreatedRoom.FeatureTags & RoomFeatures.Entrance) != 0);
 
         var entranceLevel = preCreatedRoom.Level;
         LevelGenerator.EnsureGenerated(preCreatedRoom);
 
         // The pre-created room is still the entrance after generation, and it received the
         // surface's connection (its incoming connection's target cell is resolved).
-        Assert.True((preCreatedRoom.Features & RoomFeatures.Entrance) != 0);
+        Assert.True((preCreatedRoom.FeatureTags & RoomFeatures.Entrance) != 0);
         Assert.NotNull(surfaceConnection.TargetCell);
 
         // Exactly one room on the level is the entrance — the pre-created one.
-        var entranceRooms = entranceLevel.Rooms.Where(r => (r.Features & RoomFeatures.Entrance) != 0).ToList();
+        var entranceRooms = entranceLevel.Rooms.Where(r => (r.FeatureTags & RoomFeatures.Entrance) != 0).ToList();
         Assert.Single(entranceRooms);
         Assert.Same(preCreatedRoom, entranceRooms[0]);
     }
@@ -129,7 +129,7 @@ public class LevelConnectionTest
         var manager = game.Manager;
 
         var surfaceBranch = BranchData.Surface.Instantiate(game);
-        BranchData.Entrance.Instantiate(game);
+        BranchData.OuterWards.Instantiate(game);
 
         var surfaceLevel = LevelGenerator.CreateEmpty(surfaceBranch, depth: 1, seed: 1u, manager);
         LevelGenerator.EnsureGenerated(surfaceLevel);
@@ -150,7 +150,7 @@ public class LevelConnectionTest
         Assert.NotNull(outbound.TargetCell);
         var entranceRoom = outbound.TargetRoomEntity.Room!;
         Assert.True(entranceRoom.Width > 0, "Entrance room should have allocated terrain.");
-        Assert.True((entranceRoom.Features & RoomFeatures.Entrance) != 0,
+        Assert.True((entranceRoom.FeatureTags & RoomFeatures.Entrance) != 0,
             "TargetRoomEntity should be the entrance branch's entrance room.");
         Assert.True(entranceRoom.IsValid(outbound.TargetCell!.Value),
             "TargetCell must lie inside the entrance room.");
@@ -174,8 +174,8 @@ public class LevelConnectionTest
         var manager = game.Manager;
 
         var surfaceBranch = BranchData.Surface.Instantiate(game);
-        BranchData.Entrance.Instantiate(game);
-        BranchData.Dungeon.Instantiate(game);
+        BranchData.OuterWards.Instantiate(game);
+        BranchData.RuinedStronghold.Instantiate(game);
 
         var surfaceLevel = LevelGenerator.CreateEmpty(surfaceBranch, depth: 1, seed: 1u, manager);
         LevelGenerator.EnsureGenerated(surfaceLevel);
@@ -185,18 +185,18 @@ public class LevelConnectionTest
         LevelGenerator.EnsureGenerated(entranceRoom);
 
         var entranceLevel = entranceRoom.Level;
-        var entranceExitRoom = entranceLevel.Rooms.FirstOrDefault(r => (r.Features & RoomFeatures.Exit) != 0);
+        var entranceExitRoom = entranceLevel.Rooms.FirstOrDefault(r => (r.FeatureTags & RoomFeatures.Exit) != 0);
         Assert.NotNull(entranceExitRoom);
         var dungeonRoom = entranceExitRoom.Connections.Values
             .Select(c => c.Connection!.TargetRoomEntity.Room!)
-            .FirstOrDefault(r => r.Level.Branch.Name == "dungeon");
+            .FirstOrDefault(r => r.Level.Branch.Name == BranchData.RuinedStronghold.Name);
         Assert.NotNull(dungeonRoom);
         LevelGenerator.EnsureGenerated(dungeonRoom);
 
         // After dungeon:1 generation, every '>' glyph from any dungeon:1 room targets the
         // SAME dungeon GameBranch and the SAME dungeon:2 GameLevel — never separate
         // duplicate instances per glyph.
-        var dungeonBranches = game.Branches.Where(b => b.Name == "dungeon").ToList();
+        var dungeonBranches = game.Branches.Where(b => b.Name == BranchData.RuinedStronghold.Name).ToList();
         Assert.Single(dungeonBranches);
 
         var dungeonDepth2Levels = dungeonBranches[0].Levels.Where(l => l.Depth == 2).ToList();
@@ -218,7 +218,7 @@ public class LevelConnectionTest
     {
         var game = TestHelper.CreateGame(seed: 1u);
         var manager = game.Manager;
-        var dungeon = BranchData.Dungeon.Instantiate(game);
+        var dungeon = BranchData.RuinedStronghold.Instantiate(game);
         var sourceLevel = LevelGenerator.CreateEmpty(dungeon, depth: 1, seed: 1u, manager);
         var room = LevelLayout.CreateEmptyRoom(sourceLevel, manager);
 
@@ -239,15 +239,15 @@ public class LevelConnectionTest
     {
         var game = TestHelper.CreateGame(seed: 1u);
         var manager = game.Manager;
-        var dungeon = BranchData.Dungeon.Instantiate(game);
+        var dungeon = BranchData.RuinedStronghold.Instantiate(game);
 
         // The exit room sources a connection to a fresh target level, creating a dangling
         // incoming on that level's entrance placeholder.
         var sourceLevel = LevelGenerator.CreateEmpty(dungeon, depth: 1, seed: 1u, manager);
         var exitRoom = LevelLayout.CreateEmptyRoom(sourceLevel, manager);
-        exitRoom.Features = RoomFeatures.Exit;
+        exitRoom.FeatureTags = RoomFeatures.Exit;
         var down = LevelConnection.CreateSourceConnection(
-            exitRoom, new Point(3, 0), new LevelConnection { BranchName = "dungeon", Depth = 2 });
+            exitRoom, new Point(3, 0), new LevelConnection { BranchName = BranchData.RuinedStronghold.Name, Depth = 2 });
 
         var entrancePlaceholder = down.TargetRoomEntity.Room!;
         Assert.Single(entrancePlaceholder.IncomingConnections);
@@ -270,14 +270,14 @@ public class LevelConnectionTest
     {
         var game = TestHelper.CreateGame(seed: 1u);
         var manager = game.Manager;
-        var dungeon = BranchData.Dungeon.Instantiate(game);
+        var dungeon = BranchData.RuinedStronghold.Instantiate(game);
         var sourceLevel = LevelGenerator.CreateEmpty(dungeon, depth: 1, seed: 1u, manager);
 
         var exitRoom = LevelLayout.CreateEmptyRoom(sourceLevel, manager);
-        exitRoom.Features = RoomFeatures.Exit;
+        exitRoom.FeatureTags = RoomFeatures.Exit;
         var otherRoom = LevelLayout.CreateEmptyRoom(sourceLevel, manager);
 
-        var def = new LevelConnection { BranchName = "dungeon", Depth = 2 };
+        var def = new LevelConnection { BranchName = BranchData.RuinedStronghold.Name, Depth = 2 };
 
         // The exit room sources first, creating the target level + its entrance placeholder.
         var exitConnection = LevelConnection.CreateSourceConnection(exitRoom, new Point(0, 0), def);
@@ -285,7 +285,7 @@ public class LevelConnectionTest
         var otherConnection = LevelConnection.CreateSourceConnection(otherRoom, new Point(1, 0), def);
 
         Assert.Equal(exitConnection.TargetRoomId, otherConnection.TargetRoomId);
-        Assert.True((otherConnection.TargetRoomEntity.Room!.Features & RoomFeatures.Entrance) != 0,
+        Assert.True((otherConnection.TargetRoomEntity.Room!.FeatureTags & RoomFeatures.Entrance) != 0,
             "Both connections should converge on the target level's entrance room.");
     }
 
@@ -299,7 +299,7 @@ public class LevelConnectionTest
     {
         var game = TestHelper.CreateGame(seed: 1u);
         var manager = game.Manager;
-        var dungeon = BranchData.Dungeon.Instantiate(game);
+        var dungeon = BranchData.RuinedStronghold.Instantiate(game);
 
         var sourceLevel = LevelGenerator.CreateEmpty(dungeon, depth: 1, seed: 1u, manager);
         var sourceRoom = LevelLayout.CreateEmptyRoom(sourceLevel, manager);
@@ -308,10 +308,10 @@ public class LevelConnectionTest
         var targetLevel = LevelGenerator.CreateEmpty(dungeon, depth: 2, seed: 1u, manager);
         LevelLayout.CreateEmptyRoom(targetLevel, manager);
         var entrance = LevelLayout.CreateEmptyRoom(targetLevel, manager);
-        entrance.Features = RoomFeatures.Entrance;
+        entrance.FeatureTags = RoomFeatures.Entrance;
 
         var connection = LevelConnection.CreateSourceConnection(
-            sourceRoom, new Point(0, 0), new LevelConnection { BranchName = "dungeon", Depth = 2 });
+            sourceRoom, new Point(0, 0), new LevelConnection { BranchName = BranchData.RuinedStronghold.Name, Depth = 2 });
 
         Assert.Equal(entrance.EntityId, connection.TargetRoomId);
     }
@@ -326,7 +326,7 @@ public class LevelConnectionTest
         var (_, entity, game) = CreateShortcutBranch(length: 5);
         var level = LevelGenerator.CreateEmpty(entity, depth: 1, seed: 1u, game.Manager);
         var room = LevelLayout.CreateEmptyRoom(level, game.Manager);
-        room.Features = RoomFeatures.Shortcut;
+        room.FeatureTags = RoomFeatures.Shortcut;
 
         var connection = LevelConnection.CreateSourceConnection(room, new Point(2, 2), connectionDefinition: null);
 
@@ -342,7 +342,7 @@ public class LevelConnectionTest
         var (_, entity, game) = CreateShortcutBranch(length: 5);
         var level = LevelGenerator.CreateEmpty(entity, depth: 1, seed: 1u, game.Manager);
         var room = LevelLayout.CreateEmptyRoom(level, game.Manager);
-        room.Features = RoomFeatures.Exit;
+        room.FeatureTags = RoomFeatures.Exit;
 
         var connection = LevelConnection.CreateSourceConnection(room, new Point(2, 2), connectionDefinition: null);
 
@@ -373,7 +373,7 @@ public class LevelConnectionTest
         // Depth 2 in a length-2 branch: depth + 2 = 4 runs past the end → next branch.
         var level = LevelGenerator.CreateEmpty(originEntity, depth: 2, seed: 1u, game.Manager);
         var room = LevelLayout.CreateEmptyRoom(level, game.Manager);
-        room.Features = RoomFeatures.Shortcut;
+        room.FeatureTags = RoomFeatures.Shortcut;
 
         var connection = LevelConnection.CreateSourceConnection(room, new Point(2, 2), connectionDefinition: null);
 
@@ -391,15 +391,15 @@ public class LevelConnectionTest
         var level = LevelGenerator.CreateEmpty(entity, depth: 1, seed: 1u, game.Manager);
 
         var shortcutRoom = LevelLayout.CreateEmptyRoom(level, game.Manager);
-        shortcutRoom.Features = RoomFeatures.Shortcut;
+        shortcutRoom.FeatureTags = RoomFeatures.Shortcut;
         Assert.True(NeedsConnectionProbe.Probe(shortcutRoom));
 
         var exitRoom = LevelLayout.CreateEmptyRoom(level, game.Manager);
-        exitRoom.Features = RoomFeatures.Exit;
+        exitRoom.FeatureTags = RoomFeatures.Exit;
         Assert.True(NeedsConnectionProbe.Probe(exitRoom));
 
         var plainRoom = LevelLayout.CreateEmptyRoom(level, game.Manager);
-        plainRoom.Features = RoomFeatures.Normal;
+        plainRoom.FeatureTags = RoomFeatures.Normal;
         Assert.False(NeedsConnectionProbe.Probe(plainRoom));
     }
 
@@ -417,7 +417,7 @@ public class LevelConnectionTest
 
         // depth 1 + 2 = 3 > length 1 and the branch is terminal → nowhere to skip to.
         var shortcutRoom = LevelLayout.CreateEmptyRoom(level, game.Manager);
-        shortcutRoom.Features = RoomFeatures.Shortcut;
+        shortcutRoom.FeatureTags = RoomFeatures.Shortcut;
         Assert.False(NeedsConnectionProbe.Probe(shortcutRoom));
     }
 
@@ -428,15 +428,15 @@ public class LevelConnectionTest
         var level = LevelGenerator.CreateEmpty(entity, depth: 1, seed: 1u, game.Manager);
 
         var plain = LevelLayout.CreateEmptyRoom(level, game.Manager);
-        plain.Features = RoomFeatures.Normal;
+        plain.FeatureTags = RoomFeatures.Normal;
         Assert.Null(RoomLayout.GetConnectingRoleTag(plain));
 
         var exit = LevelLayout.CreateEmptyRoom(level, game.Manager);
-        exit.Features = RoomFeatures.Exit;
+        exit.FeatureTags = RoomFeatures.Exit;
         Assert.Equal(MapFragment.FeatureTagNames[RoomFeatures.Exit], RoomLayout.GetConnectingRoleTag(exit));
 
         var shortcut = LevelLayout.CreateEmptyRoom(level, game.Manager);
-        shortcut.Features = RoomFeatures.Shortcut;
+        shortcut.FeatureTags = RoomFeatures.Shortcut;
         Assert.Equal(MapFragment.FeatureTagNames[RoomFeatures.Shortcut], RoomLayout.GetConnectingRoleTag(shortcut));
     }
 

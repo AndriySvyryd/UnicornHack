@@ -58,12 +58,6 @@ public partial class GameManager
         queue.Register<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
             AbilitiesToAffectableRelationship.Dependents.GetPropertyValueChangedMessageName(
                 nameof(AbilityComponent.Level)),
-            0);
-        queue.Register<EntityAddedMessage<GameEntity>>(
-            SkillAbilitiesSystem,
-            AbilitiesToAffectableRelationship.Dependents.GetEntityAddedMessageName(), 3);
-        queue.Register<EntityRemovedMessage<GameEntity>>(
-            SkillAbilitiesSystem,
-            AbilitiesToAffectableRelationship.Dependents.GetEntityRemovedMessageName(), 1);
+            1);
     }
 }

@@ -4,6 +4,7 @@ using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
+using UnicornHack.Systems.Features;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
@@ -58,6 +59,7 @@ public partial class GameManager :
         gameQueue.Register<DeleteEntityMessage>(this, DeleteEntityMessage.Name, order: 0);
 
         InitializeLevels(gameQueue);
+        InitializeFeatures(gameQueue);
         InitializeBeings(gameQueue);
         InitializeAbilities(gameQueue);
         InitializeActors(gameQueue);
@@ -136,6 +138,11 @@ public partial class GameManager :
         if (type == typeof(ConnectionComponent))
         {
             return CreateComponent<ConnectionComponent>(EntityComponent.Connection);
+        }
+
+        if (type == typeof(FeatureComponent))
+        {
+            return CreateComponent<FeatureComponent>(EntityComponent.Feature);
         }
 
         if (type == typeof(KnowledgeComponent))

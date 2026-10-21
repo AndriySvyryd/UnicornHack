@@ -7,6 +7,9 @@ glyph vocabulary, edge-condition syntax, transform behavior, tag system,
 current code, not aspirational. When code and this doc disagree, the code wins; please
 update the doc.
 
+For branch definitions, level graphs, population defaults and reward expressions, see
+the [Branch Authoring Guide](../Branch.md).
+
 ## 1. Fragment kinds
 
 Three concrete `MapFragment` subclasses live under [src/UnicornHack.Core/Generation/Map/](.):
@@ -291,7 +294,7 @@ candidates.
 
 | Token | Type | Source |
 |---|---|---|
-| `$branch` | `string` | `room.Level.Branch.Name` (e.g. `"dungeon"`, `"surface"`, `"entrance"`). |
+| `$branch` | `string` | `room.Level.Branch.Name` (e.g. `"ruined stronghold"`, `"surface"`, `"outer wards"`). |
 | `$depth` | `int` | `room.Level.Depth`. |
 | `$instances` | `int` | Number of times this source fragment (across all variants) has been placed on this level. From `GenerationStats.FragmentInstancesByName[SourceName]`. |
 | `$tagInstances` | `IReadOnlyDictionary<string,int>` | Per-tag placement count on this level. Use indexer: `$tagInstances["altar"]`. Missing keys return `0`. |
@@ -302,6 +305,8 @@ candidates.
 - Arithmetic: `+ - * / %`.
 - Comparison and equality: `== != < <= > >=`.
 - Boolean: `&& || !`.
+- Feature test: `HasFeature('Boss')` uses the implicit room-feature mask;
+  `HasFeature($roomFeatures, 'Boss')` supplies it explicitly.
 - Ternary: `cond ? a : b`.
 - `Infinity` for "always pick".
 - Functions: `Min(a, b, …)`, `Max(a, b, …)`. Other identifiers resolve through the
@@ -312,7 +317,8 @@ candidates.
 
 ```csharp
 GenerationWeight = "$branch == 'surface' ? Infinity : 0"     // SurfaceRoom-only
-GenerationWeight = "$branch == 'dungeon' || $branch == 'entrance' ? 1 : 0"
+GenerationWeight = "$branch == 'ruined stronghold' || $branch == 'outer wards' ? 1 : 0"
+GenerationWeight = "$branch == 'ruined stronghold' && $depth == 3 && $globalInstances == 0 ? 1 : 0"
 GenerationWeight = "$instances == 0 ? 5 : 0"                  // exactly once per level
 GenerationWeight = "$depth > 5 && $tagInstances[\"altar\"] == 0 ? 3 : 1"
 ```
@@ -320,6 +326,14 @@ GenerationWeight = "$depth > 5 && $tagInstances[\"altar\"] == 0 ? 3 : 1"
 If `GenerationWeight` is `null` or absent, the implicit weight is `1`.
 
 ## 7. Other fragment properties
+
+`Creatures` binds authored glyphs to exact creature template names, for example
+`new Dictionary<char, string> { ['B'] = "Cerberus" }`. Each bound cell becomes ordinary floor and
+an exact spawn anchor. Unlike `%`, this path does not perform weighted creature selection, so a boss
+can retain `GenerationWeight = "0"`. Occupancy, arrival protection, named uniqueness and population caps
+still apply. Authored anchors inside arrival safety zones are relocated to the nearest free,
+walkable chunk cell outside the zone before spawning, retaining the authored identity.
+If no legal cell exists, exact placement fails rather than selecting a random replacement.
 
 These are on `MapFragment` unless otherwise noted.
 
@@ -365,5 +379,5 @@ When adding or editing a fragment:
 6. Set `NoRandomDoorways = true` if you've authored exactly the doorways you want (or
    none).
 7. Set `NoOverwrite = true` if exact wall thickness matters.
-8. Test with `dotnet test test\UnicornHack.Core.Tests` — the fragment-loader and weight
+8. Test with `dotnet test --project test/UnicornHack.Core.Tests` — the fragment-loader and weight
    tests catch most authoring errors at load.

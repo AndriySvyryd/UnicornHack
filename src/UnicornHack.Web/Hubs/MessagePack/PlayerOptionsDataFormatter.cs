@@ -1,5 +1,6 @@
 using MessagePack;
 using UnicornHack.Hubs.ChangeTracking;
+using UnicornHack.Systems.Levels;
 namespace UnicornHack.Hubs.MessagePack;
 
 public sealed class PlayerOptionsDataFormatter : FixedArrayFormatter<PlayerOptionsData>
@@ -10,7 +11,7 @@ public sealed class PlayerOptionsDataFormatter : FixedArrayFormatter<PlayerOptio
     protected override void SerializeFields(
         ref MessagePackWriter writer, PlayerOptionsData value, MessagePackSerializerOptions options)
     {
-        writer.Write(value.Choice);
+        writer.Write((int)value.Choice);
         writer.Write(value.Action);
         writer.Write(value.Title);
         options.Resolver.GetFormatterWithVerify<List<PlayerOptionData>>()
@@ -24,7 +25,7 @@ public sealed class PlayerOptionsDataFormatter : FixedArrayFormatter<PlayerOptio
         switch (field)
         {
             case 0:
-                value.Choice = reader.ReadString() ?? "";
+                value.Choice = (RewardType)reader.ReadInt32();
                 break;
             case 1:
                 value.Action = reader.ReadString();

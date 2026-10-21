@@ -6,11 +6,22 @@ public static partial class CreatureData
     {
         Name = "Kraken",
         SpeciesClass = SpeciesClass.Aquatic,
+        MovementDelay = 300,
+        TurningDelay = 300,
+        Size = 16,
+        Weight = 2000,
+        PerceptionBonus = 1,
+        SpeedBonus = 1,
+        Armor = 2,
+        UpperExtremities = ExtremityType.None,
+        LowerExtremities = ExtremityType.None,
+        RespirationType = RespirationType.Water,
+        LocomotionType = LocomotionType.Swimming,
         Abilities = new List<Ability>
         {
             new Ability
             {
-                Name = "Kraken ability #1",
+                Name = "first tentacle",
                 Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
@@ -24,7 +35,7 @@ public static partial class CreatureData
             },
             new Ability
             {
-                Name = "Kraken ability #2",
+                Name = "second tentacle",
                 Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
@@ -38,7 +49,7 @@ public static partial class CreatureData
             },
             new Ability
             {
-                Name = "Kraken ability #3",
+                Name = "beak bite",
                 Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
@@ -52,7 +63,7 @@ public static partial class CreatureData
             },
             new Ability
             {
-                Name = "Kraken ability #4",
+                Name = "binding coils",
                 Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
@@ -65,20 +76,10 @@ public static partial class CreatureData
                 Effects = new List<Effect> { new Bind() }
             }
         },
+        EnglishDescription = "An immense, soft-bodied creature with a rounded mantle and a cluster of long, muscular tentacles. Pale suckers line their undersides, and large, glassy eyes gleam above the curling limbs.",
         InitialLevel = 20,
         GenerationWeight = "0",
-        GenerationFlags = CreatureGenerationFlags.NonPolymorphable,
-        Behavior = AIBehavior.Roaming,
-        Size = 16,
-        Weight = 2000,
-        MovementDelay = 300,
-        TurningDelay = 300,
-        PerceptionBonus = 1,
-        SpeedBonus = 1,
-        Armor = 2,
-        UpperExtremities = ExtremityType.None,
-        LowerExtremities = ExtremityType.None,
-        RespirationType = RespirationType.Water,
-        LocomotionType = LocomotionType.Swimming
+        GenerationFlags = CreatureGenerationFlags.NonGenocidable | CreatureGenerationFlags.NonPolymorphable | CreatureGenerationFlags.BranchBoss,
+        Behavior = AIBehavior.Roaming
     };
 }

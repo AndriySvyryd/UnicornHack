@@ -6,11 +6,23 @@ public static partial class CreatureData
     {
         Name = "shark",
         SpeciesClass = SpeciesClass.Aquatic,
+        Size = 8,
+        Weight = 1000,
+        PerceptionBonus = -6,
+        MightBonus = -6,
+        SpeedBonus = -6,
+        FocusBonus = -6,
+        Armor = 4,
+        UpperExtremities = ExtremityType.None,
+        LowerExtremities = ExtremityType.None,
+        RespirationType = RespirationType.Water,
+        LocomotionType = LocomotionType.Swimming,
+        SlotCapacity = 0,
         Abilities = new List<Ability>
         {
             new Ability
             {
-                Name = "shark ability #1",
+                Name = "bloodletting bite",
                 Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
@@ -27,19 +39,9 @@ public static partial class CreatureData
                 }
             }
         },
+        EnglishDescription = "A streamlined fish with a grey back, pale belly and a tall, triangular dorsal fin. Gill slits stripe the sides of its head, and rows of pointed teeth edge its underslung mouth.",
         InitialLevel = 7,
-        GenerationWeight = "$branch == 'entrance' || $branch == 'dungeon' ? 0 : 1.0",
-        Size = 8,
-        Weight = 1000,
-        PerceptionBonus = -6,
-        MightBonus = -6,
-        SpeedBonus = -6,
-        FocusBonus = -6,
-        Armor = 4,
-        UpperExtremities = ExtremityType.None,
-        LowerExtremities = ExtremityType.None,
-        RespirationType = RespirationType.Water,
-        LocomotionType = LocomotionType.Swimming,
-        SlotCapacity = 0
+        GenerationWeight = "0",
+        Behavior = AIBehavior.Stalking
     };
 }
