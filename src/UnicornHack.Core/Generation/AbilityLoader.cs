@@ -35,13 +35,17 @@ public class AbilityLoader
         => type switch
         {
             AbilityType.Skill => "Skills",
-            AbilityType.Buff or AbilityType.Debuff => "Status",
-            AbilityType.Boon or AbilityType.Curse => "Boons",
+            AbilityType.Buff => "Buffs",
+            AbilityType.Debuff => "Debuffs",
+            AbilityType.Boon => "Boons",
+            AbilityType.Curse => "Curses",
             AbilityType.DefaultMeleeAttack or AbilityType.DefaultRangedAttack
                 or AbilityType.MeleeAttack or AbilityType.RangedAttack => "Attacks",
             AbilityType.MeleeSpell or AbilityType.RangedSpell => "Spells",
-            AbilityType.Trait or AbilityType.Flaw => "Traits",
-            AbilityType.Feat or AbilityType.Fault => "Feats",
+            AbilityType.Trait => "Traits",
+            AbilityType.Flaw => "Flaws",
+            AbilityType.Feat => "Feats",
+            AbilityType.Fault => "Faults",
             AbilityType.Miracle => "Miracles",
             AbilityType.Faith => "Deities",
             AbilityType.Default or AbilityType.Innate

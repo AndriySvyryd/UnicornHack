@@ -110,7 +110,7 @@ public abstract class ActorSystemBase
                 {
                     Span<Direction> directions = stackalloc Direction[8];
                     var directionCount = manager.TravelSystem.GetPossibleMovementDirections(
-                        position, safe: true, directions);
+                        position, directions);
                     for (var i = 0; i < directionCount; i++)
                     {
                         var direction = directions[i];
@@ -457,11 +457,14 @@ public abstract class ActorSystemBase
         return ActivateAbility(abilityEntity, actorEntity, targetCell.Value, targetActor, manager);
     }
 
-    private static Point? ResolveAbilityTargetCell(
+    internal static Point? ResolveAbilityTargetCell(
         GameEntity actorEntity, int? targetId, GameManager manager)
-        => targetId is < 0
-            ? manager.FindEntity(-targetId.Value)?.Position?.Cell
-            : actorEntity.Position!.Cell!.Value.Translate(Vector.Unpack(targetId));
+        => targetId switch
+        {
+            null => actorEntity.Position?.Cell,
+            < 0 => manager.FindEntity(-targetId.Value)?.Position?.Cell,
+            _ => actorEntity.Position!.Cell!.Value.Translate(Vector.Unpack(targetId))
+        };
 
     public virtual GameEntity? GetDefaultAttack(GameEntity actorEntity, bool melee, GameManager manager)
         => manager.AbilitySlottingSystem.GetAbility(
@@ -631,7 +634,7 @@ public abstract class ActorSystemBase
         var currentDistance = currentCell.DistanceTo(sourceCell);
         Span<Direction> directions = stackalloc Direction[8];
         var directionCount = manager.TravelSystem.GetPossibleMovementDirections(
-            position, safe: true, directions);
+            position, directions);
         Span<Direction> escaping = stackalloc Direction[8];
         Span<Direction> nonApproaching = stackalloc Direction[8];
         var escapingCount = 0;

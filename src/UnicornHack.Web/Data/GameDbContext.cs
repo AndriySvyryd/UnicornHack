@@ -446,6 +446,7 @@ public class GameDbContext : DbContext, IRepository
         modelBuilder.Entity<GameEntity>(eb =>
         {
             eb.Ignore(e => e.Manager);
+            eb.Ignore(e => e.ComponentMask);
             eb.Property("_referenceCount");
             eb.HasKey(e => new { e.GameId, e.Id });
             eb.HasOne(e => e.Ability).WithOne(c => c.Entity)
@@ -487,6 +488,7 @@ public class GameDbContext : DbContext, IRepository
 
         modelBuilder.Entity<AIComponent>(eb =>
         {
+            eb.Ignore(c => c.ThreatenedCells);
             eb.HasKey(c => new { c.GameId, c.EntityId });
         });
 
@@ -667,9 +669,11 @@ public class GameDbContext : DbContext, IRepository
             eb.Ignore(l => l.Items);
             eb.Ignore(l => l.Connections);
             eb.Ignore(l => l.Features);
+            eb.Ignore(l => l.CellThreats);
             eb.Ignore(l => l.IncomingConnections);
             eb.Ignore(l => l.KnownActors);
             eb.Ignore(l => l.KnownItems);
+            eb.Ignore(l => l.KnownFeatures);
             eb.Ignore(l => l.KnownConnections);
             eb.Ignore(l => l.IndexToPoint);
             eb.Ignore(l => l.PointToIndex);
@@ -698,16 +702,11 @@ public class GameDbContext : DbContext, IRepository
         modelBuilder.Entity<FeatureComponent>(eb =>
         {
             eb.HasKey(feature => new { feature.GameId, feature.EntityId });
-            eb.OwnsMany(feature => feature.Rewards, reward =>
-            {
-                reward.ToTable("FeatureRewards");
-                reward.WithOwner().HasForeignKey("GameId", nameof(Reward.FeatureId));
-                reward.HasKey("GameId", nameof(Reward.FeatureId), nameof(Reward.Id));
-                reward.Property(value => value.Id).ValueGeneratedNever();
-                reward.Property(value => value.Title).IsRequired();
-                reward.Property(value => value.Type).IsRequired();
-                reward.Property(value => value.Names).IsRequired();
-            });
+            eb.Ignore(feature => feature.Template);
+            eb.Ignore(feature => feature.BlocksMovement);
+            eb.Ignore(feature => feature.ThreatenedCells);
+            eb.OwnsOne(feature => feature.RewardRandom);
+            eb.Navigation(feature => feature.RewardRandom).IsRequired();
         });
 
         modelBuilder.Entity<PositionComponent>(eb =>

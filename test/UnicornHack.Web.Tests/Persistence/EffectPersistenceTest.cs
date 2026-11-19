@@ -623,7 +623,7 @@ public class EffectPersistenceTest
 
         using var persisted = PersistedGame.CreateAndSave();
         Assert.NotNull(persisted.PlayerEntity);
-        Assert.Empty(persisted.Context.FeatureComponents.Include(feature => feature.Rewards).ToList());
+        Assert.Empty(persisted.Context.FeatureComponents.ToList());
     }
 
     [Fact]
@@ -673,7 +673,12 @@ public class EffectPersistenceTest
             }
 
             expectedCount++;
-            Assert.Same(entity, manager.TemporalEntitiesIndex[(tick.Value, entity.Id)]);
+            var componentId = entity.ActiveEffects?.NextEffectTick == tick ? EntityComponent.ActiveEffects
+                : entity.AI?.NextActionTick == tick ? EntityComponent.AI
+                : entity.Player?.NextActionTick == tick ? EntityComponent.Player
+                : entity.Feature?.NextActionTick == tick ? EntityComponent.Feature
+                : EntityComponent.Ability;
+            Assert.Same(entity, manager.TemporalEntitiesIndex[(tick.Value, (int)componentId, entity.Id)]);
         }
 
         Assert.Equal(expectedCount, manager.TemporalEntitiesIndex.Count);
@@ -840,6 +845,8 @@ public class EffectPersistenceTest
         persisted.Context.SaveChanges();
 
         var effects = player.ActiveEffects!;
+        var componentMask = player.ComponentMask;
+        Assert.Null(persisted.Context.Model.FindEntityType(typeof(GameEntity))!.FindProperty(nameof(GameEntity.ComponentMask)));
 
         var propertyEffectCount = effects.PropertyEffects.Count;
         var propertyEffectIds = effects.PropertyEffects.Select(effect => effect.InstanceId).ToArray();
@@ -880,6 +887,14 @@ public class EffectPersistenceTest
 
         var reloadedPlayer = persisted.PlayerEntity;
         var reloadedEffects = reloadedPlayer.ActiveEffects!;
+
+        Assert.Equal(componentMask, reloadedPlayer.ComponentMask);
+        foreach (var entity in persisted.Game.Manager.GetEntities())
+        {
+            uint expectedMask = 0;
+            entity.ForEachComponent(0, (_, componentId, _) => expectedMask |= 1u << componentId);
+            Assert.Equal(expectedMask, entity.ComponentMask);
+        }
 
         Assert.Equal(propertyEffectCount, reloadedEffects.PropertyEffects.Count);
         Assert.Equal(propertyEffectIds, reloadedEffects.PropertyEffects.Select(effect => effect.InstanceId));

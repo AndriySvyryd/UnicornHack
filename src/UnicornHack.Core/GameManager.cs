@@ -4,10 +4,10 @@ using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
-using UnicornHack.Systems.Features;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
+using UnicornHack.Systems.Features;
 
 namespace UnicornHack;
 
@@ -36,20 +36,22 @@ public partial class GameManager :
 
     public new SequentialMessageQueue<GameEntity> Queue => (SequentialMessageQueue<GameEntity>)base.Queue;
 
+    [ThreadStatic]
+    private static ListObjectPool<List<(Point, byte)>>? _pointByteListPool;
+
     public ListObjectPool<List<(Point, byte)>> PointByteListArrayPool
-    {
-        get;
-    } = new(() => new List<(Point, byte)>(), initialSize: 4, maxSize: 16, preallocatedCount: 0);
+        => _pointByteListPool ??= new(static () => new List<(Point, byte)>(), initialSize: 4, maxSize: 16, preallocatedCount: 0);
+
+    [ThreadStatic]
+    private static ListObjectPool<List<(int, byte)>>? _intByteListPool;
 
     public ListObjectPool<List<(int, byte)>> IntByteListArrayPool
-    {
-        get;
-    } = new(() => new List<(int, byte)>(), initialSize: 4, maxSize: 16, preallocatedCount: 0);
+        => _intByteListPool ??= new(static () => new List<(int, byte)>(), initialSize: 4, maxSize: 16, preallocatedCount: 0);
 
+    [ThreadStatic]
+    private static ListObjectPool<List<(GameEntity, byte)>>? _gameEntityByteListPool;
     public ListObjectPool<List<(GameEntity, byte)>> GameEntityByteListArrayPool
-    {
-        get;
-    } = new(() => new List<(GameEntity, byte)>(), initialSize: 4, maxSize: 16, preallocatedCount: 0);
+        => _gameEntityByteListPool ??= new(static () => new List<(GameEntity, byte)>(), initialSize: 4, maxSize: 16, preallocatedCount: 0);
 
     protected override void InitializeSystems(IMessageQueue queue)
     {

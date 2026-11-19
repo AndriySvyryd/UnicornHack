@@ -13,45 +13,45 @@ public partial class GameManager
     public EntityGroup<GameEntity> Players
     {
         get;
-        private set;
+        set;
     } = null!;
 
     public EntityGroup<GameEntity> RoomActors
     {
         get;
-        private set;
+        set;
     } = null!;
 
     public LookupEntityRelationship<GameEntity, Point, SortedDictionary<Point, GameEntity>>
         RoomActorsToRoomCellRelationship
     {
         get;
-        private set;
+        set;
     } = null!;
 
     public SkipLookupEntityRelationship<GameEntity, int, SortedDictionary<int, GameEntity>>
         SlottedAbilitiesToRoomActorsRelationship
     {
         get;
-        private set;
+        set;
     } = null!;
 
     public PlayerSystem PlayerSystem
     {
         get;
-        private set;
+        set;
     } = null!;
 
     public PlayerChoiceSystem PlayerChoiceSystem
     {
         get;
-        private set;
+        set;
     } = null!;
 
     public AISystem AISystem
     {
         get;
-        private set;
+        set;
     } = null!;
 
     private void InitializeActors(SequentialMessageQueue<GameEntity> queue)
@@ -65,6 +65,7 @@ public partial class GameManager
         RoomActors = CreateGroup(nameof(RoomActors),
             new EntityMatcher<GameEntity>().AllOf((int)EntityComponent.Position, (int)EntityComponent.Being)
                 .AnyOf((int)EntityComponent.AI, (int)EntityComponent.Player), capacity: 256);
+            RoomActors.AddListener(CellThreatTracker);
 
         RoomActorsToRoomCellRelationship = new(
             nameof(RoomActorsToRoomCellRelationship),
@@ -77,6 +78,7 @@ public partial class GameManager
             (actorEntity, _) => actorEntity.RemoveComponent(EntityComponent.Position),
             roomEntity => (SortedDictionary<Point, GameEntity>)roomEntity.Room!.Actors,
             keepDependentAlive: true);
+        RoomActorsToRoomCellRelationship.AddDependentsListener(CellThreatTracker);
 
         AISystem = new AISystem();
         queue.Register<PerformActionMessage>(AISystem, PerformActionMessage.AIName, 0);

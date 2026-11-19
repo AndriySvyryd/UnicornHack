@@ -8,6 +8,7 @@ public class RoomChangeBuilder
     private readonly ActorChangeBuilder _actorBuilder = new();
     private readonly ItemChangeBuilder _itemBuilder = new();
     private readonly ConnectionChangeBuilder _connectionBuilder = new();
+    private readonly FeatureChangeBuilder _featureBuilder = new();
     private readonly EventBuilder _eventBuilder = new();
 
     // Item, connection, and terrain DTOs are observer-independent for players sharing a room.
@@ -34,7 +35,7 @@ public class RoomChangeBuilder
         var hasItemChanges = _itemBuilder.HasChangesForRoom(room.EntityId, room.Entity.Game.Services);
         var hasConnectionChanges = _connectionBuilder.HasChangesForRoom(room.EntityId);
 
-        return hasActorChanges || hasItemChanges || hasConnectionChanges
+        return hasActorChanges || hasItemChanges || hasConnectionChanges || _featureBuilder.HasChangesForRoom(room)
                || TerrainChangeBuilder.HasChanges(room);
     }
 
@@ -98,6 +99,13 @@ public class RoomChangeBuilder
                 hasCommonChanges = true;
             }
 
+            var features = _featureBuilder.BuildChanges(room);
+            if (features != null)
+            {
+                commonChange.Features = features;
+                hasCommonChanges = true;
+            }
+
             _serializedCommonRoom = hasCommonChanges ? commonChange : null;
             _commonRoomSerialized = true;
         }
@@ -117,6 +125,7 @@ public class RoomChangeBuilder
         _actorBuilder.Reset();
         _itemBuilder.Reset();
         _connectionBuilder.Reset();
+        _featureBuilder.Reset();
         _eventBuilder.Reset();
         _serializedCommonRoom = null;
         _commonRoomSerialized = false;
@@ -208,6 +217,8 @@ public class RoomChangeBuilder
             ChangedProperties = null,
             Items = items,
             Connections = connections,
+            Features = room.KnownFeatures.Values.ToDictionary(feature => feature.Knowledge!.KnownEntityId,
+                feature => FeatureChangeBuilder.SerializeFeature(feature.Knowledge!.KnownEntity)),
             BranchName = room.Level.BranchName,
             Depth = room.Level.Depth,
             Width = room.Width,
@@ -228,6 +239,7 @@ public class RoomChangeBuilder
             Actors = actors,
             Items = common.Items,
             Connections = common.Connections,
+            Features = common.Features,
             LevelMap = common.LevelMap,
             LevelMapChanges = common.LevelMapChanges,
             BranchName = common.BranchName,
@@ -246,6 +258,7 @@ public class RoomChangeBuilder
         _actorBuilder.RegisterOnGroups(manager);
         _itemBuilder.RegisterOnGroups(manager);
         _connectionBuilder.RegisterOnGroups(manager);
+        _featureBuilder.RegisterOnGroups(manager);
         _eventBuilder.RegisterOnGroups(manager);
 
         foreach (var playerEntity in manager.Players)
@@ -270,6 +283,7 @@ public class RoomChangeBuilder
         _actorBuilder.ResetProjection(playerEntity);
         _itemBuilder.ResetProjection(playerEntity);
         _connectionBuilder.ResetProjection(playerEntity);
+        _featureBuilder.ResetProjection(playerEntity);
         foreach (var existing in PlayerBuilders)
         {
             if (existing.PlayerEntityId == playerEntity.Id)
@@ -289,6 +303,7 @@ public class RoomChangeBuilder
         _actorBuilder.ResetProjection(playerEntity);
         _itemBuilder.ResetProjection(playerEntity);
         _connectionBuilder.ResetProjection(playerEntity);
+        _featureBuilder.ResetProjection(playerEntity);
     }
 
     public void UnregisterFromGroups(GameManager manager)
@@ -296,6 +311,7 @@ public class RoomChangeBuilder
         _actorBuilder.UnregisterFromGroups(manager);
         _itemBuilder.UnregisterFromGroups(manager);
         _connectionBuilder.UnregisterFromGroups(manager);
+        _featureBuilder.UnregisterFromGroups(manager);
 
         foreach (var builder in PlayerBuilders)
         {

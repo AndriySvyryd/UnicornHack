@@ -96,7 +96,9 @@ public static class AsymmetricFragmentData
     public static readonly DefiningMapFragment Fragment = new()
     {
         Name = "Asymmetric",
-        Map = "ABC\nDEF",
+        Map = @"
+    ABC
+    DEF",
         NoRandomDoorways = true
     };
 }
@@ -106,7 +108,9 @@ public static class NoTransformFragmentData
     public static readonly DefiningMapFragment Fragment = new()
     {
         Name = "Fixed",
-        Map = "ABC\nDEF",
+        Map = @"
+ABC
+DEF",
         NoTransform = true,
         NoRandomDoorways = true
     };
@@ -117,7 +121,9 @@ public static class NoMirrorFragmentData
     public static readonly DefiningMapFragment Fragment = new()
     {
         Name = "RotatableOnly",
-        Map = "ABC\nDEF",
+        Map = @"
+ABC
+DEF",
         NoMirror = true,
         NoRandomDoorways = true
     };
@@ -128,7 +134,9 @@ public static class WeightedFragmentData
     public static readonly DefiningMapFragment Fragment = new()
     {
         Name = "Weighted",
-        Map = "ABC\nDEF",
+        Map = @"
+ABC
+DEF",
         GenerationWeight = "10",
         NoRandomDoorways = true
     };

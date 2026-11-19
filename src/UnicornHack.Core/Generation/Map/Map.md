@@ -15,7 +15,7 @@ the [Branch Authoring Guide](../Branch.md).
 Three concrete `MapFragment` subclasses live under [src/UnicornHack.Core/Generation/Map/](.):
 
 | Kind | File | Used for |
-|---|---|---|
+| --- | --- | --- |
 | `NormalMapFragment` | [NormalMapFragment.cs](NormalMapFragment.cs) | Standard chunks placed by a `RoomLayout` to fill a room's lots. |
 | `ConnectingMapFragment` | [ConnectingMapFragment.cs](ConnectingMapFragment.cs) | Chunks that carry a `LevelConnection` (stairs / inter-room exits). Anonymous connection injected by `BuildChunk` when `Connections` is empty. |
 | `DefiningMapFragment` | [DefiningMapFragment.cs](DefiningMapFragment.cs) | Whole-room template that overrides branch-level defaults (`RoomWidth/Height`, `CreatureGenerator`, `DefaultTerrain`, …). One per room. |
@@ -39,7 +39,7 @@ These commit a `MapFeature` to the terrain when the chunk is placed. The mapping
 `MapFragment.GlyphToFeature` and the `Write` switch.
 
 | Glyph | `MapFeature` | Notes |
-|---|---|---|
+| --- | --- | --- |
 | ` ` (space) | none — no-op | Used for row padding and intentional outside. |
 | `.` | `StoneFloor` | Plain interior floor. |
 | `,` | `RockFloor` | Alternate floor (visually distinct, walkable). |
@@ -47,7 +47,7 @@ These commit a `MapFeature` to the terrain when the chunk is placed. The mapping
 | `A` | `StoneArchway` | Walkable wall replacement; counts as perimeter. |
 | `~` | `Pool` | Authored pool tile **inside** the payload. At the four payload corners `~` has a different meaning (see §3). |
 | `+` | doorway candidate | Perimeter doorway. Counted into `PossibleDoorwayCount`. Auto-emits `door-n/s/e/w` tags by edge. |
-| `^` | trap point | Recorded into `Chunk.TrapPoints` (materialization deferred). Auto-tag `trap`. |
+| `^` | trap point | Materialized as random trap. Auto-tag `trap`. |
 | `<` | connection | Connection up (entrance/up stairs). Picks a `LevelConnection` whose `Glyph == '<'`, or an anonymous one when none authored. Auto-tag `entrance`. |
 | `>` | connection | Connection down (exit/down stairs). Auto-tag `exit` (suppressed when the fragment is authored with the `shortcut` role tag — see §5). |
 | `%` | creature point | Recorded into `Chunk.CreaturePoints` so `CreatureGenerator` spawns a difficulty-appropriate creature here. |
@@ -56,11 +56,10 @@ These commit a `MapFeature` to the terrain when the chunk is placed. The mapping
 ### 2.2 Feature glyphs
 
 `MapFragment.FeatureGlyphs` maps each glyph to a `RoomFeatures` bit. The underlying tile
-resolves to the feature's `MapFeature` (see `RoomFeatureToMapFeature`); `Chunk.FeaturePoints`
-records the binding so room finalization can wire up entity behavior later.
+is ordinary stone floor and a feature entity will be placed on it.
 
 | Glyph | `RoomFeatures` | Generic tag | Specific tag |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `_` | `DeityAltar` | `altar` | `deity-altar` |
 | `\` | `MajorShrine` | `shrine` | `major-shrine` |
 | `/` | `MinorShrine` | `shrine` | `minor-shrine` |
@@ -128,7 +127,7 @@ After `EnsureInitialized`, the parsed conditions live in the four
 Inside a conditional row/column each cell uses one of these symbols:
 
 | Symbol | `EdgeConditionKind` | Meaning (constraint on the cell *outside* the payload, one step beyond this edge) |
-|---|---|---|
+| --- | --- | --- |
 | ` ` (space) | `Default` | No constraint. |
 | `S` | *resolved at parse time* | Mirror condition: replaced during parsing with the tile-specific `EdgeConditionKind` that matches the payload's adjacent edge-tile feature (e.g. `S` next to a `.` becomes `StoneFloor`; next to a `#` becomes `StoneWall`). The adjacent payload glyph must have a concrete `MapFeature` — a doorway-candidate / wildcard / trap / creature / padding glyph throws at load. |
 | `F` | `Filled` | Neighbor cell must already be a non-`Default` tile (anything previously written). |
@@ -196,7 +195,7 @@ which `MemberwiseClone`s the source and rewrites its byte map, payload area, con
 edges, and per-cell edge condition arrays.
 
 | Flag | Effect |
-|---|---|
+| --- | --- |
 | `NoMirror` | Skip the 4 reflections; keep the 4 pure rotations only. |
 | `NoTurnOver` | The payload has full C4 rotational symmetry; keep identity + one flip only. |
 | `NoTransform` | No variants at all; keep only the identity. Implies the other two. |
@@ -293,7 +292,7 @@ candidates.
 ### 6.1 Parameters
 
 | Token | Type | Source |
-|---|---|---|
+| --- | --- | --- |
 | `$branch` | `string` | `room.Level.Branch.Name` (e.g. `"ruined stronghold"`, `"surface"`, `"outer wards"`). |
 | `$depth` | `int` | `room.Level.Depth`. |
 | `$instances` | `int` | Number of times this source fragment (across all variants) has been placed on this level. From `GenerationStats.FragmentInstancesByName[SourceName]`. |
@@ -338,13 +337,13 @@ If no legal cell exists, exact placement fails rather than selecting a random re
 These are on `MapFragment` unless otherwise noted.
 
 | Property | Default | Use |
-|---|---|---|
+| --- | --- | --- |
 | `Name` | required | Unique identifier across loaders of the same kind. |
 | `Map` | `""` | Glyph grid (see §2). Empty = dynamic fragment; requires `DynamicMap`. |
 | `DynamicMap` | `null` | Dynamic-shape provider (e.g. `RectangleMap { MinSize = ... }`). |
 | `Connections` (on `ConnectingMapFragment`) | empty | `LevelConnection` definitions matched to `<` / `>` glyphs by `Glyph`. Empty list ⇒ anonymous connection injected by `BuildChunk`. |
 | `NoRandomDoorways` | `false` | When `true`, no `?`-fallback doorways are added — only authored `+` glyphs count. Set this when the fragment authors doorways (or chooses not to have any). |
-| `NoMirror` / `NoTurnOver` / `NoTransform` / `NoOverwrite` | `false` | See §4 and §6 below. |
+| `NoMirror` / `NoTurnOver` / `NoTransform` / `NoOverwrite` | `false` | See §4 and §7.1. |
 | `RoomWidth` / `RoomHeight` / `CreatureGenerator` / `ItemGenerator` / `DefaultTerrain` / `DefaultPathTerrain` (on `DefiningMapFragment`) | `null` | Per-room overrides of the branch defaults. `null` = inherit. |
 
 ### 7.1 `NoOverwrite`
@@ -365,17 +364,9 @@ When adding or editing a fragment:
 2. Pick glyphs from §2.1 / §2.2 only — anything else needs an `Annotations` entry or
    it'll be parsed as `predefinedPoints` (creature/entity placeholder; rarely what you
    want).
-3. If you use a conditional edge (`~`-corner), every cell in that edge row/column must be
-   one of the symbols in §3.1 — feature glyphs in an edge row throw at load time. An
-   `S` edge cell additionally requires the adjacent payload tile to be a concrete-feature
-   glyph (terrain or a feature with a `MapFeature` mapping); placing `S` next to a
-   doorway-candidate / wildcard / trap / creature / padding glyph throws.
-4. Decide transform flags. Asymmetric → leave default (full D4). Reflection-symmetric →
-   `NoMirror`. C4-symmetric → `NoTurnOver`. Hand-tuned single variant → `NoTransform`.
-5. Audit tags. Auto-tags cover size, content glyphs, and (per-variant) `door-*`. Add the
-   canonical non-placeable feature tag (`secret` / `cursed` / `challenge` / `boss`) only
-   when the fragment is built for that room kind. Add `!{feature}` opt-outs where the
-   fragment must never appear.
+3. Validate conditional-edge symbols and `S` adjacency as described in §3.1.
+4. Choose transform flags based on symmetry and desired variants (§4).
+5. Review authored tags and opt-outs against the rules in §5.
 6. Set `NoRandomDoorways = true` if you've authored exactly the doorways you want (or
    none).
 7. Set `NoOverwrite = true` if exact wall thickness matters.

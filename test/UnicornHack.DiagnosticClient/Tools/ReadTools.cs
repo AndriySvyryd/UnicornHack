@@ -162,6 +162,32 @@ public sealed class ReadTools
         }
     }
 
+    [McpServerTool, Description("Feature entities in the current room: id, name, cell, destroyed, perceived, cooldown, next action and affected cells.")]
+    public string get_features()
+    {
+        lock (_store.Sync)
+        {
+            var player = _store.Player;
+            if (player?.Room?.Features is not { } features)
+            {
+                return "(no feature data)";
+            }
+
+            var result = new StringBuilder("id\tname\tx\ty\tdestroyed\tperceived\tcooldown\tnext\taction\tcells\n");
+            foreach (var (id, feature) in features.OrderBy(pair => pair.Key))
+            {
+                result.Append(id).Append('\t').Append(feature.Name)
+                    .Append('\t').Append(feature.LevelX).Append('\t').Append(feature.LevelY)
+                    .Append('\t').Append(feature.Destroyed)
+                    .Append('\t').Append(feature.IsCurrentlyPerceived)
+                    .Append('\t').Append(feature.CooldownTick).Append('\t').Append(feature.NextActionTick)
+                    .Append('\t').Append(feature.NextActions?.FirstOrDefault()?.Name ?? "-")
+                    .Append('\t').AppendJoin(',', feature.AffectedCells).AppendLine();
+            }
+            return result.ToString();
+        }
+    }
+
     [McpServerTool,
         Description("List the player's abilities. Columns: id name slot activation cooldown_tick cooldown_xp_left targeting accumulator.")]
     public string get_abilities(bool only_slotted = false)

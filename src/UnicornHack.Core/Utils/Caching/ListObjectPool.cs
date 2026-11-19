@@ -9,6 +9,7 @@ public class ListObjectPool<T> : IObjectPool
     private readonly T?[] _items;
     private readonly Func<T> _factory;
     private readonly int _preallocatedCount;
+    private readonly int _threadId = Environment.CurrentManagedThreadId;
     private int _head;
     private int _tail;
     private int _count;
@@ -23,6 +24,9 @@ public class ListObjectPool<T> : IObjectPool
         _items = new T?[maxSize];
         _preallocatedCount = preallocatedCount - 1;
     }
+
+    internal bool HasConfiguration(int maxSize, int preallocatedCount)
+        => _items.Length == maxSize && _preallocatedCount == preallocatedCount - 1;
 
     object IObjectPool.Rent() => Rent();
 
@@ -54,7 +58,7 @@ public class ListObjectPool<T> : IObjectPool
 
     public void Return(T obj)
     {
-        if (_count == _items.Length)
+        if (Environment.CurrentManagedThreadId != _threadId || _count == _items.Length)
         {
             return;
         }

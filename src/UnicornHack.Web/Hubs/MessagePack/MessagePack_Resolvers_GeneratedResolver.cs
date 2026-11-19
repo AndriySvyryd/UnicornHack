@@ -109,7 +109,11 @@ namespace MessagePack.Resolvers
                 { typeof(List<ConditionalGrantAttributes>), 63 },
                 { typeof(PlayerOptionsData), 64 },
                 { typeof(PlayerOptionData), 65 },
-                { typeof(List<PlayerOptionData>), 66 }
+                { typeof(List<PlayerOptionData>), 66 },
+                { typeof(FeatureChange), 67 },
+                { typeof(Dictionary<int, FeatureChange>), 68 },
+                { typeof(ActorActionChange[]), 69 },
+                { typeof(Dictionary<int, int>), 70 }
             };
         }
 
@@ -244,6 +248,14 @@ namespace MessagePack.Resolvers
                     return PlayerOptionDataFormatter.Instance;
                 case 66:
                     return new ListFormatter<PlayerOptionData>();
+                case 67:
+                    return FeatureChangeFormatter.Instance;
+                case 68:
+                    return new DictionaryFormatter<int, FeatureChange>();
+                case 69:
+                    return new ArrayFormatter<ActorActionChange>();
+                case 70:
+                    return new DictionaryFormatter<int, int>();
                 default:
                     return null;
             }

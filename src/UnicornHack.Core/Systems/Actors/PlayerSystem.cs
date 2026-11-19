@@ -459,10 +459,12 @@ public class PlayerSystem :
 
     private bool Move(Point targetCell, GameEntity playerEntity, GameManager manager)
     {
-        // TODO: avoid actors and connections
+        // TODO: avoid features and connections
         var position = playerEntity.Position!;
+        var room = position.RoomEntity.Room!;
         var direction = manager.TravelSystem.GetFirstStepFromShortestPath(
-            position.RoomEntity.Room!, position.Cell!.Value, targetCell, position.Heading!.Value, knownOnly: true);
+            room, position.Cell!.Value, targetCell, position.Heading!.Value,
+            knownOnly: true, avoidActors: true, avoidHazards: false);
         if (direction == null)
         {
             manager.LoggingSystem.WriteLog(manager.Game.Services.Language.NoPath(), playerEntity, manager);

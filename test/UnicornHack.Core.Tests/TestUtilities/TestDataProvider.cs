@@ -15,7 +15,8 @@ public sealed class TestDataProvider : DataProvider
     public TestDataProvider()
     {
         Branches = new TestLoader<Branch>(Branch.Loader);
-        Abilities = new TestGroupedLoader<AbilityType, Ability>(a => a.Type, Ability.Loader);
+        Features = new TestLoader<Feature>(Feature.Loader);
+        Abilities = new TestGroupedLoader<AbilityType, Ability>(a => a.Type, Default.Abilities);
         Creatures = new TestIndexedGroupedLoader<byte, string, Creature>(
             c => c.InitialLevel, creature => creature.GetRaceAbilityName(), Creature.Loader,
             StringComparer.OrdinalIgnoreCase);
@@ -31,6 +32,7 @@ public sealed class TestDataProvider : DataProvider
     }
 
     public override TestLoader<Branch> Branches { get; }
+    public override TestLoader<Feature> Features { get; }
     public override TestGroupedLoader<AbilityType, Ability> Abilities { get; }
     public override TestIndexedGroupedLoader<byte, string, Creature> Creatures { get; }
     public override TestGroupedLoader<ItemGroup, Item> Items { get; }

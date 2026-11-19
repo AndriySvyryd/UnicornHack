@@ -3,31 +3,32 @@ namespace UnicornHack.Systems.Levels;
 public class TerrainSystemTest
 {
     [Theory]
-    [InlineData(MapFeature.DeityAltar, MapFeature.InactiveDeityAltar)]
-    [InlineData(MapFeature.MajorShrine, MapFeature.InactiveMajorShrine)]
-    [InlineData(MapFeature.MinorShrine, MapFeature.InactiveMinorShrine)]
-    [InlineData(MapFeature.RitualShrine, MapFeature.InactiveRitualShrine)]
-    [InlineData(MapFeature.SmallFountain, MapFeature.InactiveSmallFountain)]
-    [InlineData(MapFeature.BigFountain, MapFeature.InactiveBigFountain)]
-    [InlineData(MapFeature.SkillPedestal, MapFeature.InactiveSkillPedestal)]
-    [InlineData(MapFeature.RacePedestal, MapFeature.InactiveRacePedestal)]
-    [InlineData(MapFeature.TraitPedestal, MapFeature.InactiveTraitPedestal)]
-    [InlineData(MapFeature.FeatPedestal, MapFeature.InactiveFeatPedestal)]
-    [InlineData(MapFeature.ArmorStand, MapFeature.InactiveArmorStand)]
-    [InlineData(MapFeature.GildedArmorStand, MapFeature.InactiveGildedArmorStand)]
-    [InlineData(MapFeature.ItemCase, MapFeature.InactiveItemCase)]
-    [InlineData(MapFeature.GildedItemCase, MapFeature.InactiveGildedItemCase)]
-    [InlineData(MapFeature.WeaponStand, MapFeature.InactiveWeaponStand)]
-    [InlineData(MapFeature.GildedWeaponStand, MapFeature.InactiveGildedWeaponStand)]
-    public void DeactivateFeature_uses_the_matching_inactive_terrain(
-        MapFeature active, MapFeature inactive)
+    [InlineData(RoomFeatures.DeityAltar)]
+    [InlineData(RoomFeatures.MajorShrine)]
+    [InlineData(RoomFeatures.MinorShrine)]
+    [InlineData(RoomFeatures.RitualShrine)]
+    [InlineData(RoomFeatures.SmallFountain)]
+    [InlineData(RoomFeatures.BigFountain)]
+    [InlineData(RoomFeatures.SkillPedestal)]
+    [InlineData(RoomFeatures.RacePedestal)]
+    [InlineData(RoomFeatures.TraitPedestal)]
+    [InlineData(RoomFeatures.FeatPedestal)]
+    [InlineData(RoomFeatures.ArmorStand)]
+    [InlineData(RoomFeatures.GildedArmorStand)]
+    [InlineData(RoomFeatures.ItemCase)]
+    [InlineData(RoomFeatures.GildedItemCase)]
+    [InlineData(RoomFeatures.WeaponStand)]
+    [InlineData(RoomFeatures.GildedWeaponStand)]
+    public void Interactive_entities_remain_solid_over_floor_after_destruction(RoomFeatures kind)
     {
         var room = TestHelper.BuildRoom(".");
         var point = new Point(0, 0);
-        TerrainSystem.SetTerrain(active, point, room);
+        var feature = FeatureGenerator.Place(room, point, kind);
+        Assert.False(room.Entity.Manager.TravelSystem.CanMoveTo(point, room));
 
-        TerrainSystem.DeactivateFeature(active, point, room);
+        feature.Feature!.Destroyed = true;
 
-        Assert.Equal(inactive, room.Terrain[room.PointToIndex![0, 0]]);
+        Assert.False(room.Entity.Manager.TravelSystem.CanMoveTo(point, room));
+        Assert.Equal(MapFeature.StoneFloor, room.Terrain[room.PointToIndex![0, 0]]);
     }
 }

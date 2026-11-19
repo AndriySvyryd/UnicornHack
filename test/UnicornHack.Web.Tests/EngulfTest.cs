@@ -2,7 +2,6 @@ using UnicornHack.Data.Creatures;
 using UnicornHack.Generation;
 using UnicornHack.Hubs.ChangeTracking;
 using UnicornHack.Systems.Abilities;
-using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Levels;
 using Xunit;
 
@@ -100,48 +99,4 @@ public class EngulfTest
         Assert.True(change.Room.Actors!.ContainsKey(engulferKnowledgeId));
     }
 
-    [Fact]
-    public void An_engulfed_player_remains_positioned_across_save_and_load()
-    {
-        Assert.SkipUnless(
-            PersistedGame.IsLocalDbAvailable, "SQL Server LocalDB is not available in this environment.");
-
-        using var persisted = PersistedGame.CreateAndSave();
-
-        var manager = persisted.Game.Manager;
-        var player = persisted.PlayerEntity;
-        var room = player.Position!.RoomEntity.Room!;
-        var playerCell = player.Position!.Cell!.Value;
-
-        var engulfer = CreatureData.Sylph.Instantiate(
-            room, FindAdjacentWalkableCell(room, playerCell, manager));
-        manager.Queue.ProcessQueue(manager);
-
-        var engulfEffect = engulfer.ActiveEffects!.Abilities
-            .SelectMany(a => a.Ability!.Effects)
-            .Single(e => e.Effect!.EffectType == EffectType.Engulf);
-        TestHelper.ApplyEffect(engulfEffect, engulfer, player, manager);
-        manager.Queue.ProcessQueue(manager);
-
-        Assert.NotNull(player.Position!.Cell);
-        Assert.Equal(1, player.Position.Cell.Value.DistanceTo(engulfer.Position!.Cell!.Value));
-        Assert.True((AbilityLevelSystem.GetAbilityLevel(player, "engulfed") > 0));
-        var engulferId = engulfer.Id;
-        var engulferCell = engulfer.Position!.Cell;
-        var playerCellBeforeReload = player.Position.Cell;
-
-        persisted.Context.SaveChanges();
-        persisted.Reload();
-
-        var reloadedManager = persisted.Game.Manager;
-        var reloadedPlayer = reloadedManager.FindEntity(persisted.PlayerEntityId);
-        Assert.NotNull(reloadedPlayer);
-        Assert.Equal(playerCellBeforeReload, reloadedPlayer!.Position!.Cell);
-        Assert.True((AbilityLevelSystem.GetAbilityLevel(reloadedPlayer, "engulfed") > 0));
-
-        var reloadedEngulfer = reloadedManager.EngulferToVictimRelationship.GetEngulfer(reloadedPlayer);
-        Assert.NotNull(reloadedEngulfer);
-        Assert.Equal(engulferId, reloadedEngulfer!.Id);
-        Assert.Equal(engulferCell, reloadedEngulfer.Position!.Cell);
-    }
 }

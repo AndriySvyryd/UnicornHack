@@ -27,6 +27,7 @@ public static partial class ItemData
             }
         },
         Type = ItemType.WeaponRangedLong,
+        GenerationWeight = "1.0",
         Material = Material.Wood,
         Weight = 5,
         EquipableSizes = SizeCategory.Medium | SizeCategory.Large,

@@ -17,7 +17,10 @@ public class ChangeBuilderTest
     public void Windup_is_included_in_next_action_tick()
     {
         var game = TestHelper.CreateGame();
-        var room = TestHelper.BuildRoom(".....\n.....\n.....", game);
+        var room = TestHelper.BuildRoom(@"
+.....
+.....
+.....", game);
         var player = PlayerRace.InstantiatePlayer("Tester", Sex.Male, room, new Point(2, 1));
         player.Position!.Heading = Direction.West;
         var actor = CreatureData.BalorUaNeit.Instantiate(room, new Point(1, 1));

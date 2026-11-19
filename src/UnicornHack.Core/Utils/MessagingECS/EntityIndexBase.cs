@@ -61,6 +61,7 @@ public abstract class EntityIndexBase<TEntity, TKey> : IEntityChangeListener<TEn
                 && (!hasOldKey
                     || EqualityComparer<TKey>.Default.Equals(componentOldKey, componentCurrentKey)))
             {
+                HandleNonKeyComponentChanged(entityChange);
                 return;
             }
 
@@ -123,4 +124,8 @@ public abstract class EntityIndexBase<TEntity, TKey> : IEntityChangeListener<TEn
     protected abstract bool TryAddEntity(TKey key, in EntityChange<TEntity> entityChange);
     protected abstract bool TryRemoveEntity(TKey key, in EntityChange<TEntity> entityChange);
     protected abstract void HandleNonKeyPropertyValuesChanged(in EntityChange<TEntity> entityChange);
+
+    protected virtual void HandleNonKeyComponentChanged(in EntityChange<TEntity> entityChange)
+    {
+    }
 }

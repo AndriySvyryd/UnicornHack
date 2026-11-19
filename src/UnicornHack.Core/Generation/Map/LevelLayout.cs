@@ -2445,6 +2445,7 @@ public abstract class LevelLayout
 
             foreach (var (room, roomParameters, chunks) in roomGenerationData)
             {
+                branch.FeatureGenerator.Fill(room, chunks);
                 roomParameters.CreatureGenerator.Fill(room, chunks);
                 roomParameters.ItemGenerator.Fill(room, chunks);
 

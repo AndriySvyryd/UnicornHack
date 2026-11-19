@@ -58,6 +58,21 @@ public static class AsciiMap
             }
         }
 
+        if (room.Features is { } features)
+        {
+            foreach (var feature in features.Values)
+            {
+                var glyph = feature.Destroyed ? 'x' : feature.Name switch
+                {
+                    "spike trap" => '^',
+                    "firebolt launcher" => 'T',
+                    "small fountain" or "big fountain" => '{',
+                    _ => '!'
+                };
+                Put(grid, feature.LevelX, feature.LevelY, w, h, glyph);
+            }
+        }
+
         // Items
         if (room.Items is { } items)
         {
@@ -103,6 +118,7 @@ public static class AsciiMap
         if (includeLegend)
         {
             sb.Append("legend: @=you  A-Z=visible actor  a-z=remembered  $=item  >/<=stairs |/-=doorway  ");
+            sb.Append("^=spikes T=launcher !=reward {=fountain x=destroyed  ");
             sb.Append(".=floor  #=wall  *=arch  ~=pool  ,=remembered floor  %=remembered wall  ?=unidentified\n");
         }
         return sb.ToString();

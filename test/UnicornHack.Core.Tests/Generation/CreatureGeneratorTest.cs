@@ -234,8 +234,8 @@ public class CreatureGeneratorTest
 
             Assert.InRange(level.Rooms.Count, 10, 14);
             Assert.All(level.Rooms, room => Assert.InRange(room.Actors.Count, 0, 8));
-            Assert.All(level.Rooms, room => Assert.DoesNotContain(room.Terrain.Take(room.TileCount),
-                feature => feature is MapFeature.TraitPedestal or MapFeature.FeatPedestal));
+            Assert.All(level.Rooms, room => Assert.DoesNotContain(room.Features.Values,
+                feature => feature.Feature!.Name is "trait pedestal" or "feat pedestal"));
         }
     }
 
@@ -312,7 +312,7 @@ public class CreatureGeneratorTest
         var chunk = new Chunk(room, room.BoundingRectangle, chunks[0].Fragment,
             doorwayPoints: null, insidePoints: chunks[0].InsidePoints, perimeterPoints: null,
             roomParameters: parameters,
-            creaturePoints: [(new Point(0, 0), CreatureData.EllenTrechend.Name)]);
+            creaturePoints: new Dictionary<Point, string?> { [new Point(0, 0)] = CreatureData.EllenTrechend.Name });
 
         new CreatureGenerator { ExpectedInitialCount = 0, MaximumInitialCount = 2 }.Fill(room, [chunk]);
         manager.Queue.ProcessQueue(manager);
@@ -322,7 +322,7 @@ public class CreatureGeneratorTest
         Assert.True(boss.Position.Cell!.Value.DistanceTo(new Point(0, 0)) > CreatureGenerator.ConnectionExclusionRadius);
         Assert.Equal(1, room.Level.GenerationStats.CreatureInstancesByName[CreatureData.EllenTrechend.Name]);
         Assert.Equal(1, room.Game.GenerationStats.CreatureInstancesByName[CreatureData.EllenTrechend.Name]);
-        Assert.Equal(CreatureData.EllenTrechend.Name, Assert.Single(chunk.CreaturePoints).CreatureName);
+        Assert.Equal(CreatureData.EllenTrechend.Name, Assert.Single(chunk.CreaturePoints).Value);
     }
 
     [Theory]

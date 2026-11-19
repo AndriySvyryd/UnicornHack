@@ -159,6 +159,7 @@ public class Item : ICSScriptSerializable, ILoadable
             var moveMessage = MoveItemMessage.Create(manager);
             moveMessage.ItemEntity = itemEntityReference.Referenced;
             moveMessage.TargetContainerEntity = container;
+            string? fallbackMessage = null;
 
             if (!manager.ItemMovingSystem.CanMoveItem(moveMessage, manager))
             {
@@ -173,6 +174,11 @@ public class Item : ICSScriptSerializable, ILoadable
                         manager.ReturnMessage(moveMessage);
                         return false;
                     }
+                    if (container.Player != null)
+                    {
+                        fallbackMessage = manager.Game.Services.Language.ItemDroppedBecauseInventoryFull(
+                            itemEntityReference.Referenced.Item!, countable ? quantity : 1);
+                    }
                 }
                 else
                 {
@@ -183,6 +189,10 @@ public class Item : ICSScriptSerializable, ILoadable
 
             itemEntityReference.Dispose();
             manager.Process(moveMessage);
+            if (fallbackMessage != null)
+            {
+                manager.LoggingSystem.WriteLog(fallbackMessage, container, manager);
+            }
         }
 
         return true;
@@ -389,20 +399,26 @@ public class Item : ICSScriptSerializable, ILoadable
         return abilityEntity;
     }
 
-    private Func<string, int, int, float>? _weightFunction;
+    private Func<string, int, int, string, float>? _weightFunction;
 
     protected static readonly string DefaultGenerationWeight = "1.0";
 
     public static Func<string, int, int, float> CreateWeightFunction(string expression)
-        => UnicornExpressionVisitor.CreateGenerationWeightFunction(expression);
+    {
+        var function = RewardGenerationWeight.CreateFunction(expression);
+        return (branch, depth, instances) => function(branch, depth, instances, "");
+    }
 
-    public float GetWeight(RoomComponent room)
+    public float GetWeight(RoomComponent room, string feature = "")
     {
         var count = room.Game.GenerationStats.ItemInstancesByName.GetValueOrDefault(Name);
-        return count != 0 && Name.Length > 0 && char.IsUpper(Name[0])
-            ? 0
-            : UnicornExpressionVisitor.EvaluateGenerationWeight(
-                ref _weightFunction, GenerationWeight ?? DefaultGenerationWeight, Name, room.Level.Branch.Name, room.Level.Depth, count);
+        if (count != 0 && Name.Length > 0 && char.IsUpper(Name[0]))
+        {
+            return 0;
+        }
+
+        return RewardGenerationWeight.Evaluate(ref _weightFunction,
+            GenerationWeight ?? DefaultGenerationWeight, Name, room, feature, count);
     }
 
     public static readonly GroupedCSScriptLoader<ItemGroup, Item> Loader =

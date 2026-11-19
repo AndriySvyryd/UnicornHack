@@ -1,5 +1,4 @@
 using System.Numerics;
-using UnicornHack.Systems.Levels;
 
 namespace UnicornHack.Generation.Map;
 

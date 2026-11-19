@@ -39,6 +39,12 @@ public class EnglishLanguageService : ILanguageService
         {
             case DescriptionCategory.Creature:
                 return Creature.Loader.Get(id).EnglishDescription ?? "";
+            case DescriptionCategory.Race:
+                return PlayerRace.Loader.Find(id) is { } race
+                    ? GetAbilityDescription(id, race.GetRaceAbilityTemplate())
+                    : id;
+            case DescriptionCategory.Item:
+                return GetItemDescription(id);
             case DescriptionCategory.Ability:
                 return GetAbilityDescription(id);
             case DescriptionCategory.Effect:
@@ -47,57 +53,159 @@ public class EnglishLanguageService : ILanguageService
                     : "Unknown effect";
             case DescriptionCategory.Property:
                 return GetPropertyDescription(id);
+            case DescriptionCategory.Feature:
+                return GetFeatureDescription(id);
         }
 
         return id;
     }
 
-    public string GetPlayerChoiceText(
-        RewardType choice,
-        PlayerChoiceText text,
-        string? action = null,
-        string? option = null)
+    private string GetItemDescription(string id)
     {
-        if (choice != RewardType.RacePedestal)
+        if (Item.Loader.Find(id) is not { } item)
         {
-            return "Unknown choice.";
+            return id;
         }
 
-        return text switch
+        var result = new StringBuilder();
+        result.Append("Type: ").Append(CSScriptLoaderHelpers.GetNameFromIdentifier(item.Type.ToString()!));
+        if (item.Complexity is { } complexity)
         {
-            PlayerChoiceText.NoPendingChoice => "There is no race choice to resolve.",
-            PlayerChoiceText.SourceUnavailable => "The race pedestal is no longer available.",
-            PlayerChoiceText.StaleSelection => "Those race options are no longer available.",
-            PlayerChoiceText.UnknownAction => "Unknown race pedestal action.",
-            PlayerChoiceText.NoAvailableOptions => "There are no new races available.",
-            PlayerChoiceText.NoOptionToReplace => "You have no race to replace.",
-            PlayerChoiceText.OptionUnavailable => "That race is no longer available.",
-            PlayerChoiceText.Title => action switch
+            result.Append("\nComplexity: ").Append(complexity);
+        }
+        foreach (var (property, requirement) in new[]
+        {
+            (nameof(BeingComponent.Might), item.RequiredMight),
+            (nameof(BeingComponent.Speed), item.RequiredSpeed),
+            (nameof(BeingComponent.Focus), item.RequiredFocus),
+            (nameof(BeingComponent.Perception), item.RequiredPerception)
+        })
+        {
+            if (requirement is > 0)
             {
-                null => "Race pedestal",
-                PlayerChoiceSystem.AddAction => "Choose a race to add",
-                PlayerChoiceSystem.RemoveAction => "Choose a race to replace",
-                _ => "Choose"
+                result.Append('\n').Append(PropertyRef(property)).Append(" requirement: ").Append(requirement);
+            }
+        }
+        for (var index = 0; index < item.Abilities.Count; index++)
+        {
+            var ability = item.Abilities[index];
+            var name = ability.Action is AbilityAction.Default or AbilityAction.Modifier
+                ? ability.Name
+                : CSScriptLoaderHelpers.GetNameFromIdentifier(ability.Action.ToString());
+            var tooltipId = $"item:{Uri.EscapeDataString(item.Name)}:{index}";
+            result.Append("\n\n").Append(AbilityRef(tooltipId, Capitalize(new StringBuilder(name)).ToString()));
+        }
+        return result.ToString();
+    }
+
+    private string GetFeatureDescription(string id)
+    {
+        var feature = Feature.Loader.Find(id);
+        if (feature?.EnglishDescription is { } description)
+        {
+            return description;
+        }
+        if (feature == null || feature.RewardType == RewardType.None)
+        {
+            return id;
+        }
+
+        var reward = feature.RewardType switch
+        {
+            RewardType.Item => feature.RoomFeature is RoomFeatures.GildedArmorStand or RoomFeatures.GildedItemCase
+                or RoomFeatures.GildedWeaponStand
+                ? "Offers a valuable item."
+                : "Offers an item.",
+            RewardType.Race => "Offers a new race or a replacement for an existing race.",
+            RewardType.Ability => feature.AbilityRewardType switch
+            {
+                AbilityType.Skill => "Offers a permanent skill level.",
+                AbilityType.Trait => "Offers a permanent trait.",
+                AbilityType.Feat => "Offers a permanent feat.",
+                _ => "Offers a permanent ability."
             },
-            PlayerChoiceText.OptionTitle => option == null
-                ? action == PlayerChoiceSystem.AddAction
-                    ? "Obtain a race"
-                    : action == PlayerChoiceSystem.RemoveAction
-                        ? "Replace a race"
-                        : "Destroy the pedestal"
-                : Capitalize(new StringBuilder(option)).ToString(),
-            PlayerChoiceText.OptionDescription => option == null
-                ? action == PlayerChoiceSystem.AddAction
-                    ? "Choose a new race to add permanently."
-                    : action == PlayerChoiceSystem.RemoveAction
-                        ? "Choose one of your races to replace permanently."
-                        : "Destroy the pedestal to gain a random race not shown among the other options."
-                : $"{(action == PlayerChoiceSystem.AddAction ? "Gain" : "Replace")} "
-                  + $"the <tooltip id='{option}' category='{(int)DescriptionCategory.Race}'>{option}</tooltip> race.",
-            PlayerChoiceText.Notice => "Your selection is permanent.",
-            _ => throw new ArgumentOutOfRangeException(nameof(text), text, message: null)
+            RewardType.Effect => "Offers an instant reward or a temporary boon.",
+            _ => "Offers a boon."
+        };
+
+        return reward;
+    }
+
+    public string RewardGranted(string rewardName) => $"You gain {rewardName}.";
+
+    public string GetPlayerChoiceTitle(RewardType choice, string? action = null, string? featureName = null)
+        => featureName == null ? "Choose a reward"
+            : choice != RewardType.Race || action == null ? Capitalize(new StringBuilder(featureName)).ToString()
+            : action switch
+        {
+            PlayerChoiceSystem.AddAction => "Choose a race to add",
+            PlayerChoiceSystem.ReplaceAction => "Choose a new race",
+            PlayerChoiceSystem.RemoveAction => "Choose a race to replace",
+            _ => throw new ArgumentOutOfRangeException(nameof(action), action, null)
+        };
+
+    public string GetPlayerChoiceOptionTitle(RewardType choice, string? action = null, string? option = null)
+    {
+        if (action == PlayerChoiceSystem.DestroyAction)
+        {
+            return $"Destroy the {option}";
+        }
+
+        if (option != null)
+        {
+            return Capitalize(new StringBuilder(option)).ToString();
+        }
+        return action switch
+        {
+            PlayerChoiceSystem.AddAction when choice == RewardType.Race => "Obtain a race",
+            PlayerChoiceSystem.RemoveAction when choice == RewardType.Race => "Replace a race",
+            _ => throw new ArgumentOutOfRangeException(nameof(action), action, null)
         };
     }
+
+    public string GetPlayerChoiceOptionDescription(RewardType choice, string? action = null, string? option = null)
+    {
+        if (action == PlayerChoiceSystem.DestroyAction)
+        {
+            return $"Destroy the {option} for a random result.";
+        }
+
+        if (option != null)
+        {
+            if (choice == RewardType.Race
+                && action is PlayerChoiceSystem.AddAction or PlayerChoiceSystem.ReplaceAction or PlayerChoiceSystem.RemoveAction)
+            {
+                return $"{(action == PlayerChoiceSystem.RemoveAction ? "Replace" : "Gain")} "
+                    + $"the <tooltip id='{option}' category='{(int)DescriptionCategory.Race}'>{option}</tooltip> race.";
+            }
+            return Capitalize(new StringBuilder(GetDescription(option, choice switch
+            {
+                RewardType.Item => DescriptionCategory.Item,
+                RewardType.Race => DescriptionCategory.Race,
+                _ => DescriptionCategory.Ability
+            }))).ToString();
+        }
+        return action switch
+        {
+            PlayerChoiceSystem.AddAction when choice == RewardType.Race => "Choose a new race to add permanently.",
+            PlayerChoiceSystem.RemoveAction when choice == RewardType.Race => "Choose one of your races to replace permanently.",
+            _ => throw new ArgumentOutOfRangeException(nameof(action), action, null)
+        };
+    }
+
+    public string NoAvailableRaces() => "There are no new races available.";
+
+    public string NoRaceToReplace() => "You have no race to replace.";
+
+    public string GetEffectDurationDescription(EffectDuration duration, string? amount = null) => duration switch
+    {
+        EffectDuration.UntilTimeout => $"Lasts for {amount} ticks.",
+        EffectDuration.UntilXPGained => $"Lasts until you gain {amount} XP.",
+        EffectDuration.UntilNextRoom => "Lasts until entering another room.",
+        EffectDuration.UntilNextLevel => "Lasts until entering another level.",
+        EffectDuration.UntilNextBranch => "Lasts until entering another branch.",
+        _ => "Your selection is permanent."
+    };
 
     public string PlayerChoiceRequired()
         => "Choose one of the presented options before taking another action.";
@@ -107,6 +215,13 @@ public class EnglishLanguageService : ILanguageService
 
     public string PlayerChoiceApplicationFailed()
         => "The selected option could not be applied.";
+
+    public string FeatureDestroyed(string featureName, string? rewardName, RewardType rewardType)
+        => rewardName == null ? "Nothing seems to have happened."
+            : ToSentence("The destroyed", featureName, rewardType == RewardType.Race ? "makes you" : "grants you",
+                rewardType is RewardType.Item or RewardType.Race
+                    ? GetString(rewardName, quantity: 1, definiteDeterminer: false)
+                    : rewardName);
 
     public string PlayerAbilityLevelChanged(
         string abilityName,
@@ -179,6 +294,20 @@ public class EnglishLanguageService : ILanguageService
     /// </summary>
     protected virtual string GetAbilityDescription(string abilityName)
     {
+        if (abilityName.StartsWith("item:", StringComparison.Ordinal))
+        {
+            var separator = abilityName.LastIndexOf(':');
+            if (separator <= 5 || !int.TryParse(abilityName.AsSpan(separator + 1), NumberStyles.None,
+                    CultureInfo.InvariantCulture, out var index)
+                || Item.Loader.Find(Uri.UnescapeDataString(abilityName[5..separator])) is not { } item
+                || index >= item.Abilities.Count)
+            {
+                return "";
+            }
+            var ability = item.Abilities[index];
+            return GetAbilityDescription(ability.Name, ability);
+        }
+
         int? currentLevel = null;
         if (Ability.TryGetLeveledTemplateName(
                 abilityName, out var templateName, out var parsedLevel))
@@ -187,13 +316,50 @@ public class EnglishLanguageService : ILanguageService
             abilityName = templateName;
         }
 
+        return GetAbilityDescription(abilityName, Ability.Loader.Find(abilityName), currentLevel);
+    }
+
+    private string GetAbilityDescription(string abilityName, Ability? template, int? currentLevel = null)
+    {
         var description = GetBaseAbilityDescription(abilityName);
-        if (Ability.Loader.Find(abilityName) is not LeveledAbility leveledAbility)
+        if (string.IsNullOrEmpty(description) && template?.Effects is { Count: 1 } grantEffects && grantEffects[0] is AddAbility grant)
+        {
+            description = GetBaseAbilityDescription(grant.Ability?.Name ?? grant.Name) + " "
+                + GetEffectDurationDescription(grant.Duration ?? EffectDuration.Infinite, grant.DurationAmount);
+        }
+        if (template == null)
         {
             return description;
         }
 
         var result = new StringBuilder(description);
+        result.Append("\nActivation: ").Append(template.Activation);
+        result.Append("\nRange: ").Append(template.Range);
+        if (template.Accuracy is { } accuracy)
+        {
+            result.Append("\nAccuracy: ").Append(accuracy);
+        }
+        if (template.Delay is { } delay)
+        {
+            result.Append("\nDelay: ").Append(delay);
+        }
+        if (template.Windup > 0)
+        {
+            result.Append("\nWindup: ").Append(template.Windup);
+        }
+        if (template.EnergyPointCost > 0)
+        {
+            result.Append("\nEnergy cost: ").Append(template.EnergyPointCost);
+        }
+        foreach (var effect in template.Effects ?? [])
+        {
+            result.Append('\n').Append(DescribeEffect(effect));
+        }
+        if (template is not LeveledAbility leveledAbility)
+        {
+            return result.ToString().TrimStart();
+        }
+
         foreach (var (level, effects) in leveledAbility.LeveledEffects.OrderBy(entry => entry.Key))
         {
             result.Append("\n\nLevel ").Append(level);
@@ -220,18 +386,25 @@ public class EnglishLanguageService : ILanguageService
                 descriptions.Add(behaviorDescription);
             }
 
-            descriptions.AddRange(effects.Select(effect => effect switch
-            {
-                IChangeProperty property => DescribePropertyChange(effect, property.PropertyName),
-                DecreaseAbilityLevel decrease => DescribeAbilityLevelDecrease(decrease),
-                _ => effect.GetType().Name
-            }));
+            descriptions.AddRange(effects.Select(DescribeEffect));
 
             result.AppendJoin("; ", descriptions.Count == 0 ? ["No additional effects"] : descriptions);
             result.Append('.');
         }
 
-        return result.ToString();
+        return result.ToString().TrimStart();
+    }
+
+    private string DescribeEffect(Effect effect)
+    {
+        var description = effect switch
+        {
+            IChangeProperty property => DescribePropertyChange(effect, property.PropertyName),
+            DecreaseAbilityLevel decrease => DescribeAbilityLevelDecrease(decrease),
+            AddAbility added => AbilityRef(added.Ability?.Name ?? added.Name),
+            _ => effect.Amount
+        };
+        return EffectRef(effect.Metadata.EffectType) + (description == null ? "" : ": " + description);
     }
 
     private static string? GetStatusLevelBehaviorDescription(string abilityName, int level)
@@ -253,9 +426,20 @@ public class EnglishLanguageService : ILanguageService
     private static string DescribeAbilityLevelDecrease(DecreaseAbilityLevel decrease)
     {
         var amount = decrease.Amount ?? "1";
-        return decrease.AbilityType is { } abilityType
-            ? $"each {abilityType} ability level -{amount}"
-            : $"{decrease.AbilityName} level -{amount}";
+        if (decrease.AbilityName == "*")
+        {
+            return decrease.Duration == EffectDuration.Instant
+                ? $"Removes each removable {decrease.AbilityType}"
+                : $"each {decrease.AbilityType} ability level -{amount}";
+        }
+        if (decrease.AbilityName == null)
+        {
+            return decrease.Duration == EffectDuration.Instant
+                ? $"Removes one random removable {decrease.AbilityType}"
+                : $"one random {decrease.AbilityType} ability level -{amount}";
+        }
+
+        return $"{decrease.AbilityName} level -{amount}";
     }
 
     private string DescribePropertyChange(Effect effect, string propertyName)
@@ -298,7 +482,30 @@ public class EnglishLanguageService : ILanguageService
             "Furrow's Reserve" => "Maximum health increases by 10 until you enter another branch.",
             "Patient Vigor" => "Maximum energy increases by 10 until you enter another branch.",
             "Hive-sense" => "Room perception range increases by 1. Room perception reveals actor totals and named elites, "
-                            + "not ordinary identities or positions. Ends when you enter another branch.",
+                            + "not ordinary identities or positions until you enter another branch.",
+            "Steadfast" => "Might increases by 1 for the duration of the boon.",
+            "Blood Pact" => "Maximum health increases by 10, but Focus decreases by 1.",
+            "Keen Bargain" => "Perception increases by 2, but Might decreases by 1.",
+            "Swift Sacrifice" => "Speed increases by 2, but Focus decreases by 1.",
+            "Focused Offering" => "Focus increases by 2, but maximum health decreases by 5.",
+            "Broad Frame" => "Might increases by 1.",
+            "Bright Mind" => "Focus increases by 1.",
+            "Keen Eyes" => "Perception increases by 1.",
+            "Light Step" => "Speed increases by 1.",
+            "Sure Guard" => "Armor increases by 2.",
+            "Steady Aim" => "Accuracy increases by 2.",
+            "Long Breath" => "Maximum health increases by 5.",
+            "Combat Reflexes" => "Evasion increases by 2.",
+            "renewal" => "Restores up to 20 health points.",
+            "restoration" => "Restores up to 20 energy points.",
+            "greater renewal" => "Restores up to 60 health points.",
+            "greater restoration" => "Restores up to 60 energy points.",
+            "insight" => "Grants 20 experience points to all players.",
+            "brief vigor" => "Grants Patient Vigor for 300 ticks.",
+            "earned reserve" => "Grants Furrow's Reserve until the recipient earns 100 XP.",
+            "purify flaw" => "Removes one random removable bad trait.",
+            "purify fault" => "Removes one random removable bad feat.",
+            "lift major curse" => "Removes one random removable curse.",
             // Status conditions - what carrying the condition does to the afflicted being.
             "stunned" => "Skipping your next action and unable to evade.",
             "paralyzed" => "Physical status resistance falls; at level 2 you cannot act or evade.",
@@ -645,6 +852,11 @@ public class EnglishLanguageService : ILanguageService
             return "something";
         }
 
+        if (actorEntity.Feature is { } feature)
+        {
+            return (definiteDeterminer == true ? "the " : definiteDeterminer == false ? "a " : "") + feature.Name;
+        }
+
         var properName = actorEntity.AI?.ProperName ?? actorEntity.Player?.ProperName;
         if (properName != null)
         {
@@ -694,6 +906,11 @@ public class EnglishLanguageService : ILanguageService
         }
 
         var itemName = item.TemplateName + (item.Name == null ? "" : " named \"" + item.Name + "\"");
+        return GetString(itemName, quantity, definiteDeterminer);
+    }
+
+    private string GetString(string itemName, int quantity, bool? definiteDeterminer)
+    {
         if (quantity > 1)
         {
             return quantity + " " +
@@ -1425,6 +1642,10 @@ public class EnglishLanguageService : ILanguageService
     public string InventoryFull()
         => "You can't carry any more items.";
 
+    public string ItemDroppedBecauseInventoryFull(ItemComponent item, int quantity)
+        => ToSentence("Your inventory is full, so you drop",
+            GetString(item, quantity, isIdentified: true, definiteDeterminer: true), "at your feet");
+
     public string NothingToPickUp()
         => "There's nothing to pick up here.";
 
@@ -1485,14 +1706,21 @@ public class EnglishLanguageService : ILanguageService
 
     private static StringBuilder Capitalize(StringBuilder builder)
     {
-        if (builder.Length == 0)
+        for (var index = 0; index < builder.Length; index++)
         {
-            return builder;
+            if (builder[index] == '<')
+            {
+                while (index < builder.Length && builder[index] != '>')
+                {
+                    index++;
+                }
+            }
+            else if (char.IsLetter(builder[index]))
+            {
+                builder[index] = char.ToUpper(builder[index]);
+                break;
+            }
         }
-
-        var first = builder[index: 0];
-        builder.Remove(startIndex: 0, length: 1).Insert(index: 0, value: char.ToUpper(first));
-
         return builder;
     }
 

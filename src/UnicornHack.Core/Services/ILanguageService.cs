@@ -53,6 +53,7 @@ public interface ILanguageService
     string StatusPreventsAbility(AbilityComponent statusAbility, AbilityComponent ability);
     string ItemNotInInventory();
     string InventoryFull();
+    string ItemDroppedBecauseInventoryFull(ItemComponent item, int quantity);
     string NothingToPickUp();
     string CannotMove(Direction direction);
     string Welcome(GameEntity playerEntity);
@@ -70,11 +71,14 @@ public interface ILanguageService
         int previousLevel,
         int currentLevel);
 
-    string GetPlayerChoiceText(
-        RewardType choice,
-        PlayerChoiceText text,
-        string? action = null,
-        string? option = null);
+    string FeatureDestroyed(string featureName, string? rewardName, RewardType rewardType);
+    string RewardGranted(string rewardName);
+    string GetPlayerChoiceTitle(RewardType choice, string? action = null, string? featureName = null);
+    string GetPlayerChoiceOptionTitle(RewardType choice, string? action = null, string? option = null);
+    string GetPlayerChoiceOptionDescription(RewardType choice, string? action = null, string? option = null);
+    string GetEffectDurationDescription(EffectDuration duration, string? amount = null);
+    string NoAvailableRaces();
+    string NoRaceToReplace();
 
     /// <summary>
     ///     Composes the localized hover-tooltip for a single room cell on the map screen.

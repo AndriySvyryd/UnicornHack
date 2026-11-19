@@ -49,16 +49,20 @@ public partial class EffectApplicationSystem
         // The form's own Race ability carries the suppressor, so DecreaseAbilityLevel's source exclusion
         // keeps the form active while lowering every other Race below zero. Removing the form carrier
         // removes this source-linked decrement and restores the original races automatically.
+        var originalRaceNames = being.Races.Select(race => race.Ability!.Name!).ToArray();
         var formRecord = manager.AbilityLevelSystem.AddAbilityEffect(targetEntity, formAbilityTemplate);
         var formAbility = manager.FindEntity(formRecord.CarrierId)!.Ability!;
-        var raceSuppression = new DecreaseAbilityLevel
+        foreach (var raceName in originalRaceNames)
         {
-            TargetActivator = true,
-            AbilityType = AbilityType.Race,
-            Amount = "3",
-            ContainingAbility = formAbility.Template!
-        };
-        raceSuppression.AddToAbility(formAbility, manager);
+            var raceSuppression = new DecreaseAbilityLevel
+            {
+                TargetActivator = true,
+                AbilityName = raceName,
+                Amount = "3",
+                ContainingAbility = formAbility.Template!
+            };
+            raceSuppression.AddToAbility(formAbility, manager);
+        }
     }
 
     // Ends a polymorph transformation by removing the form race carrier. Its source-linked Race decrement

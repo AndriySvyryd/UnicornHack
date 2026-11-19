@@ -1,3 +1,4 @@
+using CSharpScriptSerialization;
 using UnicornHack.Data.Branches;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Utils;
@@ -26,6 +27,65 @@ public class LevelLayoutTest
     public LevelLayoutTest(ITestOutputHelper output)
     {
         _output = output;
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Branch_feature_generator_override_is_used_for_every_room(bool singleRoom)
+    {
+        var game = TestHelper.CreateGame(seed: 1u);
+        var filledRooms = new HashSet<int>();
+        var template = singleRoom ? BranchData.Surface : BranchData.RuinedStronghold;
+        var branch = new Branch
+        {
+            Name = template.Name, Length = template.Length, RoomLayout = template.RoomLayout,
+            RoomWidth = template.RoomWidth, RoomHeight = template.RoomHeight,
+            Layout = singleRoom ? new EmptyLevelLayout() : new GridLevelLayout(),
+            FeatureGenerator = new RecordingFeatureGenerator(room => filledRooms.Add(room.EntityId))
+        };
+        ((TestDataProvider)game.Services.Data).Branches.Add(branch);
+        var level = LevelGenerator.CreateEmpty(branch.Instantiate(game), depth: singleRoom ? (byte)0 : (byte)2,
+            seed: 1u, game.Manager);
+
+        Assert.True(LevelGenerator.EnsureGenerated(level));
+        Assert.NotEmpty(level.Rooms);
+        Assert.Equal(singleRoom, level.Rooms.Count == 1);
+        Assert.All(level.Rooms, room => Assert.Contains(room.EntityId, filledRooms));
+        Assert.All(level.Rooms, room => Assert.Empty(room.Features));
+    }
+
+    [Fact]
+    public void Branch_serialization_preserves_a_derived_feature_generator()
+    {
+        var script = CSScriptSerializer.Serialize(new Branch
+        {
+            Name = "test branch", FeatureGenerator = new RecordingFeatureGenerator()
+        });
+
+        Assert.Contains(nameof(Branch.FeatureGenerator), script);
+        Assert.Contains(nameof(RecordingFeatureGenerator), script);
+    }
+
+    public class RecordingFeatureGenerator : FeatureGenerator
+    {
+        private readonly Action<RoomComponent>? _onFill;
+
+        private static readonly CSScriptSerializer Serializer = new PropertyCSScriptSerializer<RecordingFeatureGenerator>(
+            new Dictionary<string, Func<RecordingFeatureGenerator, object?, bool>>());
+
+        public RecordingFeatureGenerator()
+        {
+        }
+
+        public RecordingFeatureGenerator(Action<RoomComponent> onFill)
+        {
+            _onFill = onFill;
+        }
+
+        public override void Fill(RoomComponent room, IReadOnlyList<Chunk> chunks) => _onFill?.Invoke(room);
+
+        public override ICSScriptSerializer GetSerializer() => Serializer;
     }
 
     [Fact]

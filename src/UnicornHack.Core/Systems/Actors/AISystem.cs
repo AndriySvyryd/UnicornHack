@@ -1,5 +1,6 @@
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
+using UnicornHack.Systems.Features;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Systems.Time;
@@ -38,16 +39,32 @@ public class AISystem :
         {
             ResetNextAction(ai);
             ai.NextAction = ActorActionType.Wait;
-            ai.NextActionTick += TimeSystem.DefaultActionDelay;
+            SetNextActionTick(actorEntity, checked(ai.NextActionTick + TimeSystem.DefaultActionDelay));
             return MessageProcessingResult.ContinueProcessing;
         }
 
         var action = ai.NextAction;
         var target = ai.NextActionTarget;
         var target2 = ai.NextActionTarget2;
+        if (action == ActorActionType.MoveOneCell && target is { } movementDirection
+            && AbilityLevelSystem.GetAbilityLevel(actorEntity, AbilityData.Frightened.Name) < 2)
+        {
+            var currentPosition = actorEntity.Position!;
+            var room = currentPosition.RoomEntity.Room!;
+            var hazards = room.CellThreats!;
+                if (FeatureSystem.IsCellThreatened(hazards,
+                    currentPosition.Cell!.Value.Translate(((Direction)movementDirection).AsVector()), actorEntity.Id)
+                && manager.TravelSystem.TryGetSafeDirection(currentPosition) is { } safeDirection)
+            {
+                action = currentPosition.Heading == safeDirection ? ActorActionType.MoveOneCell : ActorActionType.ChangeHeading;
+                target = (int)safeDirection;
+                target2 = null;
+            }
+        }
+
         if (action == null)
         {
-            ai.NextActionTick += TimeSystem.DefaultActionDelay / 2;
+            SetNextActionTick(actorEntity, checked(ai.NextActionTick + TimeSystem.DefaultActionDelay / 2));
             DecideNextAction(actorEntity, manager);
             return MessageProcessingResult.ContinueProcessing;
         }
@@ -60,6 +77,10 @@ public class AISystem :
 
         RandomizeActionTargetIfConfused(
             actorEntity, ref performedAction, ref target, ref target2, manager);
+        if (performedAction != ai.NextAction || target != ai.NextActionTarget || target2 != ai.NextActionTarget2)
+        {
+            manager.CellThreatTracker.ClearThreats(actorEntity);
+        }
         EnqueueActionNoise(actorEntity, performedAction, target, manager);
         ResetNextAction(ai);
 
@@ -67,7 +88,7 @@ public class AISystem :
         switch (performedAction)
         {
             case ActorActionType.Wait:
-                ai.NextActionTick += TimeSystem.DefaultActionDelay;
+                SetNextActionTick(actorEntity, checked(ai.NextActionTick + TimeSystem.DefaultActionDelay));
                 break;
             case ActorActionType.ChangeHeading:
             case ActorActionType.MoveOneCell:
@@ -111,7 +132,7 @@ public class AISystem :
                     : null;
                 if (!ActivateAbility(actorEntity, target, target2, manager))
                 {
-                    ai.NextActionTick += TimeSystem.DefaultActionDelay;
+                    SetNextActionTick(actorEntity, checked(ai.NextActionTick + TimeSystem.DefaultActionDelay));
                     manager.LoggingSystem.WriteFailedAction(
                         actorEntity, performedAction, manager, ability: ability);
                 }
@@ -136,6 +157,17 @@ public class AISystem :
     }
 
     private void DecideNextAction(GameEntity actorEntity, GameManager manager)
+    {
+        if (actorEntity.AI!.NextAction == null)
+        {
+            manager.CellThreatTracker.ClearThreats(actorEntity);
+        }
+        var before = actorEntity.AI.ThreatenedCells;
+        DecideNextActionCore(actorEntity, manager);
+        UpdateThreats(actorEntity, before);
+    }
+
+    private void DecideNextActionCore(GameEntity actorEntity, GameManager manager)
     {
         if (AbilityLevelSystem.GetAbilityLevel(actorEntity, AbilityData.Engulfed.Name) >= 2)
         {
@@ -165,6 +197,17 @@ public class AISystem :
 
         if (TryFleeFearSource(actorEntity, position, manager))
         {
+            return;
+        }
+
+        if (position.MovementDelay != 0
+            && FeatureSystem.IsCellThreatened(position.RoomEntity.Room!.CellThreats!,
+                position.Cell!.Value, actorEntity.Id)
+            && manager.TravelSystem.TryGetSafeDirection(position) is { } escapeDirection)
+        {
+            actorEntity.AI!.NextAction = position.Heading == escapeDirection
+                ? ActorActionType.MoveOneCell : ActorActionType.ChangeHeading;
+            actorEntity.AI.NextActionTarget = (int)escapeDirection;
             return;
         }
 
@@ -217,7 +260,7 @@ public class AISystem :
         var fleeDistance = currentDistance;
         Span<Direction> directions = stackalloc Direction[8];
         var directionCount = manager.TravelSystem.GetPossibleMovementDirections(
-            position, safe: true, directions);
+            position, directions);
         for (var i = 0; i < directionCount; i++)
         {
             var direction = directions[i];
@@ -291,15 +334,51 @@ public class AISystem :
         var ai = actorEntity.AI!;
         var ability = abilityEntity.Ability!;
         var target = actorEntity.Position!.Cell!.Value.DifferenceTo(targetEntity.Position!.Cell!.Value).ToInt32();
-        if (ability.Windup > 0
-            && (ai.NextAction != ActorActionType.UseAbilitySlot || ai.NextActionTarget != ability.Slot || ai.NextActionTarget2 != target))
+        if (ai.NextAction != ActorActionType.UseAbilitySlot || ai.NextActionTarget != ability.Slot || ai.NextActionTarget2 != target)
         {
-            ai.NextActionTick = checked(ai.NextActionTick + ability.Windup);
+            if (ability.Windup > 0)
+            {
+                ai.NextActionTick = checked(ai.NextActionTick + ability.Windup);
+            }
         }
 
         ai.NextAction = ActorActionType.UseAbilitySlot;
         ai.NextActionTarget = ability.Slot;
         ai.NextActionTarget2 = target;
+    }
+
+    private void SetNextActionTick(GameEntity entity, int? tick)
+    {
+        var ai = entity.AI!;
+        var before = ai.ThreatenedCells;
+        ai.NextActionTick = tick;
+        UpdateThreats(entity, before);
+    }
+
+    public void UpdateThreats(GameEntity entity, Dictionary<Point, byte>? before)
+    {
+        var manager = entity.Manager;
+        if (entity.AI is not { NextAction: ActorActionType.UseAbilitySlot, NextActionTarget: { } slot } ai
+            || entity.Being is not { IsAlive: true } || entity.Position is not { Cell: { } actorCell } position
+            || manager.AbilitySlottingSystem.GetAbility(entity, slot)?.Ability is not { IsUsable: true } ability
+            || !ability.Type.IsAttack()
+            || ResolveAbilityTargetCell(entity, ai.NextActionTarget2, manager) is not { } targetCell
+            || position.RoomEntity.Room is not { } room || !room.IsValid(targetCell))
+        {
+            manager.CellThreatTracker.UpdateThreats(entity, before, null);
+            return;
+        }
+        var cells = (List<(Point, byte)>)manager.AbilityActivationSystem.GetTargetedCells(actorCell, targetCell,
+            position.Heading ?? Direction.East, ability.Range, ability.TargetingShape, ability.TargetingShapeSize, room);
+        try
+        {
+            manager.CellThreatTracker.UpdateThreats(entity, before, cells);
+        }
+        finally
+        {
+            cells.Clear();
+            manager.PointByteListArrayPool.Return(cells);
+        }
     }
 
     public GameEntity? GetDefaultAttack(GameEntity aiEntity, GameEntity targetEntity, bool? melee,
@@ -357,7 +436,8 @@ public class AISystem :
 
             // TODO: Avoid connections
             var directionToMove = manager.TravelSystem.GetFirstStepFromShortestPath(
-                room, aiCell, playerCell, aiPosition.Heading!.Value, avoidActors: true);
+                room, aiCell, playerCell, aiPosition.Heading!.Value,
+                knownOnly: false, avoidActors: true, avoidHazards: true);
 
             if (directionToMove != null)
             {
@@ -397,10 +477,14 @@ public class AISystem :
     {
         Span<Direction> possibleDirectionsToMove = stackalloc Direction[8];
         var directionCount = manager.TravelSystem.GetPossibleMovementDirections(
-            position, safe: true, possibleDirectionsToMove);
+            position, possibleDirectionsToMove, avoidHazards: true);
         if (directionCount == 0)
         {
-            return;
+            directionCount = manager.TravelSystem.GetPossibleMovementDirections(position, possibleDirectionsToMove);
+            if (directionCount == 0)
+            {
+                return;
+            }
         }
 
         Direction? directionToMove;
@@ -426,7 +510,7 @@ public class AISystem :
         var ai = message.ActorEntity.AI;
         if (ai?.NextActionTick != null)
         {
-            ai.NextActionTick += message.Delay;
+            SetNextActionTick(message.ActorEntity, checked(ai.NextActionTick + message.Delay));
         }
 
         return MessageProcessingResult.ContinueProcessing;
@@ -454,7 +538,7 @@ public class AISystem :
         var ai = message.BeingEntity.AI;
         if (ai != null)
         {
-            ai.NextActionTick = null;
+            SetNextActionTick(message.BeingEntity, null);
         }
 
         return MessageProcessingResult.ContinueProcessing;

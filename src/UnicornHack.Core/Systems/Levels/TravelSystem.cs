@@ -1,5 +1,6 @@
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
+using UnicornHack.Systems.Features;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Levels;
@@ -257,7 +258,7 @@ public class TravelSystem :
         if (conflictingActor != null
             && conflictingActor != engulfedVictim
             && (!message.MoveOffConflicting
-                || !MoveOffCell(conflictingActor, manager)))
+                || !MoveOffCell(conflictingActor, manager, pretend)))
         {
             return traveledMessage;
         }
@@ -503,7 +504,7 @@ public class TravelSystem :
             var currentLevel = currentRoom.Level;
             if (newRoom.Level == currentLevel)
             {
-                DeleteRoomContents(currentRoom, manager, preserveRoamingCreatures: true);
+                DeleteRoomContents(currentRoom, manager);
             }
             else if (newRoom.Level.BranchName == currentLevel.BranchName)
             {
@@ -557,47 +558,43 @@ public class TravelSystem :
             return;
         }
 
-        var destinationRoom = destinationRooms[level.GenerationRandom.Next(destinationRooms.Count)];
-        if (!TryFindRoamingCreatureCell(
-                destinationRoom.Room,
-                destinationRoom.PreferredCell,
-                out var targetCell))
+        var destinationRoomId = destinationRooms[level.GenerationRandom.Next(destinationRooms.Count)].EntityId;
+        var destinationRoom = manager.Game.LoadRoom(destinationRoomId)?.Room;
+        if (destinationRoom == null || !CreatureGenerator.TryPickSpawnCell(destinationRoom, out var targetCell))
         {
             return;
         }
 
         var traveledMessage = CreateTraveledMessage(
             roamingCreature, roamingPosition, roamingPosition.Heading!.Value, targetCell, manager);
-        roamingPosition.SetRoomPosition(destinationRoom.Room.EntityId, targetCell);
-        PropagateRoomId(roamingCreature, destinationRoom.Room.EntityId, manager);
+        roamingPosition.SetRoomPosition(destinationRoom.EntityId, targetCell);
+        PropagateRoomId(roamingCreature, destinationRoom.EntityId, manager);
 
         traveledMessage.Successful = true;
         manager.EffectApplicationSystem.ExtendEffectsOnMovement(roamingCreature, manager);
         manager.Enqueue(traveledMessage);
     }
 
-    private static List<RoamingCreatureDestinationRoom> GetRoamingCreatureDestinationRooms(
+    private static List<RoomComponent> GetRoamingCreatureDestinationRooms(
         RoomComponent currentRoom, GameLevel level)
     {
-        var destinationRooms = new Dictionary<int, RoamingCreatureDestinationRoom>();
+        var destinationRooms = new Dictionary<int, RoomComponent>();
         foreach (var connectionEntity in currentRoom.Connections.Values)
         {
             var connection = connectionEntity.Connection!;
             if (currentRoom.Entity.Manager.FindEntity(connection.TargetRoomId)?.Room is not { } targetRoom
                 || targetRoom.Level != level
-                || targetRoom.IsVisited
-                || connection.TargetCell is not { } targetCell)
+                || targetRoom.IsVisited)
             {
                 continue;
             }
 
-            destinationRooms[targetRoom.EntityId] =
-                new RoamingCreatureDestinationRoom(targetRoom, targetCell);
+            destinationRooms[targetRoom.EntityId] = targetRoom;
         }
 
         foreach (var connectionEntity in currentRoom.IncomingConnections)
         {
-            if (connectionEntity.Position is not { Cell: { } sourceCell } connectionPosition
+            if (connectionEntity.Position is not { } connectionPosition
                 || currentRoom.Entity.Manager.FindEntity(connectionPosition.RoomId)?.Room is not { } sourceRoom
                 || sourceRoom.Level != level
                 || sourceRoom.IsVisited)
@@ -605,79 +602,18 @@ public class TravelSystem :
                 continue;
             }
 
-            destinationRooms.TryAdd(
-                sourceRoom.EntityId,
-                new RoamingCreatureDestinationRoom(sourceRoom, sourceCell));
+            destinationRooms.TryAdd(sourceRoom.EntityId, sourceRoom);
         }
 
         return destinationRooms.Values
-            .OrderBy(destination => destination.Room.EntityId)
+            .OrderBy(destination => destination.EntityId)
             .ToList();
     }
 
-    private bool TryFindRoamingCreatureCell(
-        RoomComponent room, Point preferredCell, out Point targetCell)
-    {
-        if (IsActorFreeCell(preferredCell, room))
-        {
-            targetCell = preferredCell;
-            return true;
-        }
-
-        var bestDistance = int.MaxValue;
-        targetCell = default;
-        var found = false;
-        for (byte y = 0; y < room.Height; y++)
-        {
-            for (byte x = 0; x < room.Width; x++)
-            {
-                var candidate = new Point(x, y);
-                if (!IsActorFreeCell(candidate, room))
-                {
-                    continue;
-                }
-
-                var distance = candidate.DistanceTo(preferredCell);
-                if (distance >= bestDistance)
-                {
-                    continue;
-                }
-
-                bestDistance = distance;
-                targetCell = candidate;
-                found = true;
-            }
-        }
-
-        return found;
-    }
-
-    private readonly struct RoamingCreatureDestinationRoom
-    {
-        public RoamingCreatureDestinationRoom(RoomComponent room, Point preferredCell)
-        {
-            Room = room;
-            PreferredCell = preferredCell;
-        }
-
-        public RoomComponent Room
-        {
-            get;
-        }
-
-        public Point PreferredCell
-        {
-            get;
-        }
-    }
-
     /// <summary>
-    ///     Deletes every non-player actor and every loose floor item in <paramref name="room" />.
-    ///     Roaming creatures can be preserved when clearing an abandoned room so a
-    ///     creature with no eligible unvisited destination is not removed from the game.
-    ///     Called when the player abandons a room they can never return to, so its contents never
-    ///     need processing again. The player (and any other player sharing the room) is left
-    ///     untouched.
+    ///     Deletes every actor and every loose floor item in <paramref name="room" />.
+    ///     Requires that no players remain in the abandoned room, which they can never return to,
+    ///     so its contents never need processing again.
     ///     <para>
     ///         Deletion is deferred via <see cref="DeleteEntityMessage" /> (the same low-priority
     ///         path as death) so the heavy teardown runs after the current cascade settles rather than
@@ -685,19 +621,14 @@ public class TravelSystem :
     ///         deferred actor survives any intervening room teardown and is then fully removed.
     ///     </para>
     /// </summary>
-    public void DeleteRoomContents(
-        RoomComponent room, GameManager manager, bool preserveRoamingCreatures = false)
+    public void DeleteRoomContents(RoomComponent room, GameManager manager)
     {
+        Debug.Assert(!manager.PlayerSystem.IsPlayerInRoom(room.EntityId, manager));
+
         // Snapshot first: deleting mutates the room's Actors / Items dictionaries.
         foreach (var actorEntity in room.Actors.Values)
         {
-            if (!actorEntity.HasComponent(EntityComponent.Player)
-                && (!preserveRoamingCreatures
-                    || actorEntity.AI is not { } ai
-                    || (ai.Behavior & AIBehavior.Roaming) == 0))
-            {
-                DeleteEntityMessage.Enqueue(actorEntity, manager);
-            }
+            DeleteEntityMessage.Enqueue(actorEntity, manager);
         }
 
         foreach (var itemEntity in room.Items.Values)
@@ -823,21 +754,23 @@ public class TravelSystem :
         var position = entity.Position!;
         Span<Direction> possibleDirectionsToMove = stackalloc Direction[8];
         var directionCount = GetPossibleMovementDirections(
-            position, safe: true, possibleDirectionsToMove);
+            position, possibleDirectionsToMove);
         if (directionCount == 0)
         {
             // TODO: cascade move actors
             return false;
         }
 
-        var directionIndex = manager.Game.Random.Next(minValue: 0, maxValue: directionCount);
+        var directionIndex = pretend ? 0 : manager.Game.Random.Next(minValue: 0, maxValue: directionCount);
 
-        position.Cell = position.Cell!.Value.Translate(possibleDirectionsToMove[directionIndex].AsVector());
+        var targetCell = position.Cell!.Value.Translate(possibleDirectionsToMove[directionIndex].AsVector());
 
         var travelMessage = TravelMessage.Create(manager);
         travelMessage.ActorEntity = entity;
         travelMessage.TargetHeading = position.Heading!.Value;
-        travelMessage.TargetCell = position.Cell!.Value;
+        travelMessage.TargetCell = targetCell;
+        travelMessage.Forced = true;
+        travelMessage.SuppressDelay = true;
 
         var successful = Travel(travelMessage, manager, pretend);
         manager.ReturnMessage(travelMessage);
@@ -846,14 +779,16 @@ public class TravelSystem :
 
     public Direction? GetFirstStepFromShortestPath(
         RoomComponent room, Point origin, Point target, Direction initialDirection,
-        bool knownOnly = false, bool avoidActors = false)
+        bool knownOnly = false, bool avoidActors = false, bool avoidHazards = false)
     {
         var nextPoint = target;
 
-        var path = GetShortestPath(room, origin, target, initialDirection, knownOnly, avoidActors);
+        var path = GetShortestPath(room, origin, target, initialDirection, knownOnly, avoidActors, avoidHazards);
         if (path == null)
         {
-            return null;
+            return avoidHazards
+                ? GetFirstStepFromShortestPath(room, origin, target, initialDirection, knownOnly, avoidActors, false)
+                : null;
         }
 
         if (path.Count != 0)
@@ -868,33 +803,22 @@ public class TravelSystem :
 
     public List<Point>? GetShortestPath(
         RoomComponent room, Point start, Point target, Direction initialDirection,
-        bool knownOnly = false, bool avoidActors = false)
-        => avoidActors
+        bool knownOnly = false, bool avoidActors = false, bool avoidHazards = false)
+        => avoidHazards
+            ? room.PathFinder!.FindPath(start, target, initialDirection, CanMoveToAvoidingHazards,
+                (room, target, knownOnly, avoidActors, (IReadOnlyDictionary<Point, HashSet<int>>)room.CellThreats!,
+                    room.Actors.GetValueOrDefault(start)?.Id))
+            : avoidActors
             ? room.PathFinder!.FindPath(
                 start, target, initialDirection, CanMoveToAvoidingActors, (room, target, knownOnly))
             : knownOnly
             ? room.PathFinder!.FindPath(start, target, initialDirection, CanMoveToKnown, room)
             : room.PathFinder!.FindPath(start, target, initialDirection, CanMoveTo, room);
 
-    public IReadOnlyList<Direction> GetPossibleMovementDirections(
-        PositionComponent currentPosition,
-        bool safe)
-    {
-        Span<Direction> directions = stackalloc Direction[8];
-        var count = GetPossibleMovementDirections(currentPosition, safe, directions);
-        var availableDirections = new List<Direction>(count);
-        for (var i = 0; i < count; i++)
-        {
-            availableDirections.Add(directions[i]);
-        }
-
-        return availableDirections;
-    }
-
     public int GetPossibleMovementDirections(
         PositionComponent currentPosition,
-        bool safe,
-        Span<Direction> availableDirections)
+        Span<Direction> availableDirections,
+        bool avoidHazards = false)
     {
         if (availableDirections.Length < 8)
         {
@@ -903,6 +827,7 @@ public class TravelSystem :
 
         var count = 0;
         var level = currentPosition.RoomEntity.Room!;
+        var hazards = avoidHazards ? level.CellThreats : null;
         for (var i = 0; i < 8; i++)
         {
             if (CanMoveTo(currentPosition.Cell!.Value, i, level) == null)
@@ -918,7 +843,12 @@ public class TravelSystem :
                 continue;
             }
 
-            if (safe && level.Actors.ContainsKey(targetCell))
+            if (level.Actors.ContainsKey(targetCell))
+            {
+                continue;
+            }
+
+            if (hazards != null && FeatureSystem.IsCellThreatened(hazards, targetCell, currentPosition.EntityId))
             {
                 continue;
             }
@@ -927,6 +857,13 @@ public class TravelSystem :
         }
 
         return count;
+    }
+
+    public Direction? TryGetSafeDirection(PositionComponent position)
+    {
+        Span<Direction> directions = stackalloc Direction[8];
+        var count = GetPossibleMovementDirections(position, directions, avoidHazards: true);
+        return count == 0 ? null : directions[0];
     }
 
     // TODO: Use locomotion type
@@ -1054,6 +991,12 @@ public class TravelSystem :
             return null;
         }
 
+        if (room.Features.TryGetValue(new Point(locationX, locationY), out var feature)
+            && feature.Feature!.BlocksMovement)
+        {
+            return null;
+        }
+
         var index = room.PointToIndex![locationX, locationY];
         return room.Terrain[index].CanMoveTo() ? index : null;
     }
@@ -1065,13 +1008,45 @@ public class TravelSystem :
             return null;
         }
 
+        if (room.KnownFeatures.TryGetValue(new Point(locationX, locationY), out var feature)
+            && feature.Knowledge!.KnownEntity.Feature!.BlocksMovement)
+        {
+            return null;
+        }
+
         var index = room.PointToIndex![locationX, locationY];
         return room.KnownTerrain[index].CanMoveTo() ? index : null;
+    }
+
+    private short? CanMoveToAvoidingHazards(byte locationX, byte locationY,
+        (RoomComponent Room, Point Target, bool KnownOnly, bool AvoidActors,
+            IReadOnlyDictionary<Point, HashSet<int>> Hazards, int? ExcludedEntityId) state)
+    {
+        var cell = new Point(locationX, locationY);
+        if (state.Hazards.TryGetValue(cell, out var threats))
+        {
+            foreach (var entityId in threats)
+            {
+                if (entityId != state.ExcludedEntityId
+                    && (!state.KnownOnly || state.Room.Entity.Manager.FindEntity(entityId)?.Position?.Knowledge != null))
+                {
+                    return null;
+                }
+            }
+        }
+
+        return state.AvoidActors
+            ? CanMoveToAvoidingActors(locationX, locationY, (state.Room, state.Target, state.KnownOnly))
+            : state.KnownOnly ? CanMoveToKnown(locationX, locationY, state.Room) : CanMoveTo(locationX, locationY, state.Room);
     }
 
     private short? CanMoveToAvoidingActors(
         byte locationX, byte locationY, (RoomComponent Room, Point Target, bool KnownOnly) state)
     {
+        if (locationX == state.Target.X && locationY == state.Target.Y && state.Room.Features.ContainsKey(state.Target))
+        {
+            return state.Room.PointToIndex![locationX, locationY];
+        }
         var index = state.KnownOnly
             ? CanMoveToKnown(locationX, locationY, state.Room)
             : CanMoveTo(locationX, locationY, state.Room);

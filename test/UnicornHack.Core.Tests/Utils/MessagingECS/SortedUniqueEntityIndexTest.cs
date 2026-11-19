@@ -15,14 +15,18 @@ public class SortedUniqueEntityIndexTest
         var entity = entityReference.Referenced;
         var activeEffects = entity.AddComponent<ActiveEffectsComponent>((int)EntityComponent.ActiveEffects);
         activeEffects.NextEffectTick = 20;
-        Assert.Same(entity, manager.TemporalEntitiesIndex[(20, entity.Id)]);
+        Assert.Same(entity, manager.TemporalEntitiesIndex[(20, (int)EntityComponent.ActiveEffects, entity.Id)]);
 
         var player = entity.AddComponent<PlayerComponent>((int)EntityComponent.Player);
         player.NextActionTick = 10;
 
         Assert.Equal(1, manager.TemporalEntitiesIndex.Count);
-        Assert.Null(manager.TemporalEntitiesIndex[(20, entity.Id)]);
-        Assert.Same(entity, manager.TemporalEntitiesIndex[(10, entity.Id)]);
+        Assert.Null(manager.TemporalEntitiesIndex[(20, (int)EntityComponent.ActiveEffects, entity.Id)]);
+        Assert.Same(entity, manager.TemporalEntitiesIndex[(10, (int)EntityComponent.Player, entity.Id)]);
+
+        activeEffects.NextEffectTick = 10;
+        Assert.Null(manager.TemporalEntitiesIndex[(10, (int)EntityComponent.Player, entity.Id)]);
+        Assert.Same(entity, manager.TemporalEntitiesIndex[(10, (int)EntityComponent.ActiveEffects, entity.Id)]);
     }
 
     [Fact]
@@ -37,9 +41,10 @@ public class SortedUniqueEntityIndexTest
 
         ai.NextActionTick = 10;
         activeEffects.NextEffectTick = 20;
+        Assert.Same(entity, manager.TemporalEntitiesIndex[(10, (int)EntityComponent.AI, entity.Id)]);
         ai.NextActionTick = null;
 
-        Assert.Same(entity, manager.TemporalEntitiesIndex[(20, entity.Id)]);
+        Assert.Same(entity, manager.TemporalEntitiesIndex[(20, (int)EntityComponent.ActiveEffects, entity.Id)]);
 
         entity.RemoveComponent(activeEffects);
 
@@ -61,7 +66,7 @@ public class SortedUniqueEntityIndexTest
             firstAbility.CooldownTick = 10;
 
             Assert.Equal(1, manager.TemporalEntitiesIndex.Count);
-            Assert.Same(firstAbilityEntity, manager.TemporalEntitiesIndex[(10, firstAbilityEntity.Id)]);
+            Assert.Same(firstAbilityEntity, manager.TemporalEntitiesIndex[(10, (int)EntityComponent.Ability, firstAbilityEntity.Id)]);
 
             using (var secondAbilityEntityReference = manager.CreateEntity())
             {
@@ -76,6 +81,11 @@ public class SortedUniqueEntityIndexTest
 
                 secondAbility.CooldownTick = 11;
 
+                Assert.Same(firstAbilityEntity, manager.TemporalEntitiesIndex.First());
+                Assert.Same(secondAbilityEntity, manager.TemporalEntitiesIndex.Last());
+
+                firstAbility.CooldownTick = int.MinValue;
+                secondAbility.CooldownTick = int.MaxValue;
                 Assert.Same(firstAbilityEntity, manager.TemporalEntitiesIndex.First());
                 Assert.Same(secondAbilityEntity, manager.TemporalEntitiesIndex.Last());
 

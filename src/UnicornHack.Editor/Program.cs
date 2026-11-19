@@ -57,6 +57,7 @@ public static class Program
         });
         await SerializeAsync(ItemGroup.Loader);
         await SerializeAsync(Ability.Loader, Transform);
+        await SerializeAsync(Feature.Loader);
         await SerializeAsync(Branch.Loader);
         await SerializeAsync(NormalMapFragment.Loader, Transform);
         await SerializeAsync(ConnectingMapFragment.Loader, Transform);
@@ -175,6 +176,10 @@ public static class Program
             script, player, p => p.Name,
             validate: race =>
             {
+                if (race.GenerationWeight is { } expression)
+                {
+                    _ = RewardGenerationWeight.CreateFunction(expression);
+                }
                 foreach (var (level, effects) in race.Effects)
                 {
                     if (effects.Count == 0)
@@ -211,6 +216,10 @@ public static class Program
     private static void Verify(string script, Item item)
         => Verify(script, item, i => i.Name, i =>
         {
+            if (i.GenerationWeight is { } expression)
+            {
+                _ = RewardGenerationWeight.CreateFunction(expression);
+            }
             if (i.Weight == null
                 && i.BaseItem == null)
             {
@@ -266,6 +275,14 @@ public static class Program
 
             return null;
         });
+
+    private static void Verify(string script, Feature feature)
+        => Verify(script, feature, value => value.Name,
+            value => value.Behavior.HasFlag(Systems.Features.FeatureBehavior.TriggerOnInterval)
+                && value.Abilities.Count == 0
+                ? "timed feature requires abilities"
+                : null,
+                getAbilities: value => value.Abilities);
 
     private static void Verify(string script, Branch branch)
         => Verify(script, branch, b => b.Name);
@@ -371,6 +388,10 @@ public static class Program
 
     private static void Validate<T>(Ability ability, string ownerName, T owner)
     {
+        if (ability.GenerationWeight is { } expression)
+        {
+            _ = RewardGenerationWeight.CreateFunction(expression);
+        }
         if (string.IsNullOrWhiteSpace(ability.Name))
         {
             throw new InvalidOperationException($"Ability on {ownerName} has no name");

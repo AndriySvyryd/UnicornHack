@@ -109,6 +109,7 @@ public partial class GameManager
             containerEntity => (List<GameEntity>)containerEntity.ActiveEffects!.Abilities,
             keepPrincipalAlive: false,
             keepDependentAlive: true);
+        AbilitiesToAffectableRelationship.AddDependentsListener(CellThreatTracker);
 
         // Structural component effects own their carrier abilities through CarrierId. Removing the last
         // record removes the carrier component; removing the carrier component removes every referencing record.

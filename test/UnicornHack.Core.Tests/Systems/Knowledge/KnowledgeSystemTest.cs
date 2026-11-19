@@ -1,4 +1,5 @@
 using UnicornHack.Data.Creatures;
+using UnicornHack.Data.Features;
 using UnicornHack.Data.Items;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
@@ -12,6 +13,32 @@ public class KnowledgeSystemTest
 ...
 >..
 ..#";
+
+    [Fact]
+    public void Features_are_known_only_after_perception_and_remembered_outside_visibility()
+    {
+        var room = TestHelper.BuildRoom("...#...");
+        var visible = FeatureData.SmallFountain.Instantiate(room, new Point(2, 0));
+        var hidden = FeatureData.SmallFountain.Instantiate(room, new Point(5, 0));
+        var player = PlayerRace.InstantiatePlayer("Tester", Sex.Male, room, new Point(0, 0));
+        player.Position!.Heading = Direction.East;
+        var manager = room.Entity.Manager;
+        manager.Queue.ProcessQueue(manager);
+
+        var knowledge = Assert.Single(room.KnownFeatures).Value;
+        Assert.Same(visible.Position!.Knowledge, knowledge);
+        Assert.Same(visible, knowledge.Knowledge!.KnownEntity);
+        Assert.True(knowledge.Knowledge.IsIdentified);
+        Assert.Null(hidden.Position!.Knowledge);
+
+        Assert.True(manager.TravelSystem.TeleportActor(player, new Point(4, 0), manager));
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(2, room.KnownFeatures.Count);
+        Assert.Same(knowledge, room.KnownFeatures[new Point(2, 0)]);
+        Assert.Equal(SenseType.None, knowledge.Knowledge.SensedType);
+        Assert.Same(hidden, room.KnownFeatures[new Point(5, 0)].Knowledge!.KnownEntity);
+    }
 
     [Fact]
     public void Knowledge_updated_on_travel()

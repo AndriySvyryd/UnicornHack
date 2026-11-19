@@ -23,8 +23,12 @@ public class AIComponent : ActorComponent
         set => SetWithNotify(value, ref _noise);
     }
 
+    public Dictionary<Point, byte>? ThreatenedCells { get; set; }
+
     protected override void Clean()
     {
+        ThreatenedCells?.Clear();
+        ThreatenedCells = null;
         _behavior = default;
         _noise = default;
 

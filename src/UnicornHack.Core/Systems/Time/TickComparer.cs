@@ -1,6 +1,6 @@
 ﻿namespace UnicornHack.Systems.Time;
 
-public class TickComparer : IComparer<(int Tick, int Id)>
+public sealed class TickComparer : IComparer<(int Tick, int ComponentId, int Id)>
 {
     public static readonly TickComparer Instance = new();
 
@@ -8,14 +8,15 @@ public class TickComparer : IComparer<(int Tick, int Id)>
     {
     }
 
-    public int Compare((int Tick, int Id) x, (int Tick, int Id) y)
+    public int Compare((int Tick, int ComponentId, int Id) left, (int Tick, int ComponentId, int Id) right)
     {
-        var diff = x.Tick - y.Tick;
+        var diff = left.Tick.CompareTo(right.Tick);
         if (diff != 0)
         {
             return diff;
         }
 
-        return x.Id - y.Id;
+        diff = left.ComponentId.CompareTo(right.ComponentId);
+        return diff != 0 ? diff : left.Id.CompareTo(right.Id);
     }
 }

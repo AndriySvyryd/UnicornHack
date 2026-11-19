@@ -2,7 +2,6 @@ using System.ComponentModel;
 using ModelContextProtocol.Server;
 using UnicornHack.DiagnosticClient.Connection;
 using UnicornHack.Hubs;
-using UnicornHack.Services;
 
 namespace UnicornHack.DiagnosticClient.Tools;
 
@@ -96,7 +95,7 @@ public sealed class DialogTools
 
     [McpServerTool, Description(
         "Fetch a localized description from the server. category mirrors DescriptionCategory: " +
-        "0=Creature 1=Item 2=Ability 3=Trait 4=Feat 5=Race 6=God 7=Player 8=Spell 9=Other " +
+        "0=Default 1=Creature 2=Race 3=Item 4=Ability 5=Effect 6=Property 7=Room 8=Feature " +
         "(see UnicornHack.Services.DescriptionCategory for the canonical enum).")]
     public Task<string> describe(string topic_id, int category, CancellationToken cancellationToken = default)
         => WrapResult(

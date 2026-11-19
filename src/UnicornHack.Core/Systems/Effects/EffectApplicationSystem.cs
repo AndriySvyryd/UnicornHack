@@ -473,7 +473,7 @@ public partial class EffectApplicationSystem :
                 }
 
                 var newExpiration = remaining - xp;
-                if (newExpiration < 0)
+                if (newExpiration <= 0)
                 {
                     var index = activeEffects.PropertyEffects.IndexOf(instance);
                     if (index < 0)
@@ -526,7 +526,7 @@ public partial class EffectApplicationSystem :
             }
 
             var newExpiration = remaining - xp;
-            if (newExpiration < 0)
+            if (newExpiration <= 0)
             {
                 var statusType = GetTimedStatusType(record);
                 AbilityLevelSystem.DetachComponentCarrier(record, playerEntity, manager);

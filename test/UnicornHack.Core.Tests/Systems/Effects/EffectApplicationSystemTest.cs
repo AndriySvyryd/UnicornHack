@@ -16,6 +16,32 @@ namespace UnicornHack.Systems.Effects;
 
 public class EffectApplicationSystemTest
 {
+    [Fact]
+    public void Status_ability_imposes_and_lifts_its_condition()
+    {
+        var game = TestHelper.CreateGame(seed: 1u);
+        var room = TestHelper.BuildRoom(@"
+.....
+.....
+.....
+.....
+.....", game);
+        var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(2, 2));
+        var manager = playerEntity.Manager;
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.False(AbilityLevelSystem.GetAbilityLevel(playerEntity, "stunned") > 0);
+
+        EffectTestHelper.ApplyStatus(playerEntity, EffectType.Stun, duration: 100, manager);
+
+        Assert.True(AbilityLevelSystem.GetAbilityLevel(playerEntity, "stunned") > 0);
+
+        manager.AbilityLevelSystem.RemoveAbility(playerEntity, "stunned", manager);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.False(AbilityLevelSystem.GetAbilityLevel(playerEntity, "stunned") > 0);
+    }
+
     [Theory]
     [InlineData(false, false, false)]
     [InlineData(false, true, false)]
@@ -25,7 +51,7 @@ public class EffectApplicationSystemTest
     [InlineData(false, true, true)]
     [InlineData(true, false, true)]
     [InlineData(true, true, true)]
-    public void Non_decreasing_levels_survive_named_and_type_wide_decreases(bool typeWide, bool instant, bool nonDecreasing)
+    public void Non_decreasing_levels_survive_named_and_type_based_decreases(bool typeWide, bool instant, bool nonDecreasing)
     {
         var template = new LeveledAbility
         {
@@ -86,6 +112,17 @@ public class EffectApplicationSystemTest
         manager.Queue.ProcessQueue(manager);
         var expressionRecord = Assert.Single(target.ActiveEffects!.ComponentEffects.GetValues(template.Name));
         Assert.True(ordinaryRecord.InstanceId < expressionRecord.InstanceId);
+
+        if (typeWide)
+        {
+            AddLevelSuppressor(target, "test random expression-safe suppressor", AbilityType.Skill,
+                abilityName: null, abilityType: AbilityType.Buff, amount: 1, manager,
+                instant ? EffectDuration.Instant : EffectDuration.Infinite);
+
+            Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(target, template.Name));
+            Assert.Equal(0, AbilityLevelSystem.GetAbilityLevel(target, ordinary.Name));
+            return;
+        }
 
         var exception = Assert.Throws<InvalidOperationException>(() => AddLevelSuppressor(
             target, "test invalid expression suppressor", AbilityType.Skill,
@@ -1146,6 +1183,11 @@ public class EffectApplicationSystemTest
         }.AddToAffectable(target));
         Assert.Throws<InvalidOperationException>(() => new Ability
         {
+            Name = "unqualified wildcard selector",
+            Effects = [new DecreaseAbilityLevel { AbilityName = "*" }]
+        }.AddToAffectable(target));
+        Assert.Throws<InvalidOperationException>(() => new Ability
+        {
             Name = "duplicate selector",
             Effects =
             [
@@ -1187,8 +1229,10 @@ public class EffectApplicationSystemTest
         Assert.Equal(-1 - (int)AbilityType.Skill, typeEffect.TargetEntityId);
     }
 
-    [Fact]
-    public void Type_decrease_applies_to_each_matching_ability_and_excludes_its_source()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("*")]
+    public void Type_decrease_distinguishes_random_and_wildcard_selection_and_excludes_its_source(string? selectorName)
     {
         var (target, manager) = CreateEffectTarget();
         manager.AbilityLevelSystem.AddAbilityEffect(
@@ -1201,13 +1245,19 @@ public class EffectApplicationSystemTest
 
         var suppressor = AddLevelSuppressor(
             target, "skill suppressor", AbilityType.Skill,
-            abilityName: null, abilityType: AbilityType.Skill,
+            abilityName: selectorName, abilityType: AbilityType.Skill,
             amount: 1, manager);
 
-        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(
-            target, AbilityData.Acrobatics.Name));
-        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(
-            target, AbilityData.Stealth.Name));
+        var eligibleNames = new[] { AbilityData.Acrobatics.Name, AbilityData.Stealth.Name };
+        if (selectorName == "*")
+        {
+            Assert.All(eligibleNames, name => Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(target, name)));
+        }
+        else
+        {
+            Assert.Single(eligibleNames, name => AbilityLevelSystem.GetAbilityLevel(target, name) == 1);
+            Assert.Single(eligibleNames, name => AbilityLevelSystem.GetAbilityLevel(target, name) == 2);
+        }
         Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(
             target, AbilityData.Greased.Name));
         Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(target, suppressor.Name!));
@@ -1216,19 +1266,141 @@ public class EffectApplicationSystemTest
             target.ActiveEffects!.ComponentEffects,
             effect => effect.EffectType == EffectType.DecreaseAbilityLevel
                       && effect.SourceAbilityEntityId == suppressor.EntityId);
-        Assert.Null(decreaseRecord.TargetName);
-        Assert.Equal((int)AbilityType.Skill, decreaseRecord.ConditionValue);
+        if (selectorName == "*")
+        {
+            Assert.Null(decreaseRecord.TargetName);
+            Assert.Equal((int)AbilityType.Skill, decreaseRecord.ConditionValue);
+        }
+        else
+        {
+            Assert.Contains(decreaseRecord.TargetName, eligibleNames);
+            Assert.Null(decreaseRecord.ConditionValue);
+        }
 
         manager.AbilityLevelSystem.AddAbilityEffect(
             target, AbilityData.WaterSourcery, level: 2);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(
+        Assert.Equal(selectorName == "*" ? 1 : 2, AbilityLevelSystem.GetAbilityLevel(
             target, AbilityData.WaterSourcery.Name));
         Assert.Equal(
-            1,
+            selectorName == "*" ? 1 : 2,
             manager.AffectableAbilitiesIndex[
                 (target.Id, AbilityData.WaterSourcery.Name)]!.Ability!.Level);
+    }
+
+    [Theory]
+    [InlineData(AbilityType.Flaw, EffectDuration.Instant)]
+    [InlineData(AbilityType.Fault, EffectDuration.Instant)]
+    [InlineData(AbilityType.Curse, EffectDuration.Instant)]
+    [InlineData(AbilityType.Curse, EffectDuration.UntilTimeout)]
+    [InlineData(AbilityType.Curse, EffectDuration.Infinite)]
+    public void Unnamed_negative_decreases_select_one_eligible_ability(AbilityType type, EffectDuration duration)
+    {
+        var room = TestHelper.BuildRoom("...");
+        var player = PlayerRace.InstantiatePlayer("Tester", Sex.Male, room, new Point(0, 0));
+        var manager = room.Entity.Manager;
+        foreach (var name in new[] { "test negative one", "test negative two" })
+        {
+            manager.AbilityLevelSystem.AddAbilityEffect(player,
+                new Ability { Name = name, Type = type, Effects = [] });
+        }
+        const string protectedName = "test protected negative";
+        manager.AbilityLevelSystem.AddAbilityEffect(player,
+            new Ability { Name = protectedName, Type = type, NonDecreasingLevel = true, Effects = [] });
+
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(2, AbilityLevelSystem.GetRemovableAbilities(player, type).Count);
+        var ability = new Ability
+        {
+            Name = "test purification",
+            Effects = [new DecreaseAbilityLevel
+            {
+                AbilityType = type, Duration = duration, DurationAmount = duration == EffectDuration.UntilTimeout ? "10" : null
+            }]
+        }.AddToAffectable(player);
+        var activate = ActivateAbilityMessage.Create(manager);
+        activate.AbilityEntity = ability.Entity;
+        activate.ActivatorEntity = player;
+        activate.TargetEntity = player;
+        manager.Process(activate);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(player, protectedName));
+        Assert.Equal(1, new[] { "test negative one", "test negative two" }
+            .Count(name => AbilityLevelSystem.GetAbilityLevel(player, name) == 0));
+        if (duration == EffectDuration.Instant)
+        {
+            Assert.Single(AbilityLevelSystem.GetRemovableAbilities(player, type));
+            return;
+        }
+
+        var decrease = Assert.Single(player.ActiveEffects!.ComponentEffects,
+            effect => effect.EffectType == EffectType.DecreaseAbilityLevel);
+        Assert.NotNull(decrease.TargetName);
+        Assert.Null(decrease.ConditionValue);
+        if (duration == EffectDuration.UntilTimeout)
+        {
+            manager.Game.CurrentTick = 10;
+            manager.EffectApplicationSystem.ExpireTimedPropertyEffects(player, manager);
+            manager.Queue.ProcessQueue(manager);
+            Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(player, "test negative one"));
+            Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(player, "test negative two"));
+        }
+    }
+
+    [Theory]
+    [InlineData(EffectDuration.Instant)]
+    [InlineData(EffectDuration.UntilTimeout)]
+    public void Named_negative_decreases_target_only_the_specified_ability(EffectDuration duration)
+    {
+        var room = TestHelper.BuildRoom("...");
+        var player = PlayerRace.InstantiatePlayer("Tester", Sex.Male, room, new Point(0, 0));
+        var manager = room.Entity.Manager;
+        foreach (var name in new[] { "test named negative one", "test named negative two" })
+        {
+            manager.AbilityLevelSystem.AddAbilityEffect(player,
+                new Ability { Name = name, Type = AbilityType.Curse, Effects = [] });
+        }
+        manager.Queue.ProcessQueue(manager);
+        var ability = new Ability
+        {
+            Name = "test named purification",
+            Effects = [new DecreaseAbilityLevel
+            {
+                AbilityName = "test named negative two", Duration = duration,
+                DurationAmount = duration == EffectDuration.UntilTimeout ? "10" : null
+            }]
+        }.AddToAffectable(player);
+        var activate = ActivateAbilityMessage.Create(manager);
+        activate.AbilityEntity = ability.Entity;
+        activate.ActivatorEntity = player;
+        activate.TargetEntity = player;
+        manager.Process(activate);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(player, "test named negative one"));
+        Assert.Equal(0, AbilityLevelSystem.GetAbilityLevel(player, "test named negative two"));
+    }
+
+    [Fact]
+    public void Wildcard_instant_decrease_removes_all_matching_abilities_and_excludes_its_source()
+    {
+        var (target, manager) = CreateEffectTarget();
+        manager.AbilityLevelSystem.AddAbilityEffect(target, AbilityData.Acrobatics, level: 2);
+        manager.AbilityLevelSystem.AddAbilityEffect(target, AbilityData.Stealth, level: 2);
+        manager.AbilityLevelSystem.AddAbilityEffect(target, AbilityData.Greased, level: 2);
+        manager.Queue.ProcessQueue(manager);
+
+        var suppressor = AddLevelSuppressor(target, "instant wildcard skill remover", AbilityType.Skill,
+            abilityName: "*", abilityType: AbilityType.Skill, amount: 1, manager, EffectDuration.Instant);
+
+        Assert.Equal(0, AbilityLevelSystem.GetAbilityLevel(target, AbilityData.Acrobatics.Name));
+        Assert.Equal(0, AbilityLevelSystem.GetAbilityLevel(target, AbilityData.Stealth.Name));
+        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(target, AbilityData.Greased.Name));
+        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(target, suppressor.Name!));
+        Assert.DoesNotContain(target.ActiveEffects!.ComponentEffects,
+            effect => effect.EffectType == EffectType.DecreaseAbilityLevel && effect.SourceAbilityEntityId == suppressor.EntityId);
     }
 
     [Fact]

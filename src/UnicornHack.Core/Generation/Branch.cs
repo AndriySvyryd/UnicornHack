@@ -136,6 +136,12 @@ public class Branch : ILoadable, ICSScriptSerializable
         set;
     } = new();
 
+    public FeatureGenerator FeatureGenerator
+    {
+        get;
+        set;
+    } = new();
+
     /// <summary>
     ///     Default room width (tiles) for this branch. Fragments may override per-fragment via
     ///     <see cref="DefiningMapFragment.RoomWidth" />.
@@ -249,6 +255,7 @@ public class Branch : ILoadable, ICSScriptSerializable
                 => v is not ItemGenerator { ExpectedInitialCount: 3 } ig
                     || ig.GetType() != typeof(ItemGenerator)
         },
+        { nameof(FeatureGenerator), (_, v) => v is not FeatureGenerator generator || generator.GetType() != typeof(FeatureGenerator) },
         { nameof(RoomWidth), (_, v) => (byte)v! != DefaultRoomWidth },
         { nameof(RoomHeight), (_, v) => (byte)v! != DefaultRoomHeight },
         { nameof(DefaultTerrain), (_, v) => (MapFeature)v! != MapFeature.Default },

@@ -8,6 +8,10 @@ public partial class GameManager
 {
     public EntityGroup<GameEntity> Features { get; private set; } = null!;
 
+    public FeatureSystem FeatureSystem { get; private set; } = null!;
+
+    public CellThreatTracker CellThreatTracker { get; private set; } = null!;
+
     public LookupEntityRelationship<GameEntity, Point, SortedDictionary<Point, GameEntity>>
         FeaturesToRoomCellRelationship { get; private set; } = null!;
 
@@ -16,6 +20,9 @@ public partial class GameManager
         Add<FeatureComponent>(EntityComponent.Feature, poolSize: 32, maxPoolSize: 64);
         Features = CreateGroup(nameof(Features),
             new EntityMatcher<GameEntity>().AllOf((int)EntityComponent.Feature, (int)EntityComponent.Position), capacity: 64);
+        FeatureSystem = new FeatureSystem();
+        CellThreatTracker = new(this);
+        Features.AddListener(FeatureSystem);
         FeaturesToRoomCellRelationship = new(
             nameof(FeaturesToRoomCellRelationship),
             Features,
@@ -27,5 +34,6 @@ public partial class GameManager
             (featureEntity, _) => featureEntity.RemoveComponent(EntityComponent.Position),
             roomEntity => (SortedDictionary<Point, GameEntity>)roomEntity.Room!.Features,
             keepDependentAlive: true);
+        queue.Register<TraveledMessage>(FeatureSystem, TraveledMessage.Name, 7);
     }
 }

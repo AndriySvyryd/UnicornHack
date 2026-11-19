@@ -1,15 +1,69 @@
 using UnicornHack.Data.Abilities;
 using UnicornHack.Data.Creatures;
+using UnicornHack.Data.Features;
 using UnicornHack.Data.Items;
+using UnicornHack.Generation.Effects;
 using UnicornHack.Systems.Abilities;
+using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
+using UnicornHack.Systems.Senses;
 using UnicornHack.Systems.Time;
 
 namespace UnicornHack.Systems.Levels;
 
 public class TravelSystemTest
 {
+    [Fact]
+    public void Safe_path_queries_avoid_trigger_cells_without_making_them_impassable()
+    {
+        var room = TestHelper.BuildRoom(@"
+.....
+.....
+.....");
+        var manager = room.Entity.Manager;
+        FeatureData.SpikeTrap.Instantiate(room, new Point(2, 1));
+        manager.Queue.ProcessQueue(manager);
+
+        var safe = manager.TravelSystem.GetShortestPath(room, new Point(0, 1), new Point(4, 1), Direction.East,
+            avoidHazards: true)?.ToArray();
+        var ordinary = manager.TravelSystem.GetShortestPath(room, new Point(0, 1), new Point(4, 1), Direction.East);
+
+        Assert.NotNull(safe);
+        Assert.DoesNotContain(new Point(2, 1), safe);
+        Assert.Contains(new Point(2, 1), ordinary!);
+        Assert.True(manager.TravelSystem.CanMoveTo(new Point(2, 1), room));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Safe_direction_filter_preserves_physical_options_when_no_safe_cell_exists(bool hasSafeCell)
+    {
+        var room = TestHelper.BuildRoom("""
+            ...
+            ...
+            ...
+            """);
+        var actor = CreatureData.Boggart.Instantiate(room, new Point(1, 1));
+        var manager = actor.Manager;
+        for (var index = 0; index < Vector.MovementDirections.Length; index++)
+        {
+            if (hasSafeCell && index == (int)Direction.East)
+            {
+                continue;
+            }
+            FeatureData.SpikeTrap.Instantiate(room, actor.Position!.Cell!.Value.Translate(Vector.MovementDirections[index]));
+        }
+        manager.Queue.ProcessQueue(manager);
+        Span<Direction> directions = stackalloc Direction[8];
+
+        Assert.Equal(8, manager.TravelSystem.GetPossibleMovementDirections(actor.Position!, directions));
+        Assert.Equal(hasSafeCell ? 1 : 0,
+            manager.TravelSystem.GetPossibleMovementDirections(actor.Position!, directions, avoidHazards: true));
+        Assert.Equal(hasSafeCell ? Direction.East : (Direction?)null, manager.TravelSystem.TryGetSafeDirection(actor.Position!));
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -78,14 +132,179 @@ public class TravelSystemTest
         manager.Queue.ProcessQueue(manager);
 
         Direction[] expected = [Direction.North, Direction.Southeast];
-        Assert.Equal(
-            expected,
-            manager.TravelSystem.GetPossibleMovementDirections(undine.Position!, safe: true));
-
         Span<Direction> directions = stackalloc Direction[8];
         var directionCount = manager.TravelSystem.GetPossibleMovementDirections(
-            undine.Position!, safe: true, directions);
+            undine.Position!, directions);
         Assert.Equal(expected, directions[..directionCount].ToArray());
+    }
+
+    [Fact]
+    public void Known_only_paths_ignore_unperceived_blocking_features()
+    {
+        var room = TestHelper.BuildRoom("""
+            .....
+            .....
+            .....
+            """);
+        var player = PlayerRace.InstantiatePlayer("Tester", Sex.Male, room, new Point(0, 1));
+        player.Position!.Heading = Direction.West;
+        var manager = room.Entity.Manager;
+        manager.Queue.ProcessQueue(manager);
+        var feature = FeatureData.SmallFountain.Instantiate(room, new Point(2, 1));
+        manager.Queue.ProcessQueue(manager);
+        Array.Copy(room.Terrain, room.KnownTerrain, room.TileCount);
+        Assert.Null(feature.Position!.Knowledge);
+        Assert.False(manager.TravelSystem.CanMoveTo(new Point(2, 1), room));
+        var unseenPath = manager.TravelSystem.GetShortestPath(room, new Point(0, 1), new Point(4, 1),
+            Direction.East, knownOnly: true)?.ToArray();
+        Assert.Contains(new Point(2, 1), unseenPath!);
+
+        room.VisibleTerrain[room.PointToIndex![2, 1]] = 255;
+        VisibleTerrainChangedMessage.Enqueue(room.Entity, manager);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.NotNull(feature.Position.Knowledge);
+        var knownPath = manager.TravelSystem.GetShortestPath(room, new Point(0, 1), new Point(4, 1),
+            Direction.East, knownOnly: true)?.ToArray();
+        Assert.DoesNotContain(new Point(2, 1), knownPath!);
+    }
+
+    [Fact]
+    public void Known_only_paths_avoid_overlapping_threats_when_any_source_is_known()
+    {
+        var room = TestHelper.BuildRoom("""
+            .....
+            .....
+            .....
+            """);
+        var player = PlayerRace.InstantiatePlayer("Tester", Sex.Male, room, new Point(0, 1));
+        player.Position!.Heading = Direction.West;
+        var manager = room.Entity.Manager;
+        var actor = CreatureData.Boggart.Instantiate(room, new Point(4, 1));
+        var feature = FeatureData.SpikeTrap.Instantiate(room, new Point(2, 1));
+        var attack = new Ability
+        {
+            Name = "test unknown overlapping attack", Type = AbilityType.RangedAttack, Range = 4,
+            Effects = [new PhysicalDamage { Amount = "1" }]
+        }.AddToAffectable(actor);
+        manager.Queue.ProcessQueue(manager);
+        attack.Slot = 5;
+        actor.AI!.NextAction = ActorActionType.UseAbilitySlot;
+        actor.AI.NextActionTarget = 5;
+        actor.AI.NextActionTarget2 = -player.Id;
+        Array.Copy(room.Terrain, room.KnownTerrain, room.TileCount);
+        Assert.Null(actor.Position!.Knowledge);
+        Assert.Null(feature.Position!.Knowledge);
+        Assert.Equal(2, room.CellThreats![new Point(2, 1)].Count);
+        var unseenPath = manager.TravelSystem.GetShortestPath(room, new Point(0, 1), new Point(3, 1),
+            Direction.East, knownOnly: true, avoidHazards: true)?.ToArray();
+        Assert.Contains(new Point(2, 1), unseenPath!);
+
+        room.VisibleTerrain[room.PointToIndex![2, 1]] = 255;
+        VisibleTerrainChangedMessage.Enqueue(room.Entity, manager);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.NotNull(feature.Position.Knowledge);
+        Assert.Null(actor.Position.Knowledge);
+        var knownPath = manager.TravelSystem.GetShortestPath(room, new Point(0, 1), new Point(3, 1),
+            Direction.East, knownOnly: true, avoidHazards: true)?.ToArray();
+        Assert.DoesNotContain(new Point(2, 1), knownPath!);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Forced_displacement_triggers_hazards_and_preview_does_not_move_actors(bool preview)
+    {
+        var room = TestHelper.BuildRoom("""
+            #.#
+            #.#
+            #.#
+            """);
+        var manager = room.Entity.Manager;
+        var mover = PlayerRace.InstantiatePlayer("Mover", Sex.Male, room, new Point(1, 2));
+        var displaced = PlayerRace.InstantiatePlayer("Displaced", Sex.Male, room, new Point(1, 1));
+        FeatureData.SpikeTrap.Instantiate(room, new Point(1, 0));
+        manager.AbilityLevelSystem.AddAbilityEffect(displaced, new Ability
+        {
+            Name = "test immobile displaced actor", Type = AbilityType.Buff,
+            Effects =
+            [
+                new ChangeProperty<bool>
+                {
+                    TargetActivator = true, PropertyName = "CanMove", Amount = "0",
+                    CombinationFunction = ValueCombinationFunction.Override
+                },
+                new ChangeProperty<int>
+                {
+                    TargetActivator = true, PropertyName = "MovementDelay", Amount = "0",
+                    CombinationFunction = ValueCombinationFunction.Override
+                }
+            ]
+        });
+        manager.Queue.ProcessQueue(manager);
+        Assert.False(displaced.Being!.CanMove);
+        Assert.Equal(0, displaced.Position!.MovementDelay);
+        var initialHp = displaced.Being.HitPoints;
+        var initialActionTick = displaced.Player!.NextActionTick;
+        var travel = TravelMessage.Create(manager);
+        travel.ActorEntity = mover;
+        travel.TargetCell = new Point(1, 1);
+        travel.TargetHeading = Direction.North;
+        travel.MoveOffConflicting = true;
+        travel.SuppressDelay = true;
+
+        if (preview)
+        {
+            Assert.True(manager.TravelSystem.CanTravel(travel, manager));
+            manager.ReturnMessage(travel);
+        }
+        else
+        {
+            manager.Process(travel);
+        }
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(preview ? new Point(1, 2) : new Point(1, 1), mover.Position!.Cell);
+        Assert.Equal(preview ? new Point(1, 1) : new Point(1, 0), displaced.Position.Cell);
+        if (preview)
+        {
+            Assert.Equal(initialHp, displaced.Being.HitPoints);
+        }
+        else
+        {
+            Assert.True(displaced.Being.HitPoints < initialHp);
+        }
+        Assert.Equal(initialActionTick, displaced.Player.NextActionTick);
+    }
+
+    [Fact]
+    public void Displacement_preview_preserves_random_state_with_multiple_destinations()
+    {
+        var room = TestHelper.BuildRoom("""
+            #.#
+            #..
+            #.#
+            """);
+        var manager = room.Entity.Manager;
+        var mover = PlayerRace.InstantiatePlayer("Mover", Sex.Male, room, new Point(1, 2));
+        var displaced = PlayerRace.InstantiatePlayer("Displaced", Sex.Male, room, new Point(1, 1));
+        FeatureData.SpikeTrap.Instantiate(room, new Point(2, 1));
+        manager.Queue.ProcessQueue(manager);
+        var initialSeed = room.Game.Random.Seed;
+        var travel = TravelMessage.Create(manager);
+        travel.ActorEntity = mover;
+        travel.TargetCell = new Point(1, 1);
+        travel.TargetHeading = Direction.North;
+        travel.MoveOffConflicting = true;
+
+        Assert.True(manager.TravelSystem.CanTravel(travel, manager));
+        manager.ReturnMessage(travel);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(initialSeed, room.Game.Random.Seed);
+        Assert.Equal(new Point(1, 2), mover.Position!.Cell);
+        Assert.Equal(new Point(1, 1), displaced.Position!.Cell);
     }
 
     [Fact]
@@ -781,6 +1000,45 @@ public class TravelSystemTest
         Assert.Empty(roomA.Actors);
         Assert.Empty(roomA.Items);
         Assert.Contains(roomA, roomA.Level.Rooms);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Stranded_roaming_creature_is_deleted_when_the_last_player_leaves(bool anotherPlayerStays)
+    {
+        var game = TestHelper.CreateGame(seed: 1u);
+        var source = TestHelper.BuildRoom("...", game);
+        var destination = TestHelper.BuildRoom("...", game);
+        var manager = game.Manager;
+        MoveRoomToLevel(destination, source.Level);
+        ConnectRooms(source, new Point(1, 0), destination, new Point(0, 0));
+        var creature = CreatureData.Cerberus.Instantiate(source, new Point(0, 0));
+        var player = PlayerRace.InstantiatePlayer("First", Sex.Male, source, new Point(1, 0));
+        var remainingPlayer = anotherPlayerStays
+            ? PlayerRace.InstantiatePlayer("Second", Sex.Male, source, new Point(2, 0))
+            : null;
+        manager.Queue.ProcessQueue(manager);
+        var creatureId = creature.Id;
+
+        Assert.True(manager.TravelSystem.TravelToRoom(player, destination.EntityId, manager));
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(destination.EntityId, player.Position!.RoomId);
+
+        if (remainingPlayer != null)
+        {
+            Assert.Same(creature, manager.FindEntity(creatureId));
+            Assert.Equal(source.EntityId, remainingPlayer.Position!.RoomId);
+            player.Position.Cell = new Point(2, 0);
+            remainingPlayer.Position.Cell = new Point(1, 0);
+            Assert.True(manager.TravelSystem.TravelToRoom(remainingPlayer, destination.EntityId, manager));
+            manager.Queue.ProcessQueue(manager);
+            Assert.Equal(destination.EntityId, remainingPlayer.Position.RoomId);
+        }
+
+        Assert.Null(manager.FindEntity(creatureId));
+        Assert.Empty(source.Actors);
+        Assert.Contains(source, source.Level.Rooms);
     }
 
     [Fact]

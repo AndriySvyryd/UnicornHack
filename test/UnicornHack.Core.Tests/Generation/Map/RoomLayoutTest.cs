@@ -253,11 +253,12 @@ public class RoomLayoutTest
     [Fact]
     public void Static_map_chunk_exposes_perimeter_points_from_fragment()
     {
-        var room = TestHelper.BuildRoom(new string('.', 5) + "\n"
-                                        + new string('.', 5) + "\n"
-                                        + new string('.', 5) + "\n"
-                                        + new string('.', 5) + "\n"
-                                        + new string('.', 5));
+        var room = TestHelper.BuildRoom(@"
+.....
+.....
+.....
+.....
+.....");
         var fragment = new NormalMapFragment
         {
             Name = "perimeter-box",
@@ -324,7 +325,12 @@ public class RoomLayoutTest
             var fragment = new DefiningMapFragment
             {
                 Name = "fallback-defining-" + seed,
-                Map = ".....\n.....\n.....\n.....\n.....",
+                Map = @"
+.....
+.....
+.....
+.....
+.....",
                 NoRandomDoorways = true,
                 CreatureGenerator = new CreatureGenerator { ExpectedInitialCount = 0 },
                 ItemGenerator = new ItemGenerator { ExpectedInitialCount = 0 },

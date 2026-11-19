@@ -190,6 +190,7 @@ public static class ClientStateHelpers
             Actors = new Dictionary<int, ActorChange>(),
             Items = new Dictionary<int, ItemChange>(),
             Connections = new Dictionary<int, ConnectionChange>(),
+            Features = new Dictionary<int, FeatureChange>(),
             LevelMap = levelMap
         };
         var level = player.Room;
@@ -215,6 +216,14 @@ public static class ClientStateHelpers
             foreach (var kvp in data.Connections)
             {
                 ExpandConnection(kvp.Key, kvp.Value, level.Connections!, isParentAdd: true);
+            }
+        }
+
+        if (data.Features != null)
+        {
+            foreach (var (id, feature) in data.Features)
+            {
+                ExpandFeature(id, feature, level.Features!);
             }
         }
 
@@ -284,6 +293,60 @@ public static class ClientStateHelpers
                 case 5:
                     ApplySparseMapChanges(data.LevelMapChanges!, levelMap);
                     break;
+                case 12:
+                    level.Features ??= [];
+                    foreach (var (id, feature) in data.Features!)
+                    {
+                        ExpandFeature(id, feature, level.Features);
+                    }
+                    break;
+            }
+        }
+    }
+
+    public static void ExpandFeature(int id, FeatureChange data, Dictionary<int, FeatureChange> features)
+    {
+        if (data.ChangedProperties == 0)
+        {
+            features.Remove(id);
+            return;
+        }
+
+        if (data.ChangedProperties == null)
+        {
+            features[id] = new FeatureChange
+            {
+                ChangedProperties = null,
+                Name = data.Name,
+                LevelX = data.LevelX,
+                LevelY = data.LevelY,
+                Destroyed = data.Destroyed,
+                BlocksMovement = data.BlocksMovement,
+                NextActionTick = data.NextActionTick,
+                CooldownTick = data.CooldownTick,
+                NextActions = data.NextActions,
+                AffectedCells = (int[])data.AffectedCells.Clone(),
+                IsCurrentlyPerceived = data.IsCurrentlyPerceived
+            };
+            return;
+        }
+
+        var feature = features[id];
+        for (var index = 1; index < FeatureChange.PropertyCount; index++)
+        {
+            if (!data.ChangedProperties.IsPropertyChanged(index)) { continue; }
+            switch (index)
+            {
+                case 1: feature.Name = data.Name; break;
+                case 2: feature.LevelX = data.LevelX; break;
+                case 3: feature.LevelY = data.LevelY; break;
+                case 4: feature.Destroyed = data.Destroyed; break;
+                case 5: feature.BlocksMovement = data.BlocksMovement; break;
+                case 6: feature.NextActionTick = data.NextActionTick; break;
+                case 7: feature.CooldownTick = data.CooldownTick; break;
+                case 8: feature.NextActions = data.NextActions; break;
+                case 9: feature.AffectedCells = (int[])data.AffectedCells.Clone(); break;
+                case 10: feature.IsCurrentlyPerceived = data.IsCurrentlyPerceived; break;
             }
         }
     }

@@ -1,6 +1,7 @@
 ﻿using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Effects;
+using UnicornHack.Systems.Features;
 using UnicornHack.Systems.Time;
 using UnicornHack.Utils.MessagingECS;
 
@@ -15,7 +16,7 @@ public partial class GameManager
         private set;
     } = null!;
 
-    public SortedUniqueEntityIndex<GameEntity, (int Tick, int Id)> TemporalEntitiesIndex
+    public SortedUniqueEntityIndex<GameEntity, (int Tick, int ComponentId, int Id)> TemporalEntitiesIndex
     {
         get;
         private set;
@@ -33,18 +34,20 @@ public partial class GameManager
             new EntityMatcher<GameEntity>().AnyOf(
                 (int)EntityComponent.AI,
                 (int)EntityComponent.Player,
+                (int)EntityComponent.Feature,
                 (int)EntityComponent.Ability,
                 (int)EntityComponent.ActiveEffects), capacity: 1024);
 
-        TemporalEntitiesIndex = new SortedUniqueEntityIndex<GameEntity, (int Tick, int Id)>(
+        TemporalEntitiesIndex = new SortedUniqueEntityIndex<GameEntity, (int Tick, int ComponentId, int Id)>(
             nameof(TemporalEntitiesIndex),
             TemporalEntities,
-            new KeyValueGetter<GameEntity, (int Tick, int Id)>(
+            new KeyValueGetter<GameEntity, (int Tick, int ComponentId, int Id)>(
                 (change, matcher, valueType) =>
                 {
                     // The entity's temporal key is the earliest of its next action / ability cooldown and
                     // its next timed-modifier expiry, so a single slot schedules whichever comes first.
                     int? earliest = null;
+                    var componentId = (int)EntityComponent.Ability;
 
                     if (matcher.TryGetValue<int?>(
                             change, (int)EntityComponent.Ability, nameof(AbilityComponent.CooldownTick), valueType,
@@ -61,6 +64,7 @@ public partial class GameManager
                         && (earliest == null || aiTick.Value < earliest.Value))
                     {
                         earliest = aiTick.Value;
+                        componentId = (int)EntityComponent.AI;
                     }
 
                     if (matcher.TryGetValue<int?>(
@@ -70,22 +74,36 @@ public partial class GameManager
                         && (earliest == null || playerTick.Value < earliest.Value))
                     {
                         earliest = playerTick.Value;
+                        componentId = (int)EntityComponent.Player;
                     }
 
                     if (matcher.TryGetValue<int?>(
                             change, (int)EntityComponent.ActiveEffects,
                             nameof(ActiveEffectsComponent.NextEffectTick), valueType, out var effectTick)
                         && effectTick.HasValue
-                        && (earliest == null || effectTick.Value < earliest.Value))
+                        && (earliest == null || effectTick.Value <= earliest.Value))
                     {
                         earliest = effectTick.Value;
+                        componentId = (int)EntityComponent.ActiveEffects;
                     }
 
-                    return earliest.HasValue ? ((earliest.Value, change.Entity.Id), true) : ((0, 0), false);
+                    if (matcher.TryGetValue<int?>(
+                            change, (int)EntityComponent.Feature, nameof(FeatureComponent.NextActionTick), valueType,
+                            out var featureTick) && featureTick.HasValue
+                        && (earliest == null || featureTick.Value < earliest.Value))
+                    {
+                        earliest = featureTick.Value;
+                        componentId = (int)EntityComponent.Feature;
+                    }
+
+                    return earliest.HasValue
+                        ? ((earliest.Value, componentId, change.Entity.Id), true)
+                        : ((0, 0, 0), false);
                 },
                 new PropertyMatcher<GameEntity>()
                     .With(component => ((AIComponent)component).NextActionTick, (int)EntityComponent.AI)
                     .With(component => ((PlayerComponent)component).NextActionTick, (int)EntityComponent.Player)
+                    .With(component => ((FeatureComponent)component).NextActionTick, (int)EntityComponent.Feature)
                     .With(component => ((AbilityComponent)component).CooldownTick, (int)EntityComponent.Ability)
                     .With(component => ((ActiveEffectsComponent)component).NextEffectTick,
                         (int)EntityComponent.ActiveEffects)

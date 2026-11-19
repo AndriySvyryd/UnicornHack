@@ -91,7 +91,7 @@ public class MessagePackTest
             Name = "Dudley",
             PendingOptions = new PlayerOptionsData
             {
-                Choice = RewardType.RacePedestal,
+                Choice = RewardType.Race,
                 Action = PlayerChoiceSystem.AddAction,
                 Title = "Choose a race",
                 Notice = "Permanent",
@@ -125,12 +125,14 @@ public class MessagePackTest
         };
 
         var cancellationToken = TestContext.Current.CancellationToken;
+        var optionsReader = new MessagePackReader(MessagePackSerializer.Serialize(state.PendingOptions, Options, cancellationToken));
+        Assert.Equal(5, optionsReader.ReadArrayHeader());
         var bytes = MessagePackSerializer.Serialize(state, Options, cancellationToken);
         var result = MessagePackSerializer.Deserialize<PlayerChange>(
             bytes, Options, cancellationToken);
         Assert.Equal((int)EffectDuration.UntilXPGained, result.Abilities![1].ExpirationEvent);
         Assert.Equal(7, result.Abilities[1].Noise);
-        Assert.Equal(RewardType.RacePedestal, result.PendingOptions!.Choice);
+        Assert.Equal(RewardType.Race, result.PendingOptions!.Choice);
         Assert.Equal(PlayerChoiceSystem.AddAction, result.PendingOptions.Action);
         Assert.Equal("Choose a race", result.PendingOptions.Title);
         Assert.Equal("Permanent", result.PendingOptions.Notice);
@@ -467,7 +469,7 @@ public class MessagePackTest
             [
                 "Player.Full=DC0012C0A000000000C0C0C0C000000000000000C0",
                 "Player.Sparse=92CE0001000107",
-                "Room.Full=9CC0C0C0C0C0C0A00000000000",
+                "Room.Full=9DC0C0C0C0C0C0A00000000000C0",
                 "Room.Sparse=92CD080107",
                 "Actor.Full=9DC0000000A0A0C20000000000C0",
                 "Actor.Sparse=92CD10019500A0000000",

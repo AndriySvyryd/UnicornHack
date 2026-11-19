@@ -31,6 +31,7 @@ public class EmptyLevelLayout : LevelLayout, ICSScriptSerializable
             return null;
         }
 
+        branch.FeatureGenerator.Fill(room, chunks);
         roomParameters.CreatureGenerator.Fill(room, chunks);
         roomParameters.ItemGenerator.Fill(room, chunks);
 

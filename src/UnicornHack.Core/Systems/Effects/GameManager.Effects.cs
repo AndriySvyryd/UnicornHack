@@ -9,14 +9,23 @@ namespace UnicornHack;
 
 public partial class GameManager
 {
-    internal ListObjectPool<ActivePropertyEffect> ActivePropertyEffectPool { get; } =
-        new(() => new ActivePropertyEffect(), initialSize: 4096, maxSize: 8192, preallocatedCount: 0);
+    [ThreadStatic]
+    private static ListObjectPool<ActivePropertyEffect>? _propertyEffectPool;
 
-    internal ListObjectPool<ActiveComponentEffect> ActiveComponentEffectPool { get; } =
-        new(() => new ActiveComponentEffect(), initialSize: 1024, maxSize: 2048, preallocatedCount: 0);
+    internal ListObjectPool<ActivePropertyEffect> ActivePropertyEffectPool
+        => _propertyEffectPool ??= new(static () => new ActivePropertyEffect(), initialSize: 4096, maxSize: 8192, preallocatedCount: 0);
 
-    internal ListObjectPool<EffectAccumulator> EffectAccumulatorPool { get; } =
-        new(() => new EffectAccumulator(), initialSize: 1024, maxSize: 2048, preallocatedCount: 0);
+    [ThreadStatic]
+    private static ListObjectPool<ActiveComponentEffect>? _componentEffectPool;
+
+    internal ListObjectPool<ActiveComponentEffect> ActiveComponentEffectPool
+        => _componentEffectPool ??= new(static () => new ActiveComponentEffect(), initialSize: 1024, maxSize: 2048, preallocatedCount: 0);
+
+    [ThreadStatic]
+    private static ListObjectPool<EffectAccumulator>? _accumulatorPool;
+
+    internal ListObjectPool<EffectAccumulator> EffectAccumulatorPool
+        => _accumulatorPool ??= new(static () => new EffectAccumulator(), initialSize: 1024, maxSize: 2048, preallocatedCount: 0);
 
     public ActivePropertyEffect RentActivePropertyEffect(
         int gameId,

@@ -26,6 +26,7 @@ public interface IDataProvider
 {
     ILoader<Branch> Branches { get; }
     IGroupedLoader<AbilityType, Ability> Abilities { get; }
+    ILoader<Feature> Features { get; }
     IIndexedGroupedLoader<byte, string, Creature> Creatures { get; }
     IGroupedLoader<ItemGroup, Item> Items { get; }
     ISingleLoader<ItemGroup> ItemGroups { get; }

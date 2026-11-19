@@ -9,5 +9,6 @@ public enum DescriptionCategory
     Ability,
     Effect,
     Property,
-    Room
+    Room,
+    Feature
 }

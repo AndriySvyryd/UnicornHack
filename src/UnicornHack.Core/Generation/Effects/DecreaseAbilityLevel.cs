@@ -53,11 +53,11 @@ public class DecreaseAbilityLevel : Effect
     {
         base.ConfigureEffect(effect, secondaryAmountOverride);
 
-        if ((AbilityType == null) == (AbilityName == null))
+        if (AbilityName == "*" ? AbilityType == null : (AbilityType == null) == (AbilityName == null))
         {
             throw new InvalidOperationException(
                 $"{nameof(DecreaseAbilityLevel)} must set exactly one of {nameof(AbilityType)} and"
-                + $" {nameof(AbilityName)}.");
+            + $" {nameof(AbilityName)}, or a wildcard name with an ability type.");
         }
 
         effect.TargetEntityId = AbilityType is { } abilityType

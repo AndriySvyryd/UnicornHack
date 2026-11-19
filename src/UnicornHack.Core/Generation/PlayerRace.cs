@@ -10,6 +10,22 @@ namespace UnicornHack.Generation;
 
 public class PlayerRace : Being, ICSScriptSerializable, ILoadable
 {
+    private Func<string, int, int, string, float>? _generationWeightFunction;
+
+    public string? GenerationWeight
+    {
+        get;
+        set
+        {
+            field = value;
+            _generationWeightFunction = null;
+        }
+    }
+
+    public float GetWeight(RoomComponent room, string feature = "")
+        => RewardGenerationWeight.Evaluate(ref _generationWeightFunction,
+            GenerationWeight ?? "1.0", Name, room, feature);
+
     public IReadOnlyDictionary<int, IReadOnlyList<Effect>> Effects
     {
         get;
@@ -79,6 +95,7 @@ public class PlayerRace : Being, ICSScriptSerializable, ILoadable
         where TPlayerRace : PlayerRace
     {
         var propertyConditions = Being.GetPropertyConditions<TPlayerRace>();
+        propertyConditions.Add(nameof(GenerationWeight), (_, value) => value != null);
         propertyConditions.Add(
             nameof(Effects), (_, value) => ((IReadOnlyDictionary<int, IReadOnlyList<Effect>>)value!).Count != 0);
         return propertyConditions;

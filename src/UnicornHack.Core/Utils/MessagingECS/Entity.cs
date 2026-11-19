@@ -9,6 +9,7 @@ public class Entity : NotificationEntity, IReferenceable, ITrackable, IPoolable,
     public static readonly MethodInfo FindComponentMethodInfo = typeof(Entity).GetMethod(nameof(FindComponent))!;
 
     private Component?[]? _components;
+    private uint _componentMask;
 
 #if DEBUG
     // ReSharper disable once CollectionNeverQueried.Local
@@ -33,12 +34,17 @@ public class Entity : NotificationEntity, IReferenceable, ITrackable, IPoolable,
         private set;
     } = null!;
 
+    public uint ComponentMask => _componentMask;
+
     public virtual void Initialize(int id, int componentCount, IEntityManager manager)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(componentCount);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(componentCount, 32);
         Debug.Assert(Manager == null!);
 
         Id = id;
         Manager = manager;
+        _componentMask = 0;
         if (_components == null
             || _components.Length != componentCount)
         {
@@ -51,6 +57,7 @@ public class Entity : NotificationEntity, IReferenceable, ITrackable, IPoolable,
                 var component = _components[i];
                 if (component != null)
                 {
+                    _componentMask |= 1u << i;
                     manager.OnComponentAdded(component);
                 }
             }
@@ -94,6 +101,7 @@ public class Entity : NotificationEntity, IReferenceable, ITrackable, IPoolable,
         FirePropertyChanging(propertyName);
 
         _components[componentId] = component;
+        _componentMask |= GetComponentBit(componentId);
 
         if (component is IKeepAliveComponent)
         {
@@ -153,6 +161,7 @@ public class Entity : NotificationEntity, IReferenceable, ITrackable, IPoolable,
         FirePropertyChanging(propertyName);
 
         _components![componentId] = null;
+        _componentMask &= ~GetComponentBit(componentId);
 
         Manager?.OnComponentRemoved(component);
 
@@ -167,34 +176,27 @@ public class Entity : NotificationEntity, IReferenceable, ITrackable, IPoolable,
     }
 
     public bool HasComponent(int componentId)
-        => _components![componentId] != null;
+        => (_componentMask & GetComponentBit(componentId)) != 0;
 
-    public bool HasComponents(int[] ids)
+    public bool HasComponents(uint mask) => (_componentMask & mask) == mask;
+
+    public bool HasAnyComponent(uint mask) => (_componentMask & mask) != 0;
+
+    internal static uint GetComponentMask(int[] ids)
     {
-        for (var i = 0; i < ids.Length; i++)
+        uint mask = 0;
+        foreach (var id in ids)
         {
-            var id = ids[i];
-            if (_components![id] == null)
-            {
-                return false;
-            }
+            mask |= GetComponentBit(id);
         }
-
-        return true;
+        return mask;
     }
 
-    public bool HasAnyComponent(int[] ids)
+    private static uint GetComponentBit(int componentId)
     {
-        for (var i = 0; i < ids.Length; i++)
-        {
-            var id = ids[i];
-            if (_components![id] != null)
-            {
-                return true;
-            }
-        }
-
-        return false;
+        ArgumentOutOfRangeException.ThrowIfNegative(componentId);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(componentId, 32);
+        return 1u << componentId;
     }
 
     public void ForEachComponent<TState>(TState state, Action<TState, int, Component> componentAction)
@@ -235,6 +237,10 @@ public class Entity : NotificationEntity, IReferenceable, ITrackable, IPoolable,
 
     public void RemoveReference(object owner)
     {
+        if (_referenceCount == 0)
+        {
+            throw new InvalidOperationException($"Entity {Id} is not referenced by object {owner}");
+        }
 #if DEBUG
         _owners.Remove(owner);
 #endif
@@ -288,6 +294,7 @@ public class Entity : NotificationEntity, IReferenceable, ITrackable, IPoolable,
     {
         Manager.RemoveEntity(this);
 
+        _componentMask = 0;
         _id = 0;
         Manager = null!;
         _pool?.Return(this);

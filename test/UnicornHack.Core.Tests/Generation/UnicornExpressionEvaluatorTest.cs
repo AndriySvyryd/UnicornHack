@@ -5,6 +5,20 @@ namespace UnicornHack.Generation;
 public class UnicornExpressionEvaluatorTest
 {
     [Fact]
+    public void Item_generation_weights_receive_the_feature_context()
+    {
+        var room = TestHelper.BuildRoom(".");
+        room.Level.Depth = 3;
+        var item = new Item { Name = "test item", GenerationWeight = "$feature == 'gilded item case' ? $depth * 2.0 : 1.0" };
+
+        Assert.Equal(1, item.GetWeight(room));
+        Assert.Equal(6, item.GetWeight(room, "gilded item case"));
+        item.GenerationWeight = "$feature == 'gilded item case' ? 0.0 : 2.0";
+        Assert.Equal(2, item.GetWeight(room));
+        Assert.Equal(0, item.GetWeight(room, "gilded item case"));
+    }
+
+    [Fact]
     public void Literals()
     {
         Assert.Equal(0, Evaluate<int>("0"));

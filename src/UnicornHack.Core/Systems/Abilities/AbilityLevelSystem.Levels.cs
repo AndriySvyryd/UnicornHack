@@ -110,7 +110,8 @@ public partial class AbilityLevelSystem
     }
 
     public ActiveComponentEffect AddAbilityEffect(
-        GameEntity entity, Ability template, int level = 1, int sourceAbilityEntityId = 0)
+        GameEntity entity, Ability template, int level = 1, int sourceAbilityEntityId = 0,
+        EffectExpiration expiration = default)
     {
         if (level <= 0)
         {
@@ -119,7 +120,7 @@ public partial class AbilityLevelSystem
 
         return AddOrUpdateAbilityEffect(
             entity, template.Name, template, level, sourceAbilityEntityId,
-            expiration: default, embeddedAbility: null,
+            expiration, embeddedAbility: null,
             accumulateLevel: true);
     }
 
@@ -712,13 +713,32 @@ public partial class AbilityLevelSystem
         var effect = context.Effect.Component;
         var abilityName = effect.TargetName;
         var abilityType = DecreaseAbilityLevel.DecodeAbilityTypeTarget(effect.TargetEntityId);
-        Debug.Assert((abilityName == null) != (abilityType == null));
+        var wildcard = abilityName == "*";
+        Debug.Assert(wildcard ? abilityType != null : (abilityName == null) != (abilityType == null));
         amount = GetSourceAbilityDecreaseAmount(context, abilityName, abilityType, amount);
+        if (wildcard)
+        {
+            abilityName = null;
+        }
 
         var sourceAbilityId = effect.ContainingAbilityId ?? 0;
         var targetsRace = abilityType == AbilityType.Race
                           || abilityName != null
                           && GetAbilityType(targetEntity, abilityName) == AbilityType.Race;
+        if (!wildcard && abilityName == null && abilityType is { } selectedType)
+        {
+            var candidates = GetRemovableAbilities(targetEntity, selectedType);
+            var manager = context.Manager;
+            candidates.RemoveAll(name => IsSourceAbility(sourceAbilityId, name, manager));
+            if (candidates.Count == 0)
+            {
+                return;
+            }
+
+            abilityName = candidates[context.Manager.Game.Random.Next(0, candidates.Count)];
+            abilityType = null;
+        }
+
         if (effect.Duration == EffectDuration.Instant)
         {
             RemoveMatchingAbilityRecords(
@@ -782,6 +802,31 @@ public partial class AbilityLevelSystem
         }
         throw new InvalidOperationException(
             $"{EffectType.DecreaseAbilityLevel} cannot suppress every race on entity {targetEntity.Id}. ");
+    }
+
+    public static List<string> GetRemovableAbilities(GameEntity entity, AbilityType type)
+    {
+        var result = new List<string>();
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var record in entity.ActiveEffects!.ComponentEffects)
+        {
+            if (record is not { EffectType: EffectType.AddAbility, Level: > 0, TargetName: { } name }
+                || !names.Add(name) || GetAbilityType(entity, name) != type)
+            {
+                continue;
+            }
+
+            var template = entity.Manager.AffectableAbilitiesIndex[(entity.Id, name)]?.Ability?.Template
+                ?? FindAbilityTemplate(entity, name);
+            if (template?.LevelExpression != null || IsAbilityNonDecreasing(entity, name))
+            {
+                continue;
+            }
+
+            result.Add(name);
+        }
+
+        return result;
     }
 
     private static bool HasActiveRace(GameEntity targetEntity)

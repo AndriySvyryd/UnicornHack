@@ -7,6 +7,95 @@ namespace UnicornHack.Utils.MessagingECS;
 
 public class EntityTest
 {
+    [Theory]
+    [InlineData(0u)]
+    [InlineData(1u)]
+    [InlineData(0x80000000u)]
+    [InlineData(0x80000001u)]
+    [InlineData(uint.MaxValue)]
+    public void Component_masks_cover_all_bits_queries_matchers_and_pool_reuse(uint present)
+    {
+        var manager = new MaskEntityManager();
+        manager.Initialize(new SequentialMessageQueue<Entity>());
+        Entity entity;
+        using (var reference = manager.CreateEntity())
+        {
+            entity = reference.Referenced;
+            for (var componentId = 0; componentId < 32; componentId++)
+            {
+                if ((present & (1u << componentId)) != 0)
+                {
+                    entity.AddComponent(new MaskComponent(componentId));
+                }
+            }
+
+            Assert.Equal(present, entity.ComponentMask);
+            for (var componentId = 0; componentId < 32; componentId++)
+            {
+                Assert.Equal((present & (1u << componentId)) != 0, entity.HasComponent(componentId));
+            }
+            foreach (var query in new uint[] { 0, 1, 0x80000000, 0x80000001, uint.MaxValue })
+            {
+                var ids = Enumerable.Range(0, 32).Where(componentId => (query & (1u << componentId)) != 0).ToArray();
+                var all = (present & query) == query;
+                var any = (present & query) != 0;
+                Assert.Equal(all, entity.HasComponents(query));
+                Assert.Equal(any, entity.HasAnyComponent(query));
+                Assert.Equal(all, new EntityMatcher<Entity>().AllOf(ids).Matches(entity));
+                Assert.Equal(any, new EntityMatcher<Entity>().AnyOf(ids).Matches(entity));
+                Assert.Equal(!any, new EntityMatcher<Entity>().NoneOf(ids).Matches(entity));
+                var registrations = new EntityMatcher<Entity>().AllOf(ids).AnyOf(ids).NoneOf(ids);
+                Assert.Equal(ids, registrations.GetAllIds());
+                Assert.Same(registrations.GetAllIds(), registrations.GetAllIds());
+            }
+
+            Assert.Equal(entity.HasComponent(31), entity.HasComponents(0x80000000u));
+            Assert.Equal(entity.HasComponent(31), new EntityMatcher<Entity>().AllOf(31, 31).Matches(entity));
+            Assert.Throws<ArgumentOutOfRangeException>(() => entity.HasComponent(-1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => entity.HasComponent(32));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new EntityMatcher<Entity>().AnyOf(32));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Entity().Initialize(1, 33, manager));
+        }
+
+        Assert.Equal(0u, entity.ComponentMask);
+        using var reusedReference = manager.CreateEntity();
+        Assert.Same(entity, reusedReference.Referenced);
+        Assert.Equal(0u, reusedReference.Referenced.ComponentMask);
+        reusedReference.Referenced.AddComponent(new MaskComponent(31));
+        Assert.Equal(0x80000000u, reusedReference.Referenced.ComponentMask);
+        reusedReference.Referenced.RemoveComponent(31);
+        Assert.Equal(0u, reusedReference.Referenced.ComponentMask);
+    }
+
+    public sealed class MaskComponent : Component
+    {
+        public MaskComponent()
+        {
+        }
+
+        public MaskComponent(int componentId)
+        {
+            ComponentId = componentId;
+        }
+    }
+
+    private sealed class MaskEntityManager() : EntityManager<Entity>(32, 1, 1, 1)
+    {
+        private int _nextId;
+
+        protected override void InitializeSystems(IMessageQueue queue)
+        {
+            for (var componentId = 0; componentId < ComponentCount; componentId++)
+            {
+                Add<MaskComponent>(componentId, 1);
+            }
+        }
+
+        public override int GetNextEntityId() => ++_nextId;
+
+        public override string GetComponentPropertyName(int componentId) => "Component" + componentId;
+    }
+
     [Fact]
     public void AddComponent()
     {
@@ -17,6 +106,7 @@ public class EntityTest
             var component = entity.AddComponent<PositionComponent>((int)EntityComponent.Position);
 
             Assert.Same(component, entityReference.Referenced.FindComponent((int)EntityComponent.Position));
+            Assert.Equal(1u << (int)EntityComponent.Position, entity.ComponentMask);
 
             using (var anotherEntityReference = manager.CreateEntity())
             {
@@ -27,6 +117,7 @@ public class EntityTest
             entity.RemoveComponent(component);
 
             Assert.False(entity.HasComponent(EntityComponent.Position));
+            Assert.Equal(0u, entity.ComponentMask);
 
             entity.RemoveComponent(component);
         }
@@ -76,6 +167,7 @@ public class EntityTest
 
             Assert.Equal(nameof(GameEntity.Ability), e.PropertyName);
             Assert.Equal(expectedCurrentValue, ((GameEntity)s!).Ability);
+            Assert.Equal(expectedCurrentValue != null, ((GameEntity)s).HasComponent(EntityComponent.Ability));
         };
 
         var propertyChangedCalled = false;
@@ -85,6 +177,7 @@ public class EntityTest
 
             Assert.Equal(nameof(GameEntity.Ability), e.PropertyName);
             Assert.Equal(expectedNewValue, ((GameEntity)s!).Ability);
+            Assert.Equal(expectedNewValue != null, ((GameEntity)s).HasComponent(EntityComponent.Ability));
         };
 
         entity.Ability = null;
@@ -121,10 +214,10 @@ public class EntityTest
         var ai = entity.GetOrAddComponent<AIComponent>(EntityComponent.AI);
         var being = entity.GetOrAddComponent<BeingComponent>(EntityComponent.Being);
 
-        Assert.True(entity.HasComponents(new[] { (int)EntityComponent.AI, (int)EntityComponent.Being }));
-        Assert.False(entity.HasComponents(new[] { (int)EntityComponent.Player, (int)EntityComponent.Being }));
-        Assert.True(entity.HasAnyComponent(new[] { (int)EntityComponent.Player, (int)EntityComponent.Being }));
-        Assert.False(entity.HasAnyComponent(new[] { (int)EntityComponent.Player, (int)EntityComponent.Knowledge }));
+        Assert.True(entity.HasComponents((1u << (int)EntityComponent.AI) | (1u << (int)EntityComponent.Being)));
+        Assert.False(entity.HasComponents((1u << (int)EntityComponent.Player) | (1u << (int)EntityComponent.Being)));
+        Assert.True(entity.HasAnyComponent((1u << (int)EntityComponent.Player) | (1u << (int)EntityComponent.Being)));
+        Assert.False(entity.HasAnyComponent((1u << (int)EntityComponent.Player) | (1u << (int)EntityComponent.Knowledge)));
 
         var count = 0;
         entity.ForEachComponent(
@@ -160,6 +253,7 @@ public class EntityTest
         entity.ForEachComponent(count, (_, __, ___) => count++);
         Assert.Equal(0, count);
         Assert.Equal(0, entity.Id);
+        Assert.Equal(0u, entity.ComponentMask);
         Assert.Null(entity.Manager);
         Assert.Null(manager.FindEntity(id));
 
@@ -177,6 +271,7 @@ public class EntityTest
         Assert.Same(entity, reused);
 
         Assert.Throws<InvalidOperationException>(() => entity.RemoveReference(manager));
+        Assert.True(PoolContainsEntity(manager, entity));
     }
 
     [Fact]

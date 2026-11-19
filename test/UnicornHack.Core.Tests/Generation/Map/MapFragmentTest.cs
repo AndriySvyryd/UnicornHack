@@ -22,7 +22,7 @@ public partial class MapFragmentTest
 
         Assert.Equal(0, game.Services.Data.Creatures.Get("Cerberus").GetWeight(room));
         Assert.Equal("Cerberus", Creature.GetTemplate(Assert.Single(room.Actors).Value)!.Name);
-        Assert.Equal("Cerberus", Assert.Single(Assert.Single(chunks).CreaturePoints).CreatureName);
+        Assert.Equal("Cerberus", Assert.Single(Assert.Single(chunks).CreaturePoints).Value);
         Assert.Equal(1, game.GenerationStats.CreatureInstancesByName["Cerberus"]);
         Assert.Equal(1, room.Level.GenerationStats.CreatureInstancesByName["Cerberus"]);
     }
@@ -47,12 +47,12 @@ public partial class MapFragmentTest
 
         var creaturePoints = Assert.Single(chunks).CreaturePoints;
         Assert.Equal(2, creaturePoints.Count);
-        Assert.Single(creaturePoints, spawn => spawn.CreatureName is null);
-        var exactSpawn = Assert.Single(creaturePoints, spawn => spawn.CreatureName is not null);
-        Assert.Equal("Cerberus", exactSpawn.CreatureName);
+        Assert.Single(creaturePoints, spawn => spawn.Value is null);
+        var exactSpawn = Assert.Single(creaturePoints, spawn => spawn.Value is not null);
+        Assert.Equal("Cerberus", exactSpawn.Value);
         var actor = Assert.Single(room.Actors).Value;
         Assert.Equal("Cerberus", Creature.GetTemplate(actor)!.Name);
-        Assert.Equal(exactSpawn.Point, actor.Position!.Cell);
+        Assert.Equal(exactSpawn.Key, actor.Position!.Cell);
     }
 
     /// <summary>
@@ -257,7 +257,7 @@ PP
 
         Assert.NotNull(chunk);
         var origin = chunk!.BoundingRectangle.TopLeft;
-        var features = chunk.FeaturePoints.ToDictionary(t => t.Point, t => t.Feature);
+        var features = chunk.FeaturePoints;
         Assert.Equal(2, features.Count);
         Assert.Equal(RoomFeatures.DeityAltar, features[new Point((byte)(origin.X + 1), (byte)(origin.Y + 1))]);
         Assert.Equal(RoomFeatures.SmallFountain, features[new Point((byte)(origin.X + 3), (byte)(origin.Y + 1))]);
@@ -277,8 +277,8 @@ PP
 
         var wildcard = Assert.Single(chunk!.FeaturePoints);
         var origin = chunk.BoundingRectangle.TopLeft;
-        Assert.Equal(new Point((byte)(origin.X + 1), (byte)(origin.Y + 1)), wildcard.Point);
-        Assert.Null(wildcard.Feature);
+        Assert.Equal(new Point((byte)(origin.X + 1), (byte)(origin.Y + 1)), wildcard.Key);
+        Assert.Null(wildcard.Value);
     }
 
     [Fact]
@@ -296,8 +296,8 @@ PP
         Assert.Empty(chunk!.FeaturePoints);
         var origin = chunk.BoundingRectangle.TopLeft;
         var creaturePoint = Assert.Single(chunk.CreaturePoints);
-        Assert.Equal(new Point((byte)(origin.X + 1), (byte)(origin.Y + 1)), creaturePoint.Point);
-        Assert.Null(creaturePoint.CreatureName);
+        Assert.Equal(new Point((byte)(origin.X + 1), (byte)(origin.Y + 1)), creaturePoint.Key);
+        Assert.Null(creaturePoint.Value);
     }
 
     [Fact]
@@ -374,8 +374,7 @@ PP
         var chunk = fragment.TryPlace(room, new LotPlacementContext(lot, rp));
         Assert.NotNull(chunk);
 
-        var bound = chunk!.FeaturePoints
-            .Select(p => p.Feature)
+        var bound = chunk!.FeaturePoints.Values
             .Where(f => f.HasValue)
             .Select(f => f!.Value)
             .ToHashSet();
@@ -399,8 +398,8 @@ PP
         room.FeatureTags = RoomFeatures.DeityAltar | RoomFeatures.SmallFountain;
         var chunk = fragment.TryPlace(room, new LotPlacementContext(lot, rp));
 
-        var wildcard = chunk!.FeaturePoints.Single(p => p.Point.X == chunk.BoundingRectangle.TopLeft.X + 3);
-        Assert.Equal(RoomFeatures.SmallFountain, wildcard.Feature);
+        var wildcard = chunk!.FeaturePoints.Single(p => p.Key.X == chunk.BoundingRectangle.TopLeft.X + 3);
+        Assert.Equal(RoomFeatures.SmallFountain, wildcard.Value);
     }
 
     [Fact]
@@ -415,9 +414,9 @@ PP
         room.FeatureTags = RoomFeatures.SmallFountain;
         var chunk = fragment.TryPlace(room, new LotPlacementContext(lot, rp));
 
-        var boundCount = chunk!.FeaturePoints.Count(p => p.Feature.HasValue);
+        var boundCount = chunk!.FeaturePoints.Count(p => p.Value.HasValue);
         Assert.Equal(1, boundCount);
-        Assert.Equal(RoomFeatures.SmallFountain, chunk.FeaturePoints.Single(p => p.Feature.HasValue).Feature);
+        Assert.Equal(RoomFeatures.SmallFountain, chunk.FeaturePoints.Single(p => p.Value.HasValue).Value);
     }
 
     [Fact]
@@ -432,7 +431,7 @@ PP
         room.FeatureTags = RoomFeatures.Normal;
         var chunk = fragment.TryPlace(room, new LotPlacementContext(lot, rp));
 
-        Assert.All(chunk!.FeaturePoints, p => Assert.Null(p.Feature));
+        Assert.All(chunk!.FeaturePoints, p => Assert.Null(p.Value));
     }
 
     [Fact]
@@ -464,13 +463,13 @@ PP
         // Source '_' at (1,1) in a 3-wide × 4-tall payload → rotated 90° CW lands at
         // (height-1-y, x) = (4-1-1, 1) = (2, 1) in the new 4-wide × 3-tall payload.
         var featurePoint = Assert.Single(chunk.FeaturePoints);
-        Assert.Equal(RoomFeatures.DeityAltar, featurePoint.Feature);
-        Assert.Equal(new Point((byte)(origin.X + 2), (byte)(origin.Y + 1)), featurePoint.Point);
+        Assert.Equal(RoomFeatures.DeityAltar, featurePoint.Value);
+        Assert.Equal(new Point((byte)(origin.X + 2), (byte)(origin.Y + 1)), featurePoint.Key);
 
         // Source '%' at (1,2) → rotated CW lands at (4-1-2, 1) = (1, 1).
         var creaturePoint = Assert.Single(chunk.CreaturePoints);
-        Assert.Equal(new Point((byte)(origin.X + 1), (byte)(origin.Y + 1)), creaturePoint.Point);
-        Assert.Null(creaturePoint.CreatureName);
+        Assert.Equal(new Point((byte)(origin.X + 1), (byte)(origin.Y + 1)), creaturePoint.Key);
+        Assert.Null(creaturePoint.Value);
     }
 
     /// <summary>

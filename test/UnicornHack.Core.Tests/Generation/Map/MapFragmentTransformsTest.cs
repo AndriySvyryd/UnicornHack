@@ -11,79 +11,41 @@ public class MapFragmentTransformsTest
     [InlineData(true, false, true, 1)]
     [InlineData(false, true, true, 1)]
     [InlineData(true, true, true, 1)]
-    public void GetOrbit_returns_expected_size_for_flag_combination(
+    public void GetOrbit_respects_flags_order_and_unique_membership(
         bool noMirror, bool noTurnOver, bool noTransform, int expectedSize)
     {
         var orbit = MapFragmentTransforms.GetOrbit(noMirror, noTurnOver, noTransform);
 
         Assert.Equal(expectedSize, orbit.Length);
-    }
-
-    [Theory]
-    [InlineData(false, false, false)]
-    [InlineData(true, false, false)]
-    [InlineData(false, true, false)]
-    [InlineData(false, false, true)]
-    public void GetOrbit_always_starts_with_identity(bool noMirror, bool noTurnOver, bool noTransform)
-    {
-        var orbit = MapFragmentTransforms.GetOrbit(noMirror, noTurnOver, noTransform);
-
         Assert.Equal(MapFragmentTransform.Identity, orbit[0]);
+        Assert.Equal(orbit.Length, orbit.ToArray().Distinct().Count());
+        if (!noMirror && !noTurnOver && !noTransform)
+        {
+            Assert.Equal(Enum.GetValues<MapFragmentTransform>().ToHashSet(), orbit.ToArray().ToHashSet());
+        }
+        if (noMirror && !noTurnOver && !noTransform)
+        {
+            Assert.Equal(new[]
+            {
+                MapFragmentTransform.Identity, MapFragmentTransform.Rotate90,
+                MapFragmentTransform.Rotate180, MapFragmentTransform.Rotate270
+            }, orbit.ToArray());
+        }
     }
 
     [Theory]
-    [InlineData(false, false, false)]
-    [InlineData(true, false, false)]
-    [InlineData(false, true, false)]
-    [InlineData(true, true, false)]
-    [InlineData(false, false, true)]
-    public void GetOrbit_elements_are_unique(bool noMirror, bool noTurnOver, bool noTransform)
+    [InlineData(5, 3)]
+    [InlineData(3, 5)]
+    [InlineData(1, 7)]
+    [InlineData(4, 4)]
+    public void GetTransformedSize_matches_axis_mapping_for_every_transform(byte width, byte height)
     {
-        var orbit = MapFragmentTransforms.GetOrbit(noMirror, noTurnOver, noTransform).ToArray();
-
-        Assert.Equal(orbit.Length, orbit.Distinct().Count());
-    }
-
-    [Fact]
-    public void GetOrbit_full_contains_all_eight_D4_elements()
-    {
-        var orbit = MapFragmentTransforms.GetOrbit(noMirror: false, noTurnOver: false, noTransform: false).ToArray();
-
-        Assert.Equal(Enum.GetValues<MapFragmentTransform>().ToHashSet(), orbit.ToHashSet());
-    }
-
-    [Fact]
-    public void GetOrbit_NoMirror_contains_only_pure_rotations()
-    {
-        var orbit = MapFragmentTransforms.GetOrbit(noMirror: true, noTurnOver: false, noTransform: false).ToArray();
-
-        Assert.Equal(
-            new[]
-            {
-                MapFragmentTransform.Identity,
-                MapFragmentTransform.Rotate90,
-                MapFragmentTransform.Rotate180,
-                MapFragmentTransform.Rotate270
-            },
-            orbit);
-    }
-
-    [Fact]
-    public void GetTransformedSize_swaps_dimensions_for_diagonal_axis_transforms()
-    {
-        Assert.Equal((3, 5), MapFragmentTransform.Rotate90.GetTransformedSize(5, 3));
-        Assert.Equal((3, 5), MapFragmentTransform.Rotate270.GetTransformedSize(5, 3));
-        Assert.Equal((3, 5), MapFragmentTransform.FlipDiagonal.GetTransformedSize(5, 3));
-        Assert.Equal((3, 5), MapFragmentTransform.FlipAntiDiagonal.GetTransformedSize(5, 3));
-    }
-
-    [Fact]
-    public void GetTransformedSize_preserves_dimensions_for_axis_aligned_transforms()
-    {
-        Assert.Equal((5, 3), MapFragmentTransform.Identity.GetTransformedSize(5, 3));
-        Assert.Equal((5, 3), MapFragmentTransform.Rotate180.GetTransformedSize(5, 3));
-        Assert.Equal((5, 3), MapFragmentTransform.FlipHorizontal.GetTransformedSize(5, 3));
-        Assert.Equal((5, 3), MapFragmentTransform.FlipVertical.GetTransformedSize(5, 3));
+        foreach (var transform in Enum.GetValues<MapFragmentTransform>())
+        {
+            var swapsAxes = transform is MapFragmentTransform.Rotate90 or MapFragmentTransform.Rotate270
+                or MapFragmentTransform.FlipDiagonal or MapFragmentTransform.FlipAntiDiagonal;
+            Assert.Equal(swapsAxes ? (height, width) : (width, height), transform.GetTransformedSize(width, height));
+        }
     }
 
     [Fact]

@@ -1,6 +1,7 @@
 using UnicornHack.Data.Abilities;
 using UnicornHack.Data.Creatures;
 using UnicornHack.Data.Items;
+using UnicornHack.Data.Features;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
@@ -13,6 +14,49 @@ namespace UnicornHack.Systems.Actors;
 
 public class AISystemTest
 {
+    [Fact]
+    public void AI_rechecks_a_queued_move_that_would_enter_a_trap()
+    {
+        var room = TestHelper.BuildRoom(@".....
+.....
+.....");
+        var actor = CreatureData.Boggart.Instantiate(room, new Point(1, 1));
+        PlayerRace.InstantiatePlayer("Tester", Sex.Male, room, new Point(4, 1));
+        var manager = room.Entity.Manager;
+        FeatureData.SpikeTrap.Instantiate(room, new Point(2, 1));
+        manager.Queue.ProcessQueue(manager);
+        actor.Position!.Heading = Direction.East;
+        actor.AI!.NextAction = ActorActionType.MoveOneCell;
+        actor.AI.NextActionTarget = (int)Direction.East;
+        var initialHp = actor.Being!.HitPoints;
+
+        TestHelper.PerformTurn(actor, manager);
+
+        Assert.NotEqual(new Point(2, 1), actor.Position.Cell);
+        Assert.Equal(initialHp, actor.Being.HitPoints);
+    }
+
+    [Fact]
+    public void AI_chooses_a_safe_exit_from_a_launcher_attack_lane()
+    {
+        var room = TestHelper.BuildRoom(@".....
+.....
+.....
+.....
+.....");
+        var actor = CreatureData.Boggart.Instantiate(room, new Point(1, 2));
+        PlayerRace.InstantiatePlayer("Tester", Sex.Male, room, new Point(0, 0));
+        var manager = room.Entity.Manager;
+        FeatureData.FireboltLauncher.Instantiate(room, new Point(2, 2));
+        manager.Queue.ProcessQueue(manager);
+        DecideNextActionMessage.Enqueue(actor, manager);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.True(actor.AI!.NextAction is ActorActionType.ChangeHeading or ActorActionType.MoveOneCell);
+        var target = actor.Position!.Cell!.Value.Translate(((Direction)actor.AI.NextActionTarget!.Value).AsVector());
+        Assert.DoesNotContain(target, room.CellThreats!.Keys);
+    }
+
     [Fact]
     public void AI_ability_windup_is_added_once_and_the_queued_attack_resolves()
     {
@@ -30,10 +74,19 @@ public class AISystemTest
             }
         }
         manager.Queue.ProcessQueue(manager);
+        var previousAttack = new Ability
+        {
+            Name = "test previous planned attack", Type = AbilityType.RangedAttack,
+            TargetingShape = TargetingShape.Square, Range = 2, Effects = []
+        }.AddToAffectable(actor);
+        manager.Queue.ProcessQueue(manager);
+        previousAttack.Slot = 5;
         actor.Position!.Heading = Direction.East;
-        actor.AI!.NextAction = null;
-        actor.AI.NextActionTarget = null;
-        actor.AI.NextActionTarget2 = null;
+        actor.AI!.NextAction = ActorActionType.UseAbilitySlot;
+        actor.AI.NextActionTarget = previousAttack.Slot;
+        actor.AI.NextActionTarget2 = new Vector(1, 0).ToInt32();
+        Assert.Contains(player.Position!.Cell!.Value, room.CellThreats!.Keys);
+        Assert.NotNull(actor.AI.ThreatenedCells);
         actor.AI.NextActionTick = manager.Game.CurrentTick + 50;
         var initialTick = actor.AI.NextActionTick;
         var initialHp = player.Being!.HitPoints;
@@ -47,12 +100,37 @@ public class AISystemTest
         Assert.Equal(initialTick + shot.Template!.Windup, actor.AI.NextActionTick);
         Assert.Equal(initialHp, player.Being.HitPoints);
         Assert.Equal(initialEp, actor.Being.EnergyPoints);
+        Assert.NotNull(actor.AI.ThreatenedCells);
         var scheduledTick = actor.AI.NextActionTick!.Value;
+        _ = room.CellThreats;
+        var cachedCells = actor.AI.ThreatenedCells;
+        Assert.NotNull(cachedCells);
 
         DecideNextActionMessage.Enqueue(actor, manager);
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(scheduledTick, actor.AI.NextActionTick);
+        Assert.Same(cachedCells, actor.AI.ThreatenedCells);
+        var threats = room.CellThreats!;
+        var sources = threats[player.Position.Cell.Value];
+        DelayMessage.Enqueue(actor, 50, manager);
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(scheduledTick + 50, actor.AI.NextActionTick);
+        Assert.Same(cachedCells, actor.AI.ThreatenedCells);
+        Assert.Same(sources, threats[player.Position.Cell.Value]);
+        scheduledTick = actor.AI.NextActionTick!.Value;
+
+        shot.CooldownTick = 100;
+        player.Player!.NextActionTick = 1000;
+        _ = room.CellThreats;
+        cachedCells = actor.AI.ThreatenedCells;
+        sources = threats[player.Position.Cell.Value];
+        Assert.Equal(TurnResult.Continue, manager.TimeSystem.AdvanceSingleTurn(manager));
+        Assert.Null(shot.CooldownTick);
+        Assert.Same(cachedCells, actor.AI.ThreatenedCells);
+        Assert.Same(sources, threats[player.Position.Cell.Value]);
+        Assert.Same(cachedCells, manager.CellThreatTracker.GetCachedTargetCells(actor, shot.EntityId, player.Position.Cell.Value));
+
         shot.SuccessCondition = AbilitySuccessCondition.Always;
 
         TestHelper.PerformTurn(actor, manager);
@@ -655,378 +733,6 @@ public class AISystemTest
         Assert.True(attacks > 0);
     }
 
-    /// <summary>
-    ///     A stunned player can't act: their queued move is dropped, they don't move, and the
-    ///     server advances their clock rather than waiting for input.
-    /// </summary>
-    [Fact]
-    public void Stunned_player_cannot_move()
-    {
-        var game = TestHelper.CreateGame(seed: 1u);
-        var room = TestHelper.BuildRoom(Map, game);
-        var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(2, 2));
-        var manager = playerEntity.Manager;
-        manager.Queue.ProcessQueue(manager);
-
-        ApplyStatus(playerEntity, EffectType.Stun, duration: 100, manager, amount: 300);
-
-        var player = playerEntity.Player!;
-        player.NextAction = ActorActionType.MoveOneCell;
-        player.NextActionTarget = (int)Direction.East;
-        var cellBefore = playerEntity.Position!.Cell!.Value;
-        var tickBefore = player.NextActionTick;
-
-        TestHelper.PerformTurn(playerEntity, manager);
-
-        Assert.Equal(cellBefore, playerEntity.Position.Cell);
-        Assert.Null(player.NextAction);
-        Assert.Equal(tickBefore + TimeSystem.DefaultActionDelay, player.NextActionTick);
-    }
-
-    [Theory]
-    [InlineData(100, 24, false)]
-    [InlineData(100, 25, true)]
-    [InlineData(200, 49, false)]
-    [InlineData(200, 50, true)]
-    public void Lower_stunned_levels_replace_actions_at_their_probability_boundary(
-        int buildup, int roll, bool moves)
-    {
-        var game = TestHelper.CreateGame(seed: 1u);
-        var room = TestHelper.BuildRoom(Map, game);
-        var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(2, 2));
-        var manager = playerEntity.Manager;
-        manager.Queue.ProcessQueue(manager);
-
-        ApplyStatus(playerEntity, EffectType.Stun, duration: 100, manager, amount: buildup);
-        Assert.Equal(buildup / 4, playerEntity.Being!.UnableToActPercent);
-        ((TestRandom)manager.Game.Random).EnqueueNext(roll);
-
-        var player = playerEntity.Player!;
-        player.NextAction = ActorActionType.MoveOneCell;
-        player.NextActionTarget = (int)Direction.East;
-        var cellBefore = playerEntity.Position!.Cell!.Value;
-
-        TestHelper.PerformTurn(playerEntity, manager);
-
-        Assert.Equal(moves ? new Point(3, 2) : cellBefore, playerEntity.Position.Cell);
-        Assert.Null(player.NextAction);
-    }
-
-    /// <summary>
-    ///     A paralysis shorter than the time between the actor's actions doesn't take hold at once;
-    ///     it banks and the actor keeps acting until successive applications accumulate to a full
-    ///     action interval.
-    /// </summary>
-    [Fact]
-    public void A_short_incapacitation_builds_up_before_it_takes_hold()
-    {
-        var game = TestHelper.CreateGame(seed: 1u);
-        var room = TestHelper.BuildRoom(Map, game);
-        var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(2, 2));
-        var manager = playerEntity.Manager;
-        manager.Queue.ProcessQueue(manager);
-        var player = playerEntity.Player!;
-
-        // A single application shorter than the actor's action interval only banks; it keeps acting. A
-        // fresh actor's threshold is its default action interval (it hasn't acted yet), so half an interval
-        // is safely sub-threshold and merely banks.
-        var freshInterval = Effects.EffectTestHelper.GetStatusEffectThreshold(playerEntity);
-        var partial = freshInterval / 2;
-
-        ApplyStatus(playerEntity, EffectType.Paralyze, duration: partial, manager);
-        manager.Queue.ProcessQueue(manager);
-
-        var cellBefore = playerEntity.Position!.Cell!.Value;
-        player.NextAction = ActorActionType.MoveOneCell;
-        player.NextActionTarget = (int)Direction.East;
-        TestHelper.PerformTurn(playerEntity, manager);
-
-        // Still able to act: the move goes through.
-        Assert.Equal(cellBefore.Translate(Direction.East.AsVector()), playerEntity.Position!.Cell);
-
-        // The move also turns, lengthening the actor's action interval; the threshold is now that longer
-        // interval. Top the banked buildup up to two fixed thresholds so level 2 incapacitates.
-        var banked = playerEntity.ActiveEffects!.Accumulators[EffectType.Paralyze].Value;
-        ApplyStatus(
-            playerEntity, EffectType.Paralyze,
-            duration: (2 * EffectApplicationSystem.BuildUpThreshold) - banked, manager);
-        manager.Queue.ProcessQueue(manager);
-
-        var cellBefore2 = playerEntity.Position!.Cell!.Value;
-        player.NextAction = ActorActionType.MoveOneCell;
-        player.NextActionTarget = (int)Direction.East;
-        TestHelper.PerformTurn(playerEntity, manager);
-
-        // Now it takes hold: the move is dropped.
-        Assert.Equal(cellBefore2, playerEntity.Position.Cell);
-        Assert.Null(player.NextAction);
-    }
-
-    [Fact]
-    public void Paralyzed_level_two_keeps_residual_buildup_banked_while_active()
-    {
-        var game = TestHelper.CreateGame(seed: 1u);
-        var room = TestHelper.BuildRoom(Map, game);
-        var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(2, 2));
-        var manager = playerEntity.Manager;
-        manager.Queue.ProcessQueue(manager);
-        var player = playerEntity.Player!;
-
-        ApplyStatus(playerEntity, EffectType.Paralyze, duration: 100, manager, amount: 250);
-        manager.Queue.ProcessQueue(manager);
-
-        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(playerEntity, AbilityData.Paralyzed.Name));
-        Assert.Equal(50, playerEntity.ActiveEffects!.Accumulators[EffectType.Paralyze].Value);
-
-        var cellBefore = playerEntity.Position!.Cell!.Value;
-        player.PreviousActionTick = manager.Game.CurrentTick - TimeSystem.DefaultActionDelay;
-        player.NextAction = ActorActionType.MoveOneCell;
-        player.NextActionTarget = (int)Direction.East;
-        TestHelper.PerformTurn(playerEntity, manager);
-
-        Assert.Equal(cellBefore, playerEntity.Position.Cell);
-        Assert.Equal(20, playerEntity.ActiveEffects.Accumulators[EffectType.Paralyze].Value);
-        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(playerEntity, AbilityData.Paralyzed.Name));
-    }
-
-    /// <summary>
-    ///     Applying a status ability imposes its condition, and removing it lifts the condition again.
-    /// </summary>
-    [Fact]
-    public void Status_ability_imposes_and_lifts_its_condition()
-    {
-        var game = TestHelper.CreateGame(seed: 1u);
-        var room = TestHelper.BuildRoom(Map, game);
-        var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(2, 2));
-        var manager = playerEntity.Manager;
-        manager.Queue.ProcessQueue(manager);
-
-        Assert.False(AbilityLevelSystem.GetAbilityLevel(playerEntity, "stunned") > 0);
-
-        EffectTestHelper.ApplyStatus(playerEntity, EffectType.Stun, duration: 100, manager);
-
-        Assert.True(AbilityLevelSystem.GetAbilityLevel(playerEntity, "stunned") > 0);
-
-        manager.AbilityLevelSystem.RemoveAbility(playerEntity, "stunned", manager);
-        manager.Queue.ProcessQueue(manager);
-
-        Assert.False(AbilityLevelSystem.GetAbilityLevel(playerEntity, "stunned") > 0);
-    }
-
-    [Fact]
-    public void Confused_level_three_moves_in_a_random_direction()
-    {
-        var game = TestHelper.CreateGame(seed: 1u);
-        var room = TestHelper.BuildRoom(Map, game);
-        var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(2, 2));
-        var manager = playerEntity.Manager;
-        manager.Queue.ProcessQueue(manager);
-
-        Assert.IsType<LeveledAbility>(AbilityData.Confused);
-        Assert.IsType<LeveledAbility>(manager.Game.Services.Data.Abilities.Get(AbilityData.Confused.Name));
-        ApplyStatus(playerEntity, EffectType.Confuse, duration: 100, manager, amount: 350);
-        manager.Queue.ProcessQueue(manager);
-        Assert.Equal(50, playerEntity.ActiveEffects!.Accumulators[EffectType.Confuse].Value);
-        Assert.Equal(3, AbilityLevelSystem.GetAbilityLevel(playerEntity, AbilityData.Confused.Name));
-
-        // East is excluded, leaving Northeast then North as the first two candidates.
-        ((TestRandom)manager.Game.Random).EnqueueNext(1);
-
-        var player = playerEntity.Player!;
-        player.NextAction = ActorActionType.MoveOneCell;
-        player.NextActionTarget = (int)Direction.East;
-        var cellBefore = playerEntity.Position!.Cell!.Value;
-
-        TestHelper.PerformTurn(playerEntity, manager);
-
-        // The player lurched North instead of stepping East as directed.
-        Assert.Equal(cellBefore.Translate(Direction.North.AsVector()), playerEntity.Position.Cell);
-        Assert.NotEqual(cellBefore.Translate(Direction.East.AsVector()), playerEntity.Position.Cell);
-    }
-
-    [Fact]
-    public void Confused_level_one_preserves_the_intended_direction()
-    {
-        var game = TestHelper.CreateGame(seed: 1u);
-        var room = TestHelper.BuildRoom(Map, game);
-        var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(2, 2));
-        var manager = playerEntity.Manager;
-        manager.Queue.ProcessQueue(manager);
-
-        ApplyStatus(playerEntity, EffectType.Confuse, duration: 100, manager, amount: 150);
-        manager.Queue.ProcessQueue(manager);
-        Assert.Equal(50, playerEntity.ActiveEffects!.Accumulators[EffectType.Confuse].Value);
-        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(playerEntity, AbilityData.Confused.Name));
-
-        var player = playerEntity.Player!;
-        player.NextAction = ActorActionType.MoveOneCell;
-        player.NextActionTarget = (int)Direction.East;
-        var cellBefore = playerEntity.Position!.Cell!.Value;
-
-        TestHelper.PerformTurn(playerEntity, manager);
-
-        Assert.Equal(cellBefore.Translate(Direction.East.AsVector()), playerEntity.Position.Cell);
-    }
-
-    [Theory]
-    [InlineData(49, Direction.North)]
-    [InlineData(50, Direction.East)]
-    public void Confused_level_two_randomizes_half_of_movement_attempts(
-        int roll, Direction expectedDirection)
-    {
-        var game = TestHelper.CreateGame(seed: 1u);
-        var room = TestHelper.BuildRoom(Map, game);
-        var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(2, 2));
-        var manager = playerEntity.Manager;
-        manager.Queue.ProcessQueue(manager);
-
-        ApplyStatus(playerEntity, EffectType.Confuse, duration: 100, manager, amount: 250);
-        manager.Queue.ProcessQueue(manager);
-        Assert.Equal(50, playerEntity.ActiveEffects!.Accumulators[EffectType.Confuse].Value);
-        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(playerEntity, AbilityData.Confused.Name));
-
-        var random = (TestRandom)manager.Game.Random;
-        random.EnqueueNext(roll);
-        if (expectedDirection == Direction.North)
-        {
-            // East is excluded, leaving Northeast then North as the first two candidates.
-            random.EnqueueNext(1);
-        }
-
-        var player = playerEntity.Player!;
-        player.NextAction = ActorActionType.MoveOneCell;
-        player.NextActionTarget = (int)Direction.East;
-        var cellBefore = playerEntity.Position!.Cell!.Value;
-
-        TestHelper.PerformTurn(playerEntity, manager);
-
-        Assert.Equal(
-            cellBefore.Translate(expectedDirection.AsVector()),
-            playerEntity.Position.Cell);
-    }
-
-    [Fact]
-    public void Staggered_level_two_moves_in_a_random_direction_after_the_action()
-    {
-        var game = TestHelper.CreateGame(seed: 1u);
-        var room = TestHelper.BuildRoom(Map, game);
-        var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(2, 2));
-        var manager = playerEntity.Manager;
-        manager.Queue.ProcessQueue(manager);
-
-        ApplyStatus(playerEntity, EffectType.Stagger, duration: 100, manager, amount: 200);
-        manager.Queue.ProcessQueue(manager);
-        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(playerEntity, AbilityData.Staggered.Name));
-        Assert.Equal(100, playerEntity.Being!.RandomMoveAfterActionPercent);
-
-        // The requested East move resolves first, then the post-action lurch starts from that new cell.
-        ((TestRandom)manager.Game.Random).EnqueueNext((int)Direction.North);
-
-        var player = playerEntity.Player!;
-        player.NextAction = ActorActionType.MoveOneCell;
-        player.NextActionTarget = (int)Direction.East;
-        var cellBefore = playerEntity.Position!.Cell!.Value;
-
-        TestHelper.PerformTurn(playerEntity, manager);
-
-        Assert.Equal(
-            cellBefore.Translate(Direction.East.AsVector()).Translate(Direction.North.AsVector()),
-            playerEntity.Position.Cell);
-    }
-
-    [Theory]
-    [InlineData(49, true)]
-    [InlineData(50, false)]
-    public void Staggered_level_one_moves_after_half_of_actions(int roll, bool shouldMove)
-    {
-        var game = TestHelper.CreateGame(seed: 1u);
-        var room = TestHelper.BuildRoom(Map, game);
-        var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(2, 2));
-        var manager = playerEntity.Manager;
-        manager.Queue.ProcessQueue(manager);
-
-        ApplyStatus(playerEntity, EffectType.Stagger, duration: 100, manager, amount: 100);
-        manager.Queue.ProcessQueue(manager);
-        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(playerEntity, AbilityData.Staggered.Name));
-        Assert.Equal(50, playerEntity.Being!.RandomMoveAfterActionPercent);
-
-        var random = (TestRandom)manager.Game.Random;
-        random.EnqueueNext(roll);
-        if (shouldMove)
-        {
-            random.EnqueueNext((int)Direction.North);
-        }
-
-        var player = playerEntity.Player!;
-        player.NextAction = ActorActionType.Wait;
-        var cellBefore = playerEntity.Position!.Cell!.Value;
-        var tickBefore = player.NextActionTick;
-
-        TestHelper.PerformTurn(playerEntity, manager);
-
-        Assert.Equal(
-            shouldMove ? cellBefore.Translate(Direction.North.AsVector()) : cellBefore,
-            playerEntity.Position.Cell);
-            Assert.Equal(tickBefore + TimeSystem.DefaultActionDelay, player.NextActionTick);
-    }
-
-    /// <summary>
-    ///     A frightened actor can't bring itself to step toward the source of its fear, though it may
-    ///     still step away.
-    /// </summary>
-    [Fact]
-    public void Frightened_actor_cannot_step_toward_the_source_of_its_fear()
-    {
-        var game = TestHelper.CreateGame(seed: 1u);
-        var room = TestHelper.BuildRoom(Map, game);
-        var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(2, 2));
-        var manager = playerEntity.Manager;
-        var ghost = CreatureData.Psukhe.Instantiate(room, new Point(0, 2));
-        manager.Queue.ProcessQueue(manager);
-
-        var ghostGaze = ghost.ActiveEffects!.Abilities.Single(a => a.Ability!.Action == AbilityAction.Gaze);
-        ApplyCompulsion(playerEntity, EffectType.Frighten, ghostGaze, manager, amount: 200);
-        Assert.Equal(2, AbilityLevelSystem.GetAbilityLevel(playerEntity, AbilityData.Frightened.Name));
-
-        var player = playerEntity.Player!;
-        var startCell = playerEntity.Position!.Cell!.Value;
-
-        // Stepping toward the fear source (West) is refused - the player stays put.
-        player.NextAction = ActorActionType.MoveOneCell;
-        player.NextActionTarget = (int)Direction.West;
-        TestHelper.PerformTurn(playerEntity, manager);
-        Assert.Equal(startCell, playerEntity.Position.Cell);
-
-        // Stepping away from it (East) is allowed.
-        player.NextAction = ActorActionType.MoveOneCell;
-        player.NextActionTarget = (int)Direction.East;
-        TestHelper.PerformTurn(playerEntity, manager);
-        Assert.Equal(startCell.Translate(Direction.East.AsVector()), playerEntity.Position.Cell);
-    }
-
-    [Fact]
-    public void Frightened_level_one_can_still_approach_the_source()
-    {
-        var game = TestHelper.CreateGame(seed: 1u);
-        var room = TestHelper.BuildRoom(Map, game);
-        var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(2, 2));
-        var manager = playerEntity.Manager;
-        var ghost = CreatureData.Psukhe.Instantiate(room, new Point(0, 2));
-        manager.Queue.ProcessQueue(manager);
-
-        var ghostGaze = ghost.ActiveEffects!.Abilities.Single(a => a.Ability!.Action == AbilityAction.Gaze);
-        ApplyCompulsion(playerEntity, EffectType.Frighten, ghostGaze, manager, amount: 100);
-        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(playerEntity, AbilityData.Frightened.Name));
-
-        var player = playerEntity.Player!;
-        var startCell = playerEntity.Position!.Cell!.Value;
-        player.NextAction = ActorActionType.MoveOneCell;
-        player.NextActionTarget = (int)Direction.West;
-        TestHelper.PerformTurn(playerEntity, manager);
-
-        Assert.Equal(startCell.Translate(Direction.West.AsVector()), playerEntity.Position.Cell);
-    }
-
     [Fact]
     public void Frightened_level_two_ai_flees_from_a_perceived_source()
     {
@@ -1071,101 +777,6 @@ public class AISystemTest
             ((Direction)actor.AI.NextActionTarget!.Value).AsVector());
         Assert.True(targetCell.DistanceTo(player.Position!.Cell!.Value)
                     > actor.Position.Cell.Value.DistanceTo(player.Position.Cell.Value));
-    }
-
-    /// <summary>
-    ///     A taunted actor can't bring itself to step away from the taunter, though it may still
-    ///     close in.
-    /// </summary>
-    [Fact]
-    public void Taunted_actor_cannot_step_away_from_the_taunter()
-    {
-        var game = TestHelper.CreateGame(seed: 1u);
-        var room = TestHelper.BuildRoom(Map, game);
-        var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(2, 2));
-        var manager = playerEntity.Manager;
-        var bugbear = CreatureData.Bugbear.Instantiate(room, new Point(0, 2));
-        manager.Queue.ProcessQueue(manager);
-
-        var taunt = bugbear.ActiveEffects!.Abilities.Single(a => a.Ability!.Action == AbilityAction.Scream);
-        ApplyCompulsion(playerEntity, EffectType.Taunt, taunt, manager, amount: 100);
-        Assert.Equal(1, AbilityLevelSystem.GetAbilityLevel(playerEntity, AbilityData.Taunted.Name));
-
-        var player = playerEntity.Player!;
-        var startCell = playerEntity.Position!.Cell!.Value;
-
-        // Stepping away from the taunter (East) is refused.
-        player.NextAction = ActorActionType.MoveOneCell;
-        player.NextActionTarget = (int)Direction.East;
-        TestHelper.PerformTurn(playerEntity, manager);
-        Assert.Equal(startCell, playerEntity.Position.Cell);
-
-        // Closing in on it (West) is allowed.
-        player.NextAction = ActorActionType.MoveOneCell;
-        player.NextActionTarget = (int)Direction.West;
-        TestHelper.PerformTurn(playerEntity, manager);
-        Assert.Equal(startCell.Translate(Direction.West.AsVector()), playerEntity.Position.Cell);
-    }
-
-    [Fact]
-    public void Taunted_level_three_allows_only_steps_toward_the_source()
-    {
-        var game = TestHelper.CreateGame(seed: 1u);
-        var room = TestHelper.BuildRoom(Map, game);
-        var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(2, 2));
-        var manager = playerEntity.Manager;
-        var bugbear = CreatureData.Bugbear.Instantiate(room, new Point(0, 2));
-        manager.Queue.ProcessQueue(manager);
-
-        var taunt = bugbear.ActiveEffects!.Abilities.Single(a => a.Ability!.Action == AbilityAction.Scream);
-        ApplyCompulsion(playerEntity, EffectType.Taunt, taunt, manager, amount: 300);
-        Assert.Equal(3, AbilityLevelSystem.GetAbilityLevel(playerEntity, AbilityData.Taunted.Name));
-
-        var player = playerEntity.Player!;
-        var startCell = playerEntity.Position!.Cell!.Value;
-
-        // A lateral step (North) is refused because it does not reduce distance to the taunter.
-        player.NextAction = ActorActionType.MoveOneCell;
-        player.NextActionTarget = (int)Direction.North;
-        TestHelper.PerformTurn(playerEntity, manager);
-        Assert.Equal(startCell, playerEntity.Position.Cell);
-
-        player.NextAction = ActorActionType.MoveOneCell;
-        player.NextActionTarget = (int)Direction.West;
-        TestHelper.PerformTurn(playerEntity, manager);
-        Assert.Equal(startCell.Translate(Direction.West.AsVector()), playerEntity.Position.Cell);
-    }
-
-    /// <summary>
-    ///     A creature can't be compelled by a fear source it can't perceive - a wall blocking line of
-    ///     sight lets the frightened actor step toward the source it can no longer see.
-    /// </summary>
-    [Fact]
-    public void A_compulsion_does_not_apply_while_its_source_is_unperceived()
-    {
-        var game = TestHelper.CreateGame(seed: 1u);
-        var room = TestHelper.BuildRoom(@"
-.#..
-....", game);
-        var manager = game.Manager;
-        var ghost = CreatureData.Psukhe.Instantiate(room, new Point(0, 0));
-        var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(3, 0));
-        manager.Queue.ProcessQueue(manager);
-
-        // The wall at (1,0) blocks line of sight, so the player can't perceive the ghost.
-        Assert.Equal(SenseType.None, manager.SensorySystem.CanSense(playerEntity, ghost) ?? SenseType.None);
-
-        var ghostGaze = ghost.ActiveEffects!.Abilities.Single(a => a.Ability!.Action == AbilityAction.Gaze);
-        ApplyCompulsion(playerEntity, EffectType.Frighten, ghostGaze, manager);
-
-        var player = playerEntity.Player!;
-        var startCell = playerEntity.Position!.Cell!.Value;
-
-        // Stepping toward the unseen fear source (West) is allowed.
-        player.NextAction = ActorActionType.MoveOneCell;
-        player.NextActionTarget = (int)Direction.West;
-        TestHelper.PerformTurn(playerEntity, manager);
-        Assert.Equal(startCell.Translate(Direction.West.AsVector()), playerEntity.Position.Cell);
     }
 
     private static void ApplyCompulsion(

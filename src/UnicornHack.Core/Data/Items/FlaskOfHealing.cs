@@ -18,6 +18,7 @@ public static partial class ItemData
             }
         },
         Type = ItemType.Potion,
+        GenerationWeight = "1.0",
         Material = Material.Glass
     };
 }

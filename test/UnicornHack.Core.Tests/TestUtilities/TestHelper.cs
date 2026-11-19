@@ -8,7 +8,7 @@ using UnicornHack.Services.English;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Effects;
-using UnicornHack.Systems.Faculties;
+using UnicornHack.Systems.Features;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Utils.MessagingECS;
 
@@ -19,6 +19,47 @@ namespace UnicornHack;
 public static class TestHelper
 {
     private static int TestAbilityId;
+
+    public static FeatureComponent CreateRewardFeature(
+        RoomComponent room, Point cell, string title, string[] candidates, RoomFeatures feature = RoomFeatures.SmallFountain,
+        RewardType rewardType = RewardType.Ritual, bool allowDestroy = false)
+    {
+        var data = (TestDataProvider)room.Game.Services.Data;
+        var manager = room.Entity.Manager;
+        if (manager.PlayerChoiceSystem is not RewardTestPlayerChoiceSystem choices)
+        {
+            choices = new RewardTestPlayerChoiceSystem();
+            manager.PlayerChoiceSystem = choices;
+        }
+
+        var definition = new Feature
+        {
+            Name = title + " " + Interlocked.Increment(ref TestAbilityId),
+            RoomFeature = feature,
+            RewardType = rewardType,
+            Behavior = FeatureBehavior.BlocksMovement | (allowDestroy ? FeatureBehavior.AllowDestroy : FeatureBehavior.None)
+        };
+        data.Features.Add(definition);
+        choices.Candidates.Add(definition.Name, [.. candidates]);
+        var entity = definition.Instantiate(room, cell);
+        return entity.Feature!;
+    }
+
+    public class RewardTestPlayerChoiceSystem : PlayerChoiceSystem
+    {
+        public Dictionary<string, string[]> Candidates { get; } = new(StringComparer.Ordinal);
+
+        public override IEnumerable<(string Name, float Weight)> GetRewardOptions(Feature definition, RoomComponent room)
+            => Candidates.TryGetValue(definition.Name, out var candidates)
+                ? candidates.Select(name => (Name: name, Weight: GetRewardWeight(definition, room, name)))
+                    .Where(option => option.Weight > 0)
+                : base.GetRewardOptions(definition, room);
+
+        public override float GetRewardWeight(Feature definition, RoomComponent room, string name)
+            => Candidates.TryGetValue(definition.Name, out var candidates)
+                ? candidates.Contains(name, StringComparer.Ordinal) ? 1f : 0f
+                : base.GetRewardWeight(definition, room, name);
+    }
 
     public static void AdvanceToNextPlayerTurn(GameManager manager)
     {

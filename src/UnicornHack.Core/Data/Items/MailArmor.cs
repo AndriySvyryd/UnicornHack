@@ -15,6 +15,7 @@ public static partial class ItemData
             }
         },
         Type = ItemType.ArmorTorso,
+        GenerationWeight = "1.0",
         Material = Material.Steel,
         Weight = 40,
         EquipableSizes = SizeCategory.Small | SizeCategory.Medium | SizeCategory.Large,

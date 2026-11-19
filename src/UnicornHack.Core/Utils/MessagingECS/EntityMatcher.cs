@@ -2,62 +2,39 @@
 
 public class EntityMatcher<TEntity> where TEntity : Entity
 {
-    private int[]? _allOfIds;
-    private int[]? _anyOfIds;
-    private int[]? _noneOfIds;
+    private readonly SortedSet<int> _allIds = [];
+    private uint _allOfMask;
+    private uint? _anyOfMask;
+    private uint _noneOfMask;
 
     public EntityMatcher<TEntity> AllOf(params int[] ids)
     {
-        _allOfIds = Merge(_allOfIds, ids);
+        _allOfMask |= Entity.GetComponentMask(ids);
+        _allIds.UnionWith(ids);
         return this;
     }
 
     public EntityMatcher<TEntity> AnyOf(params int[] ids)
     {
-        _anyOfIds = Merge(_anyOfIds, ids);
+        _anyOfMask = (_anyOfMask ?? 0) | Entity.GetComponentMask(ids);
+        _allIds.UnionWith(ids);
         return this;
     }
 
     public EntityMatcher<TEntity> NoneOf(params int[] ids)
     {
-        _noneOfIds = Merge(_noneOfIds, ids);
+        _noneOfMask |= Entity.GetComponentMask(ids);
+        _allIds.UnionWith(ids);
         return this;
     }
 
     public bool Matches(TEntity entity)
-        => (_noneOfIds == null || !entity.HasAnyComponent(_noneOfIds))
-           && (_allOfIds == null || entity.HasComponents(_allOfIds))
-           && (_anyOfIds == null || entity.HasAnyComponent(_anyOfIds));
-
-    public IEnumerable<int> GetAllIds()
-        => (_allOfIds ?? Enumerable.Empty<int>())
-            .Concat(_anyOfIds ?? Enumerable.Empty<int>())
-            .Concat(_noneOfIds ?? Enumerable.Empty<int>())
-            .Distinct();
-
-    private static int[] Merge(int[]? firstArray, int[] secondArray)
-        => firstArray?.Concat(secondArray).Distinct().OrderBy(id => id).ToArray()
-           ?? secondArray;
-
-    public override string ToString()
     {
-        var parts = new List<string>();
-
-        if (_allOfIds?.Length > 0)
-        {
-            parts.Add($"All:[{string.Join(",", _allOfIds)}]");
-        }
-
-        if (_anyOfIds?.Length > 0)
-        {
-            parts.Add($"Any:[{string.Join(",", _anyOfIds)}]");
-        }
-
-        if (_noneOfIds?.Length > 0)
-        {
-            parts.Add($"None:[{string.Join(",", _noneOfIds)}]");
-        }
-
-        return parts.Count > 0 ? string.Join(" ", parts) : "Empty";
+        var mask = entity.ComponentMask;
+        return (mask & _noneOfMask) == 0
+               && (mask & _allOfMask) == _allOfMask
+               && (_anyOfMask is not { } anyOfMask || (mask & anyOfMask) != 0);
     }
+
+    public IEnumerable<int> GetAllIds() => _allIds;
 }

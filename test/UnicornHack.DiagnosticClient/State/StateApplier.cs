@@ -31,14 +31,6 @@ internal static class StateApplier
         if (snapshot.Room is { } room)
         {
             NormalizeRoom(room);
-            // The initial GetState snapshot sends terrain as LevelMapChanges (sparse) when
-            // the explored cell count fits inside the tile count. Materialize a LevelMap so
-            // the renderer and other consumers can read room.LevelMap directly.
-            if (room.LevelMap is null && room.LevelMapChanges is not null)
-            {
-                ApplyRoomMapChanges(room, room.LevelMapChanges);
-                room.LevelMapChanges = null;
-            }
         }
 
         return snapshot;
@@ -169,6 +161,7 @@ internal static class StateApplier
                 case 9: canonical.Height = delta.Height; break;
                 case 10: canonical.GridX = delta.GridX; break;
                 case 11: canonical.GridY = delta.GridY; break;
+                case 12: MergeFeatures(canonical, delta.Features); break;
             }
         }
         return canonical;
@@ -179,6 +172,12 @@ internal static class StateApplier
         room.Actors ??= new Dictionary<int, ActorChange>();
         room.Items ??= new Dictionary<int, ItemChange>();
         room.Connections ??= new Dictionary<int, ConnectionChange>();
+        room.Features ??= new Dictionary<int, FeatureChange>();
+        if (room.LevelMapChanges is { } changes)
+        {
+            ApplyRoomMapChanges(room, changes);
+            room.LevelMapChanges = null;
+        }
     }
 
     private static void ApplyRoomMapChanges(RoomChange room, RoomMapChanges? changes)
@@ -344,6 +343,36 @@ internal static class StateApplier
                     case 1: current.LevelX = child.LevelX; break;
                     case 2: current.LevelY = child.LevelY; break;
                     case 3: current.Orientation = child.Orientation; break;
+                }
+            }
+        }
+    }
+
+    private static void MergeFeatures(RoomChange room, Dictionary<int, FeatureChange>? delta)
+    {
+        if (delta == null) { return; }
+        room.Features ??= new Dictionary<int, FeatureChange>();
+        foreach (var (id, feature) in delta)
+        {
+            var mask = feature.ChangedProperties;
+            if (mask == null) { room.Features[id] = feature; continue; }
+            if (mask == 0) { room.Features.Remove(id); continue; }
+            if (!room.Features.TryGetValue(id, out var current)) { throw OrphanDelta("Feature", id); }
+            for (var index = 1; index < FeatureChange.PropertyCount; index++)
+            {
+                if (!mask.IsPropertyChanged(index)) { continue; }
+                switch (index)
+                {
+                    case 1: current.Name = feature.Name; break;
+                    case 2: current.LevelX = feature.LevelX; break;
+                    case 3: current.LevelY = feature.LevelY; break;
+                    case 4: current.Destroyed = feature.Destroyed; break;
+                    case 5: current.BlocksMovement = feature.BlocksMovement; break;
+                    case 6: current.NextActionTick = feature.NextActionTick; break;
+                    case 7: current.CooldownTick = feature.CooldownTick; break;
+                    case 8: current.NextActions = feature.NextActions; break;
+                    case 9: current.AffectedCells = feature.AffectedCells; break;
+                    case 10: current.IsCurrentlyPerceived = feature.IsCurrentlyPerceived; break;
                 }
             }
         }

@@ -78,6 +78,11 @@ public sealed class RoomChangeFormatter : IMessagePackFormatter<RoomChange?>
         {
             writer.Write(value.GridY);
         }
+
+        if (values.IsPropertyChanged(12))
+        {
+            resolver.GetFormatterWithVerify<Dictionary<int, FeatureChange>?>().Serialize(ref writer, value.Features, options);
+        }
     }
 
     public RoomChange? Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
@@ -147,6 +152,10 @@ public sealed class RoomChangeFormatter : IMessagePackFormatter<RoomChange?>
                     break;
                 case 11:
                     result.GridY = reader.ReadByte();
+                    break;
+                case 12:
+                    result.Features = resolver.GetFormatterWithVerify<Dictionary<int, FeatureChange>?>()
+                        .Deserialize(ref reader, options);
                     break;
                 default:
                     reader.Skip();

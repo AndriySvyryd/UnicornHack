@@ -27,6 +27,7 @@ public static partial class ItemData
             }
         },
         Type = ItemType.WeaponMeleeMedium,
+        GenerationWeight = "1.0",
         Material = Material.Steel,
         Weight = 10,
         EquipableSizes = SizeCategory.Medium | SizeCategory.Large,

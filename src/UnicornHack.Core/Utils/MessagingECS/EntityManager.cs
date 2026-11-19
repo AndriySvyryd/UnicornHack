@@ -8,8 +8,31 @@ public abstract class EntityManager<TEntity> : IEntityManager
     private readonly SnapshotableDictionary<int, TEntity> _entities;
 
     private readonly List<EntityGroup<TEntity>>?[] _groupsByComponentId;
-    private readonly ListObjectPool<TEntity> _entityPool;
-    private readonly IObjectPool?[] _componentPools;
+    private readonly int _entityPoolSize;
+    private readonly int _entityMaxPoolSize;
+    private readonly (int PoolSize, int MaxPoolSize)[] _componentPoolSizes;
+
+    private static class ComponentPool<TComponent>
+        where TComponent : Component, new()
+    {
+        [ThreadStatic]
+        public static ListObjectPool<TComponent>? Pool;
+    }
+
+    [ThreadStatic]
+    private static ListObjectPool<TEntity>? _entityPool;
+
+    private ListObjectPool<TEntity> CurrentEntityPool
+    {
+        get
+        {
+            if (_entityPool == null || !_entityPool.HasConfiguration(_entityMaxPoolSize, _entityPoolSize))
+            {
+                _entityPool = new(static () => new TEntity(), _entityPoolSize, _entityMaxPoolSize, _entityPoolSize);
+            }
+            return _entityPool;
+        }
+    }
 
     // entityPoolSize is the eager initial fill; entityMaxPoolSize caps retained instances for reuse;
     // entityDictionaryCapacity pre-sizes the per-game entity store so it doesn't grow-and-realloc its
@@ -18,9 +41,9 @@ public abstract class EntityManager<TEntity> : IEntityManager
     {
         ComponentCount = componentCount;
 
-        _entityPool =
-            new ListObjectPool<TEntity>(() => new TEntity(), entityPoolSize, entityMaxPoolSize, entityPoolSize);
-        _componentPools = new IObjectPool[ComponentCount];
+        _entityPoolSize = entityPoolSize;
+        _entityMaxPoolSize = entityMaxPoolSize;
+        _componentPoolSizes = new (int, int)[ComponentCount];
 
         _groupsByComponentId = new List<EntityGroup<TEntity>>?[ComponentCount];
 
@@ -55,7 +78,7 @@ public abstract class EntityManager<TEntity> : IEntityManager
         Queue = queue;
         InitializeSystems(queue);
 
-        Debug.Assert(_componentPools.All(p => p != null));
+        Debug.Assert(_componentPoolSizes.All(settings => settings.PoolSize > 0));
 
         return this;
     }
@@ -80,11 +103,10 @@ public abstract class EntityManager<TEntity> : IEntityManager
     // large maxPoolSize lets the per-level create-and-free churn be recycled instead of GC'd.
     protected virtual void Add<TComponent>(int componentId, int poolSize, int maxPoolSize)
         where TComponent : Component, new()
-        => _componentPools[componentId] =
-            new ListObjectPool<TComponent>(() => new TComponent(), poolSize, maxPoolSize, poolSize);
+        => _componentPoolSizes[componentId] = (poolSize, maxPoolSize);
 
     public virtual object? Rent(Type type)
-        => type == typeof(TEntity) ? _entityPool.Rent() : null;
+        => type == typeof(TEntity) ? CurrentEntityPool.Rent() : null;
 
     protected EntityGroup<TEntity> CreateGroup(string name, EntityMatcher<TEntity> matcher, int capacity = 8)
     {
@@ -110,7 +132,7 @@ public abstract class EntityManager<TEntity> : IEntityManager
 
     protected virtual TEntity CreateEntityNoReference()
     {
-        var entity = _entityPool.Rent();
+        var entity = CurrentEntityPool.Rent();
         entity.Initialize(GetNextEntityId(), ComponentCount, this);
         _entities[entity.Id] = entity;
         return entity;
@@ -133,7 +155,7 @@ public abstract class EntityManager<TEntity> : IEntityManager
     void IEntityManager.RemoveEntity(Entity entity)
     {
         Debug.Assert(_entities.Dictionary.ContainsKey(entity.Id));
-        Debug.Assert(!entity.HasAnyComponent(Enumerable.Range(0, ComponentCount).ToArray()));
+        Debug.Assert(entity.ComponentMask == 0);
 
         _entities.Dictionary.Remove(entity.Id);
     }
@@ -146,7 +168,17 @@ public abstract class EntityManager<TEntity> : IEntityManager
     Entity? IEntityManager.FindEntity(int id) => FindEntity(id);
 
     public TComponent CreateComponent<TComponent>(int componentId)
-        where TComponent : Component, new() => ((ListObjectPool<TComponent>)_componentPools[componentId]!).Rent();
+        where TComponent : Component, new()
+    {
+        var (poolSize, maxPoolSize) = _componentPoolSizes[componentId];
+        var pool = ComponentPool<TComponent>.Pool;
+        if (pool == null || !pool.HasConfiguration(maxPoolSize, poolSize))
+        {
+            pool = new(static () => new TComponent(), poolSize, maxPoolSize, poolSize);
+            ComponentPool<TComponent>.Pool = pool;
+        }
+        return pool.Rent();
+    }
 
     public void OnComponentAdded(Component component)
         => OnComponentAddedOrRemoved(component, removed: false);

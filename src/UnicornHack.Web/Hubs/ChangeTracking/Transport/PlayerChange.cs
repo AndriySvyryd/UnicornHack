@@ -177,5 +177,4 @@ public class PlayerChange
             MarkChanged(17);
         }
     }
-
 }

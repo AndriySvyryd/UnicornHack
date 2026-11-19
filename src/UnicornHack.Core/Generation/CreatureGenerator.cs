@@ -98,6 +98,31 @@ public class CreatureGenerator : ICSScriptSerializable
 
     public virtual ICSScriptSerializer GetSerializer() => Serializer;
 
+    public static bool TryPickSpawnCell(RoomComponent room, out Point point)
+        => room.Level.GenerationRandom.TryPick(
+            room.IndexToPoint!,
+            candidate => CanSpawnAt(room, candidate),
+            out point);
+
+    private static bool CanSpawnAt(RoomComponent room, Point point)
+    {
+        if (!room.Entity.Manager.TravelSystem.IsActorFreeCell(point, room))
+        {
+            return false;
+        }
+
+        foreach (var incoming in room.IncomingConnections)
+        {
+            if (incoming.Connection!.TargetCell is { } arrival
+                && point.DistanceTo(arrival) <= ConnectionExclusionRadius)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     /// <summary>
     ///     The set of cells within <see cref="ConnectionExclusionRadius" /> (Chebyshev) of an
     ///     incoming connection's landing cell. Both the room's own connection tiles and the
@@ -149,7 +174,7 @@ public class CreatureGenerator : ICSScriptSerializable
             foreach (var candidate in chunk.InsidePoints)
             {
                 if (exclusionZone.Contains(candidate) || room.Actors.ContainsKey(candidate)
-                    || !room.Terrain[room.PointToIndex![candidate.X, candidate.Y]].CanMoveTo())
+                    || !room.Entity.Manager.TravelSystem.CanMoveTo(candidate, room))
                 {
                     continue;
                 }
@@ -188,21 +213,11 @@ public class CreatureGenerator : ICSScriptSerializable
     private static bool TrySpawnCreatureAt(
         RoomComponent room, Point point, Creature creature, byte maximumInitialCount)
     {
-        if (!room.IsValid(point) || !room.Terrain[room.PointToIndex![point.X, point.Y]].CanMoveTo()
-            || room.Actors.ContainsKey(point)
+        if (!CanSpawnAt(room, point)
             || room.Actors.Count >= maximumInitialCount
             || !creature.CanPlaceInstance(room.Level))
         {
             return false;
-        }
-
-        foreach (var incoming in room.IncomingConnections)
-        {
-            if (incoming.Connection!.TargetCell is { } arrival
-                && point.DistanceTo(arrival) <= ConnectionExclusionRadius)
-            {
-                return false;
-            }
         }
 
         if (creature.Instantiate(room, point) == null)

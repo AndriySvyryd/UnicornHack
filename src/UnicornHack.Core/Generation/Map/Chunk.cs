@@ -4,11 +4,6 @@ namespace UnicornHack.Generation.Map;
 
 public class Chunk
 {
-    private byte _x1;
-    private byte _x2;
-    private byte _y1;
-    private byte _y2;
-
     public Chunk(
         RoomComponent room,
         Rectangle boundingRectangle,
@@ -17,8 +12,8 @@ public class Chunk
         IReadOnlySet<Point>? insidePoints,
         IReadOnlySet<Point>? perimeterPoints,
         RoomParameters roomParameters,
-        IReadOnlyList<(Point Point, RoomFeatures? Feature)>? featurePoints = null,
-        IReadOnlyList<(Point Point, string? CreatureName)>? creaturePoints = null,
+        IReadOnlyDictionary<Point, RoomFeatures?>? featurePoints = null,
+        IReadOnlyDictionary<Point, string?>? creaturePoints = null,
         IReadOnlyList<Point>? trapPoints = null)
     {
         ArgumentNullException.ThrowIfNull(roomParameters);
@@ -30,8 +25,8 @@ public class Chunk
         DoorwayPoints = doorwayPoints ?? new HashSet<Point>();
         InsidePoints = insidePoints ?? new HashSet<Point>();
         PerimeterPoints = perimeterPoints ?? new HashSet<Point>();
-        FeaturePoints = featurePoints ?? Array.Empty<(Point, RoomFeatures?)>();
-        CreaturePoints = creaturePoints ?? [];
+        FeaturePoints = featurePoints ?? new Dictionary<Point, RoomFeatures?>();
+        CreaturePoints = creaturePoints ?? new Dictionary<Point, string?>();
         TrapPoints = trapPoints ?? Array.Empty<Point>();
 
         DebugAssertPointsInRoom();
@@ -86,14 +81,8 @@ public class Chunk
 
     public Rectangle BoundingRectangle
     {
-        get => new Rectangle(new Point(_x1, _y1), new Point(_x2, _y2));
-        set
-        {
-            _x1 = value.TopLeft.X;
-            _y1 = value.TopLeft.Y;
-            _x2 = value.BottomRight.X;
-            _y2 = value.BottomRight.Y;
-        }
+        get;
+        set;
     }
 
     public IReadOnlySet<Point> DoorwayPoints
@@ -125,7 +114,7 @@ public class Chunk
     /// <summary>
     ///     Cells whose payload glyph matched a key in <see cref="MapFragment.FeatureGlyphs" />.
     /// </summary>
-    public IReadOnlyList<(Point Point, RoomFeatures? Feature)> FeaturePoints
+    public IReadOnlyDictionary<Point, RoomFeatures?> FeaturePoints
     {
         get;
     }
@@ -134,7 +123,7 @@ public class Chunk
     ///     Authored creature positions. A null name denotes a wildcard whose creature is
     ///     selected by weight at spawn time; otherwise the named template is spawned.
     /// </summary>
-    public IReadOnlyList<(Point Point, string? CreatureName)> CreaturePoints
+    public IReadOnlyDictionary<Point, string?> CreaturePoints
     {
         get;
     }

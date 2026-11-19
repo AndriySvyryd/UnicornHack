@@ -11,27 +11,29 @@ public sealed class PlayerOptions : NotificationEntity
         set => SetWithNotify(value, ref field);
     }
 
-    private RewardType _pendingChoice;
-    private string? _pendingChoiceAction;
-    private string[] _pendingChoiceOptions = [];
+    public string? SelectedOption
+    {
+        get;
+        set => SetWithNotify(value, ref field);
+    }
 
     public RewardType ChoiceType
     {
-        get => _pendingChoice;
-        set => SetWithNotify(value, ref _pendingChoice);
+        get;
+        set => SetWithNotify(value, ref field);
     }
 
     public string? PendingChoiceAction
     {
-        get => _pendingChoiceAction;
-        set => SetWithNotify(value, ref _pendingChoiceAction);
+        get;
+        set => SetWithNotify(value, ref field);
     }
 
-    public string[] PendingChoiceOptions
+    public List<string> PendingChoiceOptions
     {
-        get => _pendingChoiceOptions;
-        set => SetWithNotify(value, ref _pendingChoiceOptions);
-    }
+        get;
+        set => SetWithNotify(value, ref field);
+    } = [];
 }
 
 public sealed record PlayerChoicePresentation(

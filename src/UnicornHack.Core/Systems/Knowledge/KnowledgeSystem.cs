@@ -15,14 +15,32 @@ public class KnowledgeSystem :
     IGameSystem<TraveledMessage>,
     IGameSystem<ItemMovedMessage>,
     IGameSystem<AttackResultMessage>,
-    IGameSystem<SoundMessage>
+    IGameSystem<SoundMessage>,
+    IEntityChangeListener<GameEntity>
 {
+    public void OnEntityAdded(in EntityChange<GameEntity> change) => UpdateFeatureKnowledge(change.Entity);
+
+    public void OnEntityRemoved(in EntityChange<GameEntity> change)
+    {
+    }
+
+    public void OnPropertyValuesChanged(in EntityChange<GameEntity> change) => UpdateFeatureKnowledge(change.Entity);
+
+    private void UpdateFeatureKnowledge(GameEntity entity)
+    {
+        if (!entity.Manager.IsLoading && entity.Feature != null && entity.Position?.RoomEntity?.Room is { } room)
+        {
+            UpdateEntityKnowledge(entity, room.KnownFeatures, entity.Manager, room);
+        }
+    }
+
     public MessageProcessingResult Process(VisibleTerrainChangedMessage message, GameManager manager)
     {
         var room = message.RoomEntity.Room!;
         UpdateAllEntitiesKnowledge(room.Actors, room.KnownActors, room, manager);
         UpdateAllEntitiesKnowledge(room.Connections, room.KnownConnections, room, manager);
         UpdateAllEntitiesKnowledge(room.Items, room.KnownItems, room, manager);
+        UpdateAllEntitiesKnowledge(room.Features, room.KnownFeatures, room, manager);
 
         return MessageProcessingResult.ContinueProcessing;
     }
@@ -45,7 +63,7 @@ public class KnowledgeSystem :
         if (message.Successful)
         {
             var room = message.Entity.Position!.RoomEntity.Room!;
-            UpdateEntityKnowledge(message.Entity, room.KnownActors, manager, room,
+            UpdateEntityKnowledge(message.Entity, message.Entity.Feature != null ? room.KnownFeatures : room.KnownActors, manager, room,
                 additionalCellToTest: message.InitialLevelCell);
         }
         else if (message.Entity.HasComponent(EntityComponent.Player))
@@ -318,7 +336,7 @@ public class KnowledgeSystem :
         }
 
         UpdateEntityKnowledge(
-            source, room.KnownActors, manager, room,
+            source, source.Feature != null ? room.KnownFeatures : room.KnownActors, manager, room,
             forcedSense: exactSoundSense, preservedSenseMask: SenseType.None);
 
         return MessageProcessingResult.ContinueProcessing;

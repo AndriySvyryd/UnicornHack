@@ -6,6 +6,7 @@ public static partial class AbilityData
     {
         Name = "Patient Vigor",
         Type = AbilityType.Boon,
+        GenerationWeight = "0",
         Effects = new List<Effect> { new ChangeProperty<int> { TargetActivator = true, Amount = "10", PropertyName = "EnergyPointMaximum" } }
     };
 }

@@ -75,35 +75,6 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         }.ToFrozenDictionary();
 
     /// <summary>
-    ///     Maps each placeable <see cref="RoomFeatures" /> bit to the <see cref="MapFeature" />
-    ///     that <see cref="Write" /> commits to the terrain when the matching feature glyph
-    ///     is encountered (or that <see cref="BindWildcardFeatures" /> commits after a
-    ///     <see cref="FeatureWildcardGlyph" /> is bound). Layout / sensing code intentionally
-    ///     does <em>not</em> register these bits as walkable or visibility-blocking — the
-    ///     feature acts purely as a tile-level identity tag on top of the underlying floor.
-    /// </summary>
-    public static readonly FrozenDictionary<RoomFeatures, MapFeature> RoomFeatureToMapFeature =
-        new Dictionary<RoomFeatures, MapFeature>
-        {
-            [RoomFeatures.DeityAltar] = MapFeature.DeityAltar,
-            [RoomFeatures.MajorShrine] = MapFeature.MajorShrine,
-            [RoomFeatures.MinorShrine] = MapFeature.MinorShrine,
-            [RoomFeatures.RitualShrine] = MapFeature.RitualShrine,
-            [RoomFeatures.SmallFountain] = MapFeature.SmallFountain,
-            [RoomFeatures.BigFountain] = MapFeature.BigFountain,
-            [RoomFeatures.SkillPedestal] = MapFeature.SkillPedestal,
-            [RoomFeatures.RacePedestal] = MapFeature.RacePedestal,
-            [RoomFeatures.TraitPedestal] = MapFeature.TraitPedestal,
-            [RoomFeatures.FeatPedestal] = MapFeature.FeatPedestal,
-            [RoomFeatures.ArmorStand] = MapFeature.ArmorStand,
-            [RoomFeatures.GildedArmorStand] = MapFeature.GildedArmorStand,
-            [RoomFeatures.ItemCase] = MapFeature.ItemCase,
-            [RoomFeatures.GildedItemCase] = MapFeature.GildedItemCase,
-            [RoomFeatures.WeaponStand] = MapFeature.WeaponStand,
-            [RoomFeatures.GildedWeaponStand] = MapFeature.GildedWeaponStand
-        }.ToFrozenDictionary();
-
-    /// <summary>
     ///     The non-placeable subset of <see cref="RoomFeatures" /> — features that describe
     ///     the whole room rather than a single tile (Secret / Cursed / Challenge / Boss).
     ///     Authors gate fragments into these rooms via positive feature tags
@@ -219,8 +190,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     ///     distinguish "this glyph has a concrete tile-feature identity" from "this glyph
     ///     resolves to plain floor by default". Returns <c>true</c> only for the terrain
     ///     glyphs (<c>.</c>, <c>,</c>, <c>#</c>, <c>A</c>, <c>~</c>) and the feature
-    ///     glyphs in <see cref="FeatureGlyphs" /> that have a matching entry in
-    ///     <see cref="RoomFeatureToMapFeature" />. Padding (<c>' '</c>), connection
+    ///     glyphs in <see cref="FeatureGlyphs" /> backed by ordinary floor. Padding, connection
     ///     identifiers, doorway candidates, wildcards, traps, and annotated glyphs return
     ///     <c>false</c> with <paramref name="feature" /> = <see cref="MapFeature.Default" />.
     /// </summary>
@@ -250,8 +220,9 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
 
         if (FeatureGlyphs.TryGetValue(c, out var roomFeature)
             && roomFeature.HasValue
-            && RoomFeatureToMapFeature.TryGetValue(roomFeature.Value, out feature))
+            && roomFeature != RoomFeatures.Trapped)
         {
+            feature = MapFeature.StoneFloor;
             return true;
         }
 
@@ -3068,24 +3039,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     {
         foreach (var feature in Enum.GetValues<MapFeature>())
         {
-            if (feature is not (MapFeature.Default
-                or MapFeature.InactiveDeityAltar
-                or MapFeature.InactiveMajorShrine
-                or MapFeature.InactiveMinorShrine
-                or MapFeature.InactiveRitualShrine
-                or MapFeature.InactiveSmallFountain
-                or MapFeature.InactiveBigFountain
-                or MapFeature.InactiveSkillPedestal
-                or MapFeature.InactiveRacePedestal
-                or MapFeature.InactiveTraitPedestal
-                or MapFeature.InactiveFeatPedestal
-                or MapFeature.InactiveArmorStand
-                or MapFeature.InactiveGildedArmorStand
-                or MapFeature.InactiveItemCase
-                or MapFeature.InactiveGildedItemCase
-                or MapFeature.InactiveWeaponStand
-                or MapFeature.InactiveGildedWeaponStand
-                or MapFeature.Unexplored))
+            if (feature is not (MapFeature.Default or MapFeature.Unexplored))
             {
                 result.Add(feature);
             }
@@ -3200,9 +3154,9 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
 
     /// <summary>
     ///     Resolves wildcard <see cref="FeatureWildcardGlyph" /> entries in the freshly
-    ///     parsed <paramref name="featurePoints" /> list by binding each one to a
+    ///     parsed <paramref name="featurePoints" /> dictionary by binding each one to a
     ///     <see cref="RoomFeatures" /> bit that <paramref name="room" /> still demands but
-    ///     no chunk has placed yet. Concrete feature bits already in the list are folded
+    ///     no chunk has placed yet. Concrete feature bits already in the dictionary are folded
     ///     into <see cref="RoomComponent.BoundPlaceableFeatures" /> first, so a wildcard
     ///     sharing the chunk with a concrete glyph for the same feature never double-binds.
     ///     Wildcards beyond the room's outstanding count are left unbound (the
@@ -3216,9 +3170,9 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     ///     fragments that rely on wildcards when a specific binding is required — earlier
     ///     wildcards may otherwise grab a bit that a later chunk would have placed
     ///     concretely. Mutates <paramref name="featurePoints" /> in place before the
-    ///     <see cref="Chunk" /> is constructed so the chunk's exposed list is immutable.
+    ///     <see cref="Chunk" /> is constructed so the chunk's exposed dictionary is read-only.
     /// </remarks>
-    private static void BindWildcardFeatures(RoomComponent room, List<(Point Point, RoomFeatures? Feature)> featurePoints)
+    private static void BindWildcardFeatures(RoomComponent room, Dictionary<Point, RoomFeatures?> featurePoints)
     {
         var demanded = room.FeatureTags & PlaceableFeaturesMask;
         if (demanded == 0)
@@ -3233,9 +3187,8 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         // feature slot the way a fountain or altar does, so multiple trap fragments
         // remain individually demanded.
         var wildcardCount = 0;
-        for (var i = 0; i < featurePoints.Count; i++)
+        foreach (var feature in featurePoints.Values)
         {
-            var feature = featurePoints[i].Feature;
             if (feature.HasValue)
             {
                 if (feature.Value != RoomFeatures.Trapped)
@@ -3270,9 +3223,9 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         }
 
         var random = room.Level.GenerationRandom;
-        for (var i = 0; i < featurePoints.Count; i++)
+        foreach (var (point, feature) in featurePoints)
         {
-            if (featurePoints[i].Feature.HasValue)
+            if (feature.HasValue)
             {
                 continue;
             }
@@ -3285,16 +3238,9 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             var pickIndex = random.Next(0, outstandingBits.Count);
             var picked = outstandingBits[pickIndex];
             outstandingBits.RemoveAt(pickIndex);
-            featurePoints[i] = (featurePoints[i].Point, picked);
+            featurePoints[point] = picked;
             room.BoundPlaceableFeatures |= picked;
 
-            // The wildcard glyph initially committed plain stone floor via Write; now that
-            // the bit is bound, overwrite the terrain with the feature-specific MapFeature
-            // so downstream sensing / rendering reflect the resolved feature.
-            if (RoomFeatureToMapFeature.TryGetValue(picked, out var mappedFeature))
-            {
-                TerrainSystem.SetTerrain(mappedFeature, featurePoints[i].Point, room);
-            }
         }
     }
 
@@ -3327,14 +3273,14 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         var perimeterPoints = new HashSet<Point>();
         var insidePoints = new HashSet<Point>();
         var points = new List<Point>();
-        var featurePoints = new List<(Point Point, RoomFeatures? Feature)>();
-        var creaturePoints = new List<(Point Point, string? CreatureName)>();
+        var featurePoints = new Dictionary<Point, RoomFeatures?>();
+        var creaturePoints = new Dictionary<Point, string?>();
         var trapPoints = new List<Point>();
         WriteMap(target, room, Write,
             (doorwayPoints, perimeterPoints, insidePoints, points, featurePoints, creaturePoints, trapPoints, ctx));
 
         // Resolve wildcard feature glyphs against the room's outstanding placeable features
-        // before constructing the chunk so the chunk's FeaturePoints list is fully bound.
+        // before constructing the chunk so the chunk's FeaturePoints dictionary is fully bound.
         BindWildcardFeatures(room, featurePoints);
 
         var chunkBounds = new Rectangle(target, PayloadArea.Width, PayloadArea.Height);
@@ -3386,8 +3332,8 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             HashSet<Point> perimeterPoints,
             HashSet<Point> insidePoints,
             List<Point> points,
-            List<(Point Point, RoomFeatures? Feature)> featurePoints,
-            List<(Point Point, string? CreatureName)> creaturePoints,
+            Dictionary<Point, RoomFeatures?> featurePoints,
+            Dictionary<Point, string?> creaturePoints,
             List<Point> trapPoints,
             LotPlacementContext ctx) state)
     {
@@ -3396,7 +3342,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
 
         if (Creatures?.TryGetValue(c, out var creatureName) == true)
         {
-            creaturePoints.Add((point, creatureName));
+            creaturePoints.Add(point, creatureName);
             c = '.';
         }
 
@@ -3441,25 +3387,20 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
                 // on the chunk.
                 insidePoints.Add(point);
                 trapPoints.Add(point);
-                featurePoints.Add((point, RoomFeatures.Trapped));
+                featurePoints.Add(point, RoomFeatures.Trapped);
                 feature = MapFeature.StoneFloor;
                 break;
             case CreatureWildcardGlyph:
                 insidePoints.Add(point);
-                creaturePoints.Add((point, null));
+                creaturePoints.Add(point, null);
                 feature = MapFeature.StoneFloor;
                 break;
             default:
                 insidePoints.Add(point);
                 if (FeatureGlyphs.TryGetValue(c, out var roomFeature))
                 {
-                    featurePoints.Add((point, roomFeature));
-                    // Wildcard glyph ($) defers feature binding to BindWildcardFeatures
-                    // and writes plain floor in the meantime; concrete feature glyphs
-                    // commit their feature-specific MapFeature directly.
-                    feature = roomFeature.HasValue
-                        ? RoomFeatureToMapFeature[roomFeature.Value]
-                        : MapFeature.StoneFloor;
+                    featurePoints.Add(point, roomFeature);
+                    feature = MapFeature.StoneFloor;
                 }
                 else
                 {

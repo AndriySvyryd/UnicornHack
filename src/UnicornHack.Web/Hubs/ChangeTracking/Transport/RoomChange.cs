@@ -5,7 +5,7 @@ namespace UnicornHack.Hubs.ChangeTracking;
 [MessagePackObject]
 public class RoomChange
 {
-    public const int PropertyCount = 12;
+    public const int PropertyCount = 13;
     private ushort? _changedProperties = 1;
 
     [Key(0)]
@@ -120,6 +120,16 @@ public class RoomChange
         {
             field = value;
             MarkChanged(11);
+        }
+    }
+
+    [Key(12)]
+    public Dictionary<int, FeatureChange>? Features
+    {
+        get => field; set
+        {
+            field = value;
+            MarkChanged(12);
         }
     }
 }

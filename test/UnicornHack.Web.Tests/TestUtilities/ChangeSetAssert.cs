@@ -113,6 +113,7 @@ public static class ChangeSetAssert
         AssertActorsEqual(expected.Actors!, actual.Actors!);
         AssertItemsEqual(expected.Items!, actual.Items!);
         AssertConnectionsEqual(expected.Connections!, actual.Connections!);
+        AssertFeaturesEqual(expected.Features ?? [], actual.Features ?? []);
         AssertTerrainEqual(expected, actual);
     }
 
@@ -176,6 +177,29 @@ public static class ChangeSetAssert
             Assert.True(exp.LevelX == act.LevelX, $"Connection {kvp.Key}: LevelX expected {exp.LevelX}, actual {act.LevelX}");
             Assert.True(exp.LevelY == act.LevelY, $"Connection {kvp.Key}: LevelY expected {exp.LevelY}, actual {act.LevelY}");
             Assert.True(exp.Orientation == act.Orientation, $"Connection {kvp.Key}: Orientation expected {exp.Orientation}, actual {act.Orientation}");
+        }
+    }
+
+    private static void AssertFeaturesEqual(Dictionary<int, FeatureChange> expected, Dictionary<int, FeatureChange> actual)
+    {
+        Assert.Equal(expected.Keys.OrderBy(id => id), actual.Keys.OrderBy(id => id));
+        foreach (var (id, feature) in expected)
+        {
+            var other = actual[id];
+            Assert.Equal(feature.Name, other.Name);
+            Assert.Equal(feature.LevelX, other.LevelX);
+            Assert.Equal(feature.LevelY, other.LevelY);
+            Assert.Equal(feature.Destroyed, other.Destroyed);
+            Assert.Equal(feature.BlocksMovement, other.BlocksMovement);
+            Assert.Equal(feature.NextActionTick, other.NextActionTick);
+            Assert.Equal(feature.CooldownTick, other.CooldownTick);
+            Assert.Equal(feature.IsCurrentlyPerceived, other.IsCurrentlyPerceived);
+            Assert.Equal(feature.AffectedCells, other.AffectedCells);
+            Assert.Equal(feature.NextActions?.Length ?? 0, other.NextActions?.Length ?? 0);
+            for (var index = 0; index < (feature.NextActions?.Length ?? 0); index++)
+            {
+                AssertActorActionEqual(id, feature.NextActions![index], other.NextActions![index]);
+            }
         }
     }
 

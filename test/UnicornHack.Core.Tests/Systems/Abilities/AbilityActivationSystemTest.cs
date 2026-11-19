@@ -16,6 +16,44 @@ namespace UnicornHack.Systems.Abilities;
 public class AbilityActivationSystemTest
 {
     [Theory]
+    [InlineData(TargetingShape.Plus)]
+    [InlineData(TargetingShape.PlusNoCenter)]
+    public void Plus_targeting_uses_unique_cardinal_rays_with_wall_and_optional_actor_clipping(TargetingShape shape)
+    {
+        var room = TestHelper.BuildRoom("""
+            .......
+            .......
+            .......
+            .......
+            ...#...
+            .......
+            .......
+            """);
+        var manager = room.Entity.Manager;
+        CreatureData.Manusya.Instantiate(room, new Point(1, 3));
+        manager.Queue.ProcessQueue(manager);
+        var origin = new Point(3, 3);
+        var cells = (List<(Point, byte)>)manager.AbilityActivationSystem.GetTargetedCells(
+            origin, origin, Direction.East, 3, shape, 1, room, stopAtActors: true);
+
+        Assert.Equal(shape == TargetingShape.Plus, cells.Any(cell => cell.Item1 == origin));
+        Assert.Equal(cells.Count, cells.Select(cell => cell.Item1).Distinct().Count());
+        Assert.All(cells, cell => Assert.True(cell.Item1.X == origin.X || cell.Item1.Y == origin.Y));
+        Assert.Contains(cells, cell => cell.Item1 == new Point(1, 3));
+        Assert.DoesNotContain(cells, cell => cell.Item1 == new Point(0, 3));
+        Assert.DoesNotContain(cells, cell => cell.Item1 == new Point(3, 5));
+        cells.Clear();
+        manager.PointByteListArrayPool.Return(cells);
+
+        cells = (List<(Point, byte)>)manager.AbilityActivationSystem.GetTargetedCells(
+            origin, origin, Direction.East, 3, shape, 1, room);
+        Assert.Contains(cells, cell => cell.Item1 == new Point(0, 3));
+        Assert.DoesNotContain(cells, cell => cell.Item1 == new Point(3, 5));
+        cells.Clear();
+        manager.PointByteListArrayPool.Return(cells);
+    }
+
+    [Theory]
     [InlineData(Direction.East, 1, 3)]
     [InlineData(Direction.East, 2, 8)]
     [InlineData(Direction.East, 3, 15)]

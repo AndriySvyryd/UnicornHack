@@ -1,6 +1,7 @@
 using CSharpScriptSerialization;
 using System.Globalization;
 using UnicornHack.Systems.Abilities;
+using UnicornHack.Systems.Levels;
 using UnicornHack.Utils.DataLoading;
 
 namespace UnicornHack.Generation;
@@ -14,6 +15,7 @@ public class Ability : ILoadable, ICSScriptSerializable
     private IReadOnlyList<Effect>? _effects;
     private ActivationType? _activation;
     private string? _levelExpression;
+    private Func<string, int, int, string, float>? _generationWeightFunction;
 
     public string Name
     {
@@ -24,8 +26,27 @@ public class Ability : ILoadable, ICSScriptSerializable
     public AbilityType Type
     {
         get;
-        set;
+        set
+        {
+            field = value;
+            _generationWeightFunction = null;
+        }
     }
+
+    public string? GenerationWeight
+    {
+        get;
+        set
+        {
+            field = value;
+            _generationWeightFunction = null;
+        }
+    }
+
+    public float GetWeight(RoomComponent room, string feature = "")
+        => RewardGenerationWeight.Evaluate(ref _generationWeightFunction,
+            GenerationWeight ?? (Type == AbilityType.Skill ? "1.0" : "0"),
+            Name, room, feature);
 
     /// <summary>
     ///     Computes a level from the owner's abilities or level statistics. A non-positive result grants nothing.
@@ -94,6 +115,16 @@ public class Ability : ILoadable, ICSScriptSerializable
         }
 
         TryGetLeveledTemplateName(abilityName, out var templateName, out _);
+        if (owner?.Feature is { } feature)
+        {
+            var featureAbility = data.Features.Find(feature.Name)?.Abilities.FirstOrDefault(
+                ability => string.Equals(ability.Name, templateName, StringComparison.OrdinalIgnoreCase));
+            if (featureAbility != null)
+            {
+                return featureAbility;
+            }
+        }
+
         var template = data.Abilities.Find(templateName);
         if (template == null)
         {
@@ -370,6 +401,7 @@ public class Ability : ILoadable, ICSScriptSerializable
     {
         { nameof(Name), (_, v) => v != default },
         { nameof(Type), (_, v) => (AbilityType)v! != default },
+        { nameof(GenerationWeight), (_, v) => v != null },
         { nameof(LevelExpression), (_, v) => v != default },
         { nameof(NonDecreasingLevel), (_, v) => (bool)v! },
         { nameof(Windup), (_, v) => (int)v! != 0 },

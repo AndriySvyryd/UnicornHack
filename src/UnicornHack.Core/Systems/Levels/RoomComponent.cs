@@ -237,6 +237,29 @@ public class RoomComponent : GameComponent, IKeepAliveComponent
 
     public IReadOnlyDictionary<Point, GameEntity> Features { get; } = new SortedDictionary<Point, GameEntity>();
 
+    public Dictionary<Point, HashSet<int>>? CellThreats
+    {
+        get => Entity?.Manager == null || Width == 0 || Height == 0
+            ? field
+            : Entity.Manager.CellThreatTracker.GetThreats(this, field);
+        set
+        {
+            if (ReferenceEquals(field, value))
+            {
+                return;
+            }
+            if (value == null && field != null)
+            {
+                foreach (var sources in field.Values)
+                {
+                    sources.Clear();
+                }
+                field.Clear();
+            }
+            field = value;
+        }
+    }
+
     public IReadOnlyCollection<GameEntity> IncomingConnections
     {
         get;
@@ -248,6 +271,11 @@ public class RoomComponent : GameComponent, IKeepAliveComponent
     } = new SortedDictionary<Point, GameEntity>();
 
     public IReadOnlyDictionary<Point, GameEntity> KnownItems
+    {
+        get;
+    } = new SortedDictionary<Point, GameEntity>();
+
+    public IReadOnlyDictionary<Point, GameEntity> KnownFeatures
     {
         get;
     } = new SortedDictionary<Point, GameEntity>();
@@ -371,6 +399,7 @@ public class RoomComponent : GameComponent, IKeepAliveComponent
         }
 
         BoundPlaceableFeatures = 0;
+        CellThreats = null;
         TerrainChanges = null;
         KnownTerrainChanges = null;
         NeighborChanges = null;
@@ -385,6 +414,7 @@ public class RoomComponent : GameComponent, IKeepAliveComponent
         ((SortedDictionary<Point, GameEntity>)Features).Clear();
         ((SortedDictionary<Point, GameEntity>?)KnownActors)?.Clear();
         ((SortedDictionary<Point, GameEntity>?)KnownItems)?.Clear();
+        ((SortedDictionary<Point, GameEntity>)KnownFeatures).Clear();
         ((SortedDictionary<Point, GameEntity>?)KnownConnections)?.Clear();
         // IncomingConnections intentionally preserved.
     }

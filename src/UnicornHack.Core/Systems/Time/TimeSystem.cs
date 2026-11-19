@@ -24,6 +24,7 @@ public class TimeSystem : IGameSystem<AdvanceTurnMessage>
         var entity = manager.TemporalEntitiesIndex.First();
         var actionTick = entity.AI?.NextActionTick
                          ?? entity.Player?.NextActionTick
+                         ?? entity.Feature?.NextActionTick
                          ?? entity.Ability?.CooldownTick;
         var processingAction = actionTick is { } scheduledActionTick
                                && (entity.ActiveEffects?.NextEffectTick is not { } effectTick
@@ -44,6 +45,7 @@ public class TimeSystem : IGameSystem<AdvanceTurnMessage>
             && ReferenceEquals(manager.TemporalEntitiesIndex.First(), entity)
             && (entity.AI?.NextActionTick
                 ?? entity.Player?.NextActionTick
+                ?? entity.Feature?.NextActionTick
                 ?? entity.Ability?.CooldownTick) == actionTick)
         {
             var actor = (ActorComponent?)entity.AI ?? entity.Player;
@@ -99,6 +101,12 @@ public class TimeSystem : IGameSystem<AdvanceTurnMessage>
             return MessageProcessingResult.ContinueProcessing;
         }
         
+        if (entity.Feature?.NextActionTick == tick)
+        {
+            manager.FeatureSystem.Advance(entity, manager);
+            return MessageProcessingResult.ContinueProcessing;
+        }
+
         var ability = entity.Ability;
         if (ability != null
             && ability.CooldownTick == tick)
@@ -114,6 +122,7 @@ public class TimeSystem : IGameSystem<AdvanceTurnMessage>
     {
         var actionTick = entity.AI?.NextActionTick
                          ?? entity.Player?.NextActionTick
+                         ?? entity.Feature?.NextActionTick
                          ?? entity.Ability?.CooldownTick;
         var effectTick = entity.ActiveEffects?.NextEffectTick;
         return actionTick == null || effectTick < actionTick

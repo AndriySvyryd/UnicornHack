@@ -994,31 +994,54 @@ public class AbilityActivationSystem :
 
         var room = activatorPosition!.RoomEntity.Room!;
         var targetCell = activationMessage.TargetCell ?? activationMessage.TargetEntity!.Position!.Cell!.Value;
-        var cells = GetTargetedCells(
+        if (ability.TargetingShape is not (TargetingShape.Plus or TargetingShape.PlusNoCenter)
+            && manager.CellThreatTracker.GetCachedTargetCells(activator, ability.EntityId, targetCell) is { } cachedCells)
+        {
+            foreach (var (cachedCell, exposure) in cachedCells)
+            {
+                var target = room.Actors.GetValueOrDefault(cachedCell);
+                if (target == null)
+                {
+                    continue;
+                }
+                targets.Add((target, exposure));
+                if (ability.TargetingShape == TargetingShape.Line)
+                {
+                    break;
+                }
+            }
+            return targets;
+        }
+        var cells = (List<(Point, byte)>)GetTargetedCells(
             activatorPosition.Cell!.Value,
             targetCell,
             activatorPosition.Heading!.Value,
             ability.Range,
             ability.TargetingShape,
             ability.TargetingShapeSize,
-            room);
+            room,
+            stopAtActors: ability.TargetingShape is TargetingShape.Plus or TargetingShape.PlusNoCenter);
 
-        foreach (var (visibleTargetCell, exposure) in cells)
+        try
         {
-            var target = room.Actors.GetValueOrDefault(visibleTargetCell);
-            if (target != null)
+            foreach (var (visibleTargetCell, exposure) in cells)
             {
-                targets.Add((target, exposure));
-
-                if (ability.TargetingShape == TargetingShape.Line)
+                var target = room.Actors.GetValueOrDefault(visibleTargetCell);
+                if (target != null)
                 {
-                    return targets;
+                    targets.Add((target, exposure));
+                    if (ability.TargetingShape == TargetingShape.Line)
+                    {
+                        break;
+                    }
                 }
             }
         }
-
-        ((List<(Point, byte)>)cells).Clear();
-        manager.PointByteListArrayPool.Return((List<(Point, byte)>)cells);
+        finally
+        {
+            cells.Clear();
+            manager.PointByteListArrayPool.Return(cells);
+        }
 
         return targets;
     }
@@ -1030,7 +1053,8 @@ public class AbilityActivationSystem :
         int range,
         TargetingShape targetingShape,
         int targetShapeSize,
-        RoomComponent room)
+        RoomComponent room,
+        bool stopAtActors = false)
     {
         var manager = room.Entity.Manager;
         var targetVector = originCell.DifferenceTo(targetCell);
@@ -1042,6 +1066,48 @@ public class AbilityActivationSystem :
 
         switch (targetingShape)
         {
+            case TargetingShape.Plus:
+            case TargetingShape.PlusNoCenter:
+            {
+                if (targetShapeSize != 1)
+                {
+                    throw new NotSupportedException(
+                        $"TargetingShape {targetingShape} with size {targetShapeSize} not supported");
+                }
+
+                var targets = manager.PointByteListArrayPool.Rent();
+                if (targetingShape == TargetingShape.Plus)
+                {
+                    targets.Add((originCell, BeveledVisibilityCalculator.MaxVisibility));
+                }
+                for (var direction = 0; direction < 8; direction += 2)
+                {
+                    var vector = ((Direction)direction).AsVector();
+                    var cells = (List<(Point, byte)>)GetTargetedCells(originCell, originCell, (Direction)direction,
+                        range, TargetingShape.Line, targetShapeSize, room);
+                    try
+                    {
+                        foreach (var (cell, exposure) in cells)
+                        {
+                            if (vector.X == 0 ? cell.X != originCell.X : cell.Y != originCell.Y)
+                            {
+                                break;
+                            }
+                            targets.Add((cell, exposure));
+                            if (stopAtActors && room.Actors.ContainsKey(cell))
+                            {
+                                break;
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        cells.Clear();
+                        manager.PointByteListArrayPool.Return(cells);
+                    }
+                }
+                return targets;
+            }
             case TargetingShape.Beam:
             {
                 // TODO: Implement length equal to targetShapeSize

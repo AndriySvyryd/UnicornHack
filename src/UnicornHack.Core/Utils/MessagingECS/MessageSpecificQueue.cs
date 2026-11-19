@@ -1,4 +1,6 @@
-﻿namespace UnicornHack.Utils.MessagingECS;
+﻿using UnicornHack.Utils.Caching;
+
+namespace UnicornHack.Utils.MessagingECS;
 
 /// <summary>
 ///     Implementation detail of <see cref="SequentialMessageQueue{TEntity}" />
@@ -13,45 +15,21 @@ public class MessageSpecificQueue<TMessage, TEntity> : IMessageSpecificQueue
 
     private readonly Queue<TMessage> _queue = new();
 
-    // FIFO pool of reusable message instances. Returned messages are appended to the tail and
-    // rented from the head, so a just-returned message goes to the back of the line rather than
-    // being handed straight back out — reducing the chance of a caller obtaining an instance the
-    // code path that returned it is still touching.
-    private const int PoolCapacity = 64;
-    private readonly TMessage?[] _pool = new TMessage?[PoolCapacity];
-    private int _poolHead;
-    private int _poolTail;
-    private int _poolCount;
+    [ThreadStatic]
+    private static ListObjectPool<TMessage>? _pool;
+
+    private static ListObjectPool<TMessage> CurrentPool
+        => _pool ??= new(static () => new TMessage(), initialSize: 64, maxSize: 64, preallocatedCount: 0);
 
     public void Add(IMessageConsumer<TMessage> consumer, int order)
         => _consumers.Add(order, consumer);
 
-    public TMessage CreateMessage()
-    {
-        if (_poolCount != 0)
-        {
-            var pooled = _pool[_poolHead]!;
-            _pool[_poolHead] = null;
-            _poolHead = _poolHead + 1 == PoolCapacity ? 0 : _poolHead + 1;
-            _poolCount--;
-            return pooled;
-        }
-
-        return new TMessage();
-    }
+    public TMessage CreateMessage() => CurrentPool.Rent();
 
     public void ReturnMessage(TMessage message)
     {
         message.Clean();
-        if (_poolCount == PoolCapacity)
-        {
-            // Pool full: drop the surplus instance and let the GC reclaim it.
-            return;
-        }
-
-        _pool[_poolTail] = message;
-        _poolTail = _poolTail + 1 == PoolCapacity ? 0 : _poolTail + 1;
-        _poolCount++;
+        CurrentPool.Return(message);
     }
 
     public void Enqueue(TMessage body) => _queue.Enqueue(body);

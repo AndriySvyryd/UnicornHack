@@ -21,7 +21,7 @@ public static partial class ItemData
             }
         },
         Type = ItemType.ArmorTorso | ItemType.HeavyArmor,
-        GenerationWeight = "$branch == 'ruined stronghold' && $depth >= 2 ? 0.5 : 0",
+        GenerationWeight = "$feature == 'gilded armor stand' || ($branch == 'ruined stronghold' && $depth >= 2) ? 0.5 : 0",
         RequiredMight = 10
     };
 }

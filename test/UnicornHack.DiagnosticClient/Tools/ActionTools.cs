@@ -2,8 +2,8 @@ using System.ComponentModel;
 using ModelContextProtocol.Server;
 using UnicornHack.DiagnosticClient.Connection;
 using UnicornHack.DiagnosticClient.State;
-using UnicornHack.Primitives;
 using UnicornHack.Systems.Actors;
+using UnicornHack.Utils.DataStructures;
 
 namespace UnicornHack.DiagnosticClient.Tools;
 
@@ -88,12 +88,17 @@ public sealed class ActionTools
         {
             lock (_store.Sync)
             {
-                if (_store.Player?.Room?.Actors?.GetValueOrDefault(actorId) is not { } actor)
+                if (_store.Player is not { } player || player.Room?.Actors?.GetValueOrDefault(actorId) is not { } actor)
                 {
                     return Task.FromResult($"error: actor {actorId} is not known in the current room");
                 }
 
-                target = -actorId;
+                if (player.Room.Actors.GetValueOrDefault(player.Id) is not { } playerActor)
+                {
+                    return Task.FromResult("error: the player's position is not known in the current room");
+                }
+                target = new Point(playerActor.LevelX, playerActor.LevelY)
+                    .DifferenceTo(new Point(actor.LevelX, actor.LevelY)).ToInt32();
             }
         }
 

@@ -1,4 +1,6 @@
 using UnicornHack.Data.Branches;
+using UnicornHack.Data.Creatures;
+using UnicornHack.Data.Players;
 using UnicornHack.Generation;
 using UnicornHack.Generation.Effects;
 using UnicornHack.Generation.Map;
@@ -9,6 +11,24 @@ namespace UnicornHack.Persistence;
 
 public class RoomPersistenceTest
 {
+    [Fact]
+    public void Snapshot_population_tracks_persisted_races_without_requiring_a_creature_template()
+    {
+        var room = TestHelper.BuildRoom(".");
+        var actor = CreatureData.Boggart.Instantiate(room, new Point(0, 0));
+        var manager = actor.Manager;
+        manager.Queue.ProcessQueue(manager);
+        var originalRace = Assert.Single(actor.Being!.Races).Ability!.Name!;
+        manager.AbilityLevelSystem.AddAbilityEffect(actor, PlayerRaceData.Human.GetRaceAbilityTemplate());
+        manager.AbilityLevelSystem.RemoveAbility(actor, originalRace, manager);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Null(Creature.GetTemplate(actor));
+        var snapshot = SnapshotPopulation(room.Level);
+        Assert.Contains(PlayerRaceData.Human.GetRaceAbilityName(), snapshot);
+        Assert.Contains("\"Races\"", snapshot);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -143,7 +163,12 @@ public class RoomPersistenceTest
                 {
                     Cell = entry.Key,
                     entry.Value.Id,
-                    Name = Creature.GetTemplate(entry.Value)!.Name,
+                    Races = entry.Value.Being!.Races.OrderBy(race => race.Id).Select(race => new
+                    {
+                        race.Id,
+                        race.Ability!.Name,
+                        race.Ability.Level
+                    }),
                     entry.Value.Being!.ExperiencePoints
                 }),
                 Items = room.Items.OrderBy(entry => entry.Key.X).ThenBy(entry => entry.Key.Y).Select(entry => new

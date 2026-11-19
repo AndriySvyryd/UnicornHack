@@ -33,6 +33,13 @@ public partial class GameManager
     } = null!;
 
     public LookupEntityRelationship<GameEntity, Point, SortedDictionary<Point, GameEntity>>
+        KnownFeaturesToCellRelationship
+    {
+        get;
+        private set;
+    } = null!;
+
+    public LookupEntityRelationship<GameEntity, Point, SortedDictionary<Point, GameEntity>>
         KnownConnectionsToCellRelationship
     {
         get;
@@ -116,6 +123,26 @@ public partial class GameManager
                 (int)EntityComponent.Knowledge),
             keepDependentAlive: true);
 
+        KnownFeaturesToCellRelationship = new(
+            nameof(KnownFeaturesToCellRelationship),
+            KnownPositions,
+            Rooms,
+            new SimpleKeyValueGetter<GameEntity, int>(
+                component => ((PositionComponent)component).RoomId,
+                (int)EntityComponent.Position),
+            CreateCellKeyValueGetter(),
+            (knowledgeEntity, _) =>
+            {
+                knowledgeEntity.RemoveComponent(EntityComponent.Knowledge);
+                knowledgeEntity.RemoveComponent(EntityComponent.Position);
+            },
+            roomEntity => (SortedDictionary<Point, GameEntity>)roomEntity.Room!.KnownFeatures,
+            secondaryPrincipalGroup: Features,
+            secondaryPrincipalKeyValueGetter: new SimpleKeyValueGetter<GameEntity, int>(
+                component => ((KnowledgeComponent)component).KnownEntityId,
+                (int)EntityComponent.Knowledge),
+            keepDependentAlive: true);
+
         KnownConnectionsToCellRelationship = new(
             nameof(KnownConnectionsToCellRelationship),
             KnownPositions,
@@ -173,6 +200,7 @@ public partial class GameManager
         );
 
         KnowledgeSystem = new KnowledgeSystem();
+        Features.AddListener(KnowledgeSystem);
         queue.Register<VisibleTerrainChangedMessage>(KnowledgeSystem, VisibleTerrainChangedMessage.Name, 0);
         queue.Register<TraveledMessage>(KnowledgeSystem, TraveledMessage.Name, 5);
         queue.Register<ItemMovedMessage>(KnowledgeSystem, ItemMovedMessage.Name, 0);

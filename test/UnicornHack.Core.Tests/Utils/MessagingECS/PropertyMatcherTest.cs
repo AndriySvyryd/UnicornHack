@@ -2,53 +2,36 @@ namespace UnicornHack.Utils.MessagingECS;
 
 public class PropertyMatcherTest
 {
-    [Fact]
-    public void Matches_none()
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void Matches_only_registered_component_property_pairs(int propertyCount)
     {
         var matcher = new PropertyMatcher<GameEntity>();
+        if (propertyCount >= 1)
+        {
+            matcher = matcher.With(component => ((TestComponent)component).Foo, 1);
+        }
+        if (propertyCount >= 2)
+        {
+            matcher = matcher.With(component => ((TestComponent)component).Bar, 2);
+        }
+        if (propertyCount >= 3)
+        {
+            matcher = matcher.With(component => ((TestComponent)component).Zom, 3);
+        }
 
-        Assert.False(matcher.Matches(2, nameof(TestComponent.Foo)));
-        Assert.False(matcher.Matches(1, nameof(TestComponent.Bar)));
-    }
-
-    [Fact]
-    public void Matches_one()
-    {
-        var matcher = new PropertyMatcher<GameEntity>().With(c => ((TestComponent)c).Bar, 2);
-
-        Assert.True(matcher.Matches(2, nameof(TestComponent.Bar)));
-        Assert.False(matcher.Matches(1, nameof(TestComponent.Bar)));
-        Assert.False(matcher.Matches(1, nameof(TestComponent.Foo)));
-        Assert.False(matcher.Matches(2, nameof(TestComponent.Foo)));
-    }
-
-    [Fact]
-    public void Matches_two()
-    {
-        var matcher = new PropertyMatcher<GameEntity>().With(c => ((TestComponent)c).Foo, 1)
-            .With(c => ((TestComponent)c).Bar, 2);
-
-        Assert.True(matcher.Matches(1, nameof(TestComponent.Foo)));
-        Assert.False(matcher.Matches(2, nameof(TestComponent.Foo)));
-        Assert.True(matcher.Matches(2, nameof(TestComponent.Bar)));
-        Assert.False(matcher.Matches(1, nameof(TestComponent.Bar)));
-    }
-
-    [Fact]
-    public void Matches_three()
-    {
-        var matcher = new PropertyMatcher<GameEntity>()
-            .With(c => ((TestComponent)c).Foo, 1)
-            .With(c => ((TestComponent)c).Bar, 2)
-            .With(c => ((TestComponent)c).Zom, 3);
-
-        Assert.True(matcher.Matches(1, nameof(TestComponent.Foo)));
-        Assert.False(matcher.Matches(2, nameof(TestComponent.Foo)));
-        Assert.True(matcher.Matches(2, nameof(TestComponent.Bar)));
-        Assert.False(matcher.Matches(1, nameof(TestComponent.Bar)));
-        Assert.True(matcher.Matches(3, nameof(TestComponent.Zom)));
-        Assert.False(matcher.Matches(1, nameof(TestComponent.Zom)));
-        Assert.False(matcher.Matches(2, nameof(TestComponent.Zom)));
+        string[] properties = [nameof(TestComponent.Foo), nameof(TestComponent.Bar), nameof(TestComponent.Zom), "Unknown"];
+        for (var componentId = 0; componentId <= 4; componentId++)
+        {
+            for (var propertyIndex = 0; propertyIndex < properties.Length; propertyIndex++)
+            {
+                var expected = propertyIndex < propertyCount && componentId == propertyIndex + 1;
+                Assert.Equal(expected, matcher.Matches(componentId, properties[propertyIndex]));
+            }
+        }
     }
 
     private class TestComponent : Component

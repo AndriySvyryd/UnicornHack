@@ -18,21 +18,39 @@ public class RectangleTest
             () => new Rectangle(new Point(1, 1), 1, 0));
     }
 
-    [Fact]
-    public void Properties()
+    [Theory]
+    [InlineData(0, 0, 4, 4)]
+    [InlineData(6, 1, 8, 7)]
+    [InlineData(6, 7, 6, 7)]
+    [InlineData(0, 2, 2, 3)]
+    [InlineData(1, 2, 5, 7)]
+    public void Properties_and_constructor_forms_agree(byte left, byte top, byte right, byte bottom)
     {
-        Assert.Equal(new Segment(0, 4), new Rectangle(new Point(0, 0), new Point(4, 4)).XProjection);
-        Assert.Equal(new Segment(1, 7), new Rectangle(new Point(6, 1), new Point(8, 7)).YProjection);
-        Assert.Equal(1, new Rectangle(new Point(6, 1), 1, 2).Width);
-        Assert.Equal(2, new Rectangle(new Point(6, 1), 1, 2).Height);
-        Assert.Equal(1, new Rectangle(new Point(6, 7), new Point(6, 7)).Width);
-        Assert.Equal(1, new Rectangle(new Point(6, 7), new Point(6, 7)).Height);
-        Assert.Equal(6, new Rectangle(new Point(0, 2), new Point(2, 3)).Area);
-
-        // (Segment, Segment) ctor maps projections to corners.
-        var fromSegments = new Rectangle(new Segment(2, 6), new Segment(3, 9));
-        Assert.Equal(new Point(2, 3), fromSegments.TopLeft);
-        Assert.Equal(new Point(6, 9), fromSegments.BottomRight);
+        var topLeft = new Point(left, top);
+        var bottomRight = new Point(right, bottom);
+        var width = (byte)(right - left + 1);
+        var height = (byte)(bottom - top + 1);
+        Rectangle[] rectangles =
+        [
+            new(topLeft, bottomRight),
+            new(topLeft, width, height),
+            new(topLeft, new Dimensions(width, height)),
+            new(new Segment(left, right), new Segment(top, bottom))
+        ];
+        foreach (var rectangle in rectangles)
+        {
+            Assert.Equal(rectangles[0], rectangle);
+            Assert.Equal(topLeft, rectangle.TopLeft);
+            Assert.Equal(bottomRight, rectangle.BottomRight);
+            Assert.Equal(new Point(right, top), rectangle.TopRight);
+            Assert.Equal(new Point(left, bottom), rectangle.BottomLeft);
+            Assert.Equal(width, rectangle.Width);
+            Assert.Equal(height, rectangle.Height);
+            Assert.Equal(width * height, rectangle.Area);
+            Assert.Equal(new Dimensions(width, height), rectangle.Dimensions);
+            Assert.Equal(new Segment(left, right), rectangle.XProjection);
+            Assert.Equal(new Segment(top, bottom), rectangle.YProjection);
+        }
     }
 
     [Fact]
@@ -104,26 +122,6 @@ public class RectangleTest
 
         Assert.Equal(new[] { new Point(1, 1) },
             new Rectangle(new Point(1, 1), new Point(1, 1)).GetPerimeter());
-    }
-
-    [Fact]
-    public void TopRight_and_BottomLeft_derive_from_corners()
-    {
-        var rect = new Rectangle(new Point(1, 2), new Point(5, 7));
-        Assert.Equal(new Point(5, 2), rect.TopRight);
-        Assert.Equal(new Point(1, 7), rect.BottomLeft);
-    }
-
-    [Fact]
-    public void Dimensions_property_matches_width_height()
-    {
-        var rect = new Rectangle(new Point(0, 0), 4, 7);
-        Assert.Equal(new Dimensions(4, 7), rect.Dimensions);
-
-        // The (Point, Dimensions) ctor is equivalent to (Point, byte, byte).
-        var fromDims = new Rectangle(new Point(2, 3), new Dimensions(4, 5));
-        var fromBytes = new Rectangle(new Point(2, 3), 4, 5);
-        Assert.Equal(fromBytes, fromDims);
     }
 
     [Fact]
@@ -225,52 +223,54 @@ public class RectangleTest
         Assert.Equal(7, rect.OrthogonalDistanceTo(new Point(10, 1)));
     }
 
-    [Fact]
-    public void GetEnumerator_yields_row_major_points()
+    [Theory]
+    [InlineData(1, 2, 3, 3)]
+    [InlineData(0, 0, 1, 1)]
+    [InlineData(3, 4, 3, 4)]
+    public void Both_enumerator_interfaces_yield_row_major_points(byte left, byte top, byte right, byte bottom)
     {
-        var rect = new Rectangle(new Point(1, 2), new Point(3, 3));
-        var points = rect.ToList();
-        Assert.Equal(
-            new[]
+        var rect = new Rectangle(new Point(left, top), new Point(right, bottom));
+        var expected = new List<Point>();
+        for (var row = top; row <= bottom; row++)
+        {
+            for (var column = left; column <= right; column++)
             {
-                new Point(1, 2), new Point(2, 2), new Point(3, 2),
-                new Point(1, 3), new Point(2, 3), new Point(3, 3)
-            },
-            points);
-    }
-
-    [Fact]
-    public void GetEnumerator_via_non_generic_interface_walks_same_sequence()
-    {
-        var rect = new Rectangle(new Point(0, 0), new Point(1, 1));
+                expected.Add(new Point(column, row));
+            }
+        }
+        Assert.Equal(expected, rect.ToList());
         var enumerable = (System.Collections.IEnumerable)rect;
         var points = new List<Point>();
-        foreach (var p in enumerable)
+        foreach (var point in enumerable)
         {
-            points.Add((Point)p);
+            points.Add((Point)point);
         }
-        Assert.Equal(new[] { new Point(0, 0), new Point(1, 0), new Point(0, 1), new Point(1, 1) }, points);
+        Assert.Equal(expected, points);
     }
 
-    [Fact]
-    public void GetInside_excludes_perimeter()
+    [Theory]
+    [InlineData(4, 4)]
+    [InlineData(2, 6)]
+    [InlineData(6, 2)]
+    [InlineData(1, 1)]
+    public void GetInside_excludes_perimeter_and_handles_thin_rectangles(byte width, byte height)
     {
-        var rect = new Rectangle(new Point(0, 0), new Point(3, 3));
+        var rect = new Rectangle(new Point(0, 0), width, height);
         var inside = new List<Point>();
         var enumerator = rect.GetInside();
         while (enumerator.MoveNext())
         {
             inside.Add(enumerator.Current);
         }
-        Assert.Equal(new[] { new Point(1, 1), new Point(2, 1), new Point(1, 2), new Point(2, 2) }, inside);
-    }
-
-    [Fact]
-    public void GetInside_returns_empty_for_thin_rectangles()
-    {
-        Assert.False(new Rectangle(new Point(0, 0), new Point(1, 5)).GetInside().MoveNext()); // width 2
-        Assert.False(new Rectangle(new Point(0, 0), new Point(5, 1)).GetInside().MoveNext()); // height 2
-        Assert.False(new Rectangle(new Point(0, 0), new Point(0, 0)).GetInside().MoveNext()); // 1x1
+        var expected = new List<Point>();
+        for (byte row = 1; row < height - 1; row++)
+        {
+            for (byte column = 1; column < width - 1; column++)
+            {
+                expected.Add(new Point(column, row));
+            }
+        }
+        Assert.Equal(expected, inside);
     }
 
     [Fact]
@@ -379,36 +379,25 @@ public class RectangleTest
         }
     }
 
-    [Fact]
-    public void GetPointIndex_returns_cached_instance_for_same_dimensions()
+    [Theory]
+    [InlineData(5, 3)]
+    [InlineData(3, 5)]
+    [InlineData(1, 1)]
+    public void GetPointIndex_round_trips_and_reuses_the_dimension_cache(byte width, byte height)
     {
-        var (pti1, itp1) = Rectangle.GetPointIndex(4, 3);
-        var (pti2, itp2) = Rectangle.GetPointIndex(4, 3);
-        Assert.Same(pti1, pti2);
-        Assert.Same(itp1, itp2);
-    }
-
-    [Fact]
-    public void GetPointIndex_round_trips_points_to_indices()
-    {
-        const byte width = 5;
-        const byte height = 3;
         var (pointToIndex, indexToPoint) = Rectangle.GetPointIndex(width, height);
-
-        Assert.Equal(new[,]
-            {
-                { (short)0, (short)5, (short)10 },
-                { (short)1, (short)6, (short)11 },
-                { (short)2, (short)7, (short)12 },
-                { (short)3, (short)8, (short)13 },
-                { (short)4, (short)9, (short)14 }
-            },
-            pointToIndex);
+        var cached = Rectangle.GetPointIndex(width, height);
+        Assert.Same(pointToIndex, cached.Item1);
+        Assert.Same(indexToPoint, cached.Item2);
+        Assert.Equal(width, pointToIndex.GetLength(0));
+        Assert.Equal(height, pointToIndex.GetLength(1));
+        Assert.Equal(width * height, indexToPoint.Length);
 
         for (byte y = 0; y < height; y++)
         {
             for (byte x = 0; x < width; x++)
             {
+                Assert.Equal(x + y * width, pointToIndex[x, y]);
                 Assert.Equal(new Point(x, y), indexToPoint[pointToIndex[x, y]]);
             }
         }
